@@ -32,6 +32,8 @@ data class AppSettings(
     /** AI（DeepSeek）：是否已保存 Key；模型名 */
     val aiKeySet: Boolean = false,
     val aiModel: String = "deepseek-flash",
+    /** 默认勾选：使用开发者内置的 API Key；取消后使用自行填写的 Key */
+    val useDevAiKey: Boolean = true,
     /** 常驻通知：开关 + 内容源（course/plan/agenda 逗号分隔） */
     val statusNotifEnabled: Boolean = false,
     val statusNotifSources: String = "course,plan,agenda",
@@ -57,6 +59,7 @@ object SettingsStore {
     private val KEY_SCHOOL = stringPreferencesKey("school_id")
     private val KEY_AI_KEY_ENC = stringPreferencesKey("ai_key_enc")
     private val KEY_AI_MODEL = stringPreferencesKey("ai_model")
+    private val KEY_USE_DEV_AI_KEY = booleanPreferencesKey("use_dev_ai_key")
     private val KEY_STATUS_ENABLED = booleanPreferencesKey("status_notif_enabled")
     private val KEY_STATUS_SOURCES = stringPreferencesKey("status_notif_sources")
     private val KEY_FLOATING_BALL = booleanPreferencesKey("floating_ball")
@@ -76,6 +79,7 @@ object SettingsStore {
             schoolId = p[KEY_SCHOOL] ?: "buaa",
             aiKeySet = !p[KEY_AI_KEY_ENC].isNullOrEmpty(),
             aiModel = p[KEY_AI_MODEL] ?: "deepseek-flash",
+            useDevAiKey = p[KEY_USE_DEV_AI_KEY] ?: true,
             statusNotifEnabled = p[KEY_STATUS_ENABLED] ?: false,
             statusNotifSources = p[KEY_STATUS_SOURCES] ?: "course,plan,agenda",
             floatingBall = p[KEY_FLOATING_BALL] ?: false,
@@ -166,6 +170,21 @@ object SettingsStore {
     /** 读取解密后的 AI Key（未配置返回 null） */
     suspend fun aiKey(context: Context): String? {
         val enc = context.settingsDataStore.data.first()[KEY_AI_KEY_ENC] ?: return null
+        return CryptoManager.decrypt(enc)?.takeIf { it.isNotBlank() }
+    }
+
+    /** 切换「使用开发者的 API key」（默认勾选） */
+    suspend fun setUseDevAiKey(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_USE_DEV_AI_KEY] = enabled }
+    }
+
+    /** 实际用于 AI 请求的 Key：默认使用开发者内置 Key；关闭后使用用户自己保存的 Key */
+    suspend fun effectiveAiKey(context: Context): String? {
+        val p = context.settingsDataStore.data.first()
+        if (p[KEY_USE_DEV_AI_KEY] ?: true) {
+            return DevKey.value().takeIf { it.isNotBlank() }
+        }
+        val enc = p[KEY_AI_KEY_ENC] ?: return null
         return CryptoManager.decrypt(enc)?.takeIf { it.isNotBlank() }
     }
 

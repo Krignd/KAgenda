@@ -288,7 +288,7 @@ fun AgendaEditorDialog(
                                     parseMsg = t.aiRunning
                                     scope.launch {
                                         try {
-                                            val key = SettingsStore.aiKey(aiContext)
+                                            val key = SettingsStore.effectiveAiKey(aiContext)
                                             if (key.isNullOrBlank()) {
                                                 parseMsg = t.aiNeedKey
                                                 return@launch

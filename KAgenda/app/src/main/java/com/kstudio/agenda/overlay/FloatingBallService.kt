@@ -381,7 +381,7 @@ class FloatingBallService : Service() {
             setMsg(t.aiRunning)
             scope.launch {
                 try {
-                    val key = SettingsStore.aiKey(this@FloatingBallService)
+                    val key = SettingsStore.effectiveAiKey(this@FloatingBallService)
                     if (key.isNullOrBlank()) {
                         setMsg(t.aiNeedKey)
                         return@launch

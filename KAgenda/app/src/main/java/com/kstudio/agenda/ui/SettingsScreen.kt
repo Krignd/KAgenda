@@ -334,16 +334,31 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
         // ---------------------------------------------------------- AI 识别（DeepSeek）
         item {
             SectionCard(t.secAi, t.secAiSub) {
-                OutlinedTextField(
-                    value = aiKeyInput,
-                    onValueChange = { aiKeyInput = it },
-                    label = { Text(t.aiKeyLabel) },
-                    placeholder = { if (settings.aiKeySet) Text(t.aiKeyKeepHint) },
-                    singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = settings.useDevAiKey,
+                        onCheckedChange = { vm.setUseDevAiKey(it) },
+                    )
+                    Text(t.aiUseDevKey)
+                }
+                if (settings.useDevAiKey) {
+                    Text(
+                        text = t.aiDevKeyInUse,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    OutlinedTextField(
+                        value = aiKeyInput,
+                        onValueChange = { aiKeyInput = it },
+                        label = { Text(t.aiKeyLabel) },
+                        placeholder = { if (settings.aiKeySet) Text(t.aiKeyKeepHint) },
+                        singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(
                     value = aiModel,
@@ -696,7 +711,7 @@ private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                         msg = t.adapterStageRequest
                         scope.launch {
                             try {
-                                val key = SettingsStore.aiKey(context)
+                                val key = SettingsStore.effectiveAiKey(context)
                                 if (key.isNullOrBlank()) {
                                     errorMsg = true
                                     msg = t.aiNeedKey

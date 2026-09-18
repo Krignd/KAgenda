@@ -54,12 +54,14 @@ object AppLog {
         if (!secrets.contains(secret)) secrets.add(secret)
     }
 
-    /** 票据 / 会话 / 令牌类字段的兜底遮蔽（正则） */
+    /** 票据 / 会话 / 令牌 / API Key 类字段的兜底遮蔽（正则） */
     private val SECRET_PATTERNS = listOf(
         Regex(
             "(?i)(ticket|castgc|jsessionid|sessionid|session|token|password|passwd|pwd|authorization|cookie)" +
                 "\\s*[=:]\\s*([^&;\\s\"'}]+)",
         ),
+        // DeepSeek 等 API Key（sk- 开头）：防止 Key 意外进入可分享的日志
+        Regex("sk-[A-Za-z0-9_\\-]{8,}"),
     )
 
     private fun redact(text: String): String {
@@ -71,9 +73,12 @@ object AppLog {
                 result = result.replace(s, "******")
             }
         }
-        // 2) 常规敏感字段兜底（ticket=、CASTGC=、token: 等）
+        // 2) 常规敏感字段兜底（ticket=、CASTGC=、token:、sk- API Key 等）
         for (p in SECRET_PATTERNS) {
-            result = p.replace(result) { m -> m.groupValues[1] + "=******" }
+            result = p.replace(result) { m ->
+                val groups = m.groupValues
+                if (groups.size > 1 && groups[1].isNotEmpty()) groups[1] + "=******" else "******"
+            }
         }
         return result
     }

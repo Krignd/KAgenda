@@ -309,6 +309,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 切换「使用开发者的 API key」（默认勾选，使用内置 Key） */
+    fun setUseDevAiKey(enabled: Boolean) {
+        viewModelScope.launch { SettingsStore.setUseDevAiKey(getApplication(), enabled) }
+    }
+
     fun setAiModel(model: String) {
         viewModelScope.launch { SettingsStore.setAiModel(getApplication(), model) }
     }

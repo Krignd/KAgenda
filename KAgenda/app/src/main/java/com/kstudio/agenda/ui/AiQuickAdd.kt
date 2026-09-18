@@ -98,7 +98,7 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     items = emptyList()
                     scope.launch {
                         try {
-                            val key = SettingsStore.aiKey(context)
+                            val key = SettingsStore.effectiveAiKey(context)
                             if (key.isNullOrBlank()) {
                                 msg = t.aiNeedKey
                                 return@launch

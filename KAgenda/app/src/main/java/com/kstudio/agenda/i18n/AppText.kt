@@ -240,6 +240,8 @@ interface AppStrings {
     val secAiSub: String
     val aiKeyLabel: String
     val aiKeyKeepHint: String
+    val aiUseDevKey: String
+    val aiDevKeyInUse: String
     val aiModelLabel: String
     val aiSave: String
     val aiClear: String
@@ -581,6 +583,8 @@ object ZhStrings : AppStrings {
     override val secAiSub = "配置 API Key 后，可用一句话生成或修改日程/计划"
     override val aiKeyLabel = "DeepSeek API Key"
     override val aiKeyKeepHint = "已保存（留空则不修改）"
+    override val aiUseDevKey = "使用开发者的 API key"
+    override val aiDevKeyInUse = "已启用内置 API Key，无需自行申请即可使用 AI 识别"
     override val aiModelLabel = "模型"
     override val aiSave = "保存 AI 设置"
     override val aiClear = "清除 Key"
@@ -926,6 +930,8 @@ object EnStrings : AppStrings {
     override val secAiSub = "With an API key, create or edit events/plans in natural language"
     override val aiKeyLabel = "DeepSeek API Key"
     override val aiKeyKeepHint = "Saved (leave blank to keep)"
+    override val aiUseDevKey = "Use developer's API key"
+    override val aiDevKeyInUse = "Built-in API key enabled — AI works out of the box"
     override val aiModelLabel = "Model"
     override val aiSave = "Save AI settings"
     override val aiClear = "Clear key"
@@ -1272,6 +1278,8 @@ object FrStrings : AppStrings {
     override val secAiSub = "Avec une clé API, créez/modifiez en langage naturel"
     override val aiKeyLabel = "Clé API DeepSeek"
     override val aiKeyKeepHint = "Enregistrée (laisser vide pour garder)"
+    override val aiUseDevKey = "Utiliser la clé API du développeur"
+    override val aiDevKeyInUse = "Clé API intégrée activée — l'IA est prête à l'emploi"
     override val aiModelLabel = "Modèle"
     override val aiSave = "Enregistrer"
     override val aiClear = "Effacer la clé"
