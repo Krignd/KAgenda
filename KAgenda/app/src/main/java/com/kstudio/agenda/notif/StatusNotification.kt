@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -104,7 +105,10 @@ object StatusNotification {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pi)
             .build()
-        runCatching { nm.notify(NOTIF_ID, notif) }
+        try {
+            nm.notify(NOTIF_ID, notif)
+        } catch (_: SecurityException) {
+        }
     }
 
     /** 常驻通知中的「AI 快速添加」：显示为一个文本框，点按打开 App 的 AI 添加界面 */
@@ -137,7 +141,10 @@ object StatusNotification {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setContentIntent(pi)
             .build()
-        runCatching { nm.notify(AI_NOTIF_ID, notif) }
+        try {
+            nm.notify(AI_NOTIF_ID, notif)
+        } catch (_: SecurityException) {
+        }
     }
 
     private fun scheduleAlarm(context: Context, settings: AppSettings) {
@@ -153,7 +160,7 @@ object StatusNotification {
         val delayMs = nextDelayMs(context)
         val triggerAt = System.currentTimeMillis() + delayMs
         runCatching {
-            if (am.canScheduleExactAlarms()) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()) {
                 am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
             } else {
                 am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)

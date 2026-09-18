@@ -5,11 +5,14 @@ package com.kstudio.agenda.ui
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.provider.Settings
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -84,12 +87,19 @@ fun MainScreen(
     val context = LocalContext.current
     val t = LocalStrings.current
 
-    // 通知权限（Android 13+）
+    // 通知权限（Android 13+）；存储权限（Android 8.0–9 导出图片到相册需要）
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
     LaunchedEffect(Unit) {
-        if (!Notifier.hasPermission(context)) {
+        if (Build.VERSION.SDK_INT < 29 &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else if (!Notifier.hasPermission(context)) {
             permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
     }

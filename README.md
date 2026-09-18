@@ -31,7 +31,7 @@ almost entirely through natural-language conversations with an AI coding assista
 ## 技术栈 / Tech Stack
 
 Kotlin · Jetpack Compose (Material 3) · 单 Activity 状态驱动 · DataStore + Keystore 加密 ·
-WebView 同步引擎 · WorkManager / AlarmManager · AGP 8.x · minSdk 35（Android 15+）
+WebView 同步引擎 · WorkManager / AlarmManager · AGP 8.x · minSdk 26（Android 8.0+）
 
 ## 构建 / Build
 

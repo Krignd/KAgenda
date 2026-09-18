@@ -10,11 +10,11 @@ android {
 
     defaultConfig {
         applicationId = "com.kstudio.agenda"
-        minSdk = 35          // Android 15+（用户要求）
+        minSdk = 26          // Android 8.0+（向下兼容；悬浮窗 TYPE_APPLICATION_OVERLAY 即 API 26 起）
         targetSdk = 35
         // 版本命名逻辑（2026.9 起）：年份.月份 v序号；versionCode = 年×10000 + 月×100 + 序号
-        versionCode = 20260902
-        versionName = "2026.9 v2"
+        versionCode = 20260903
+        versionName = "2026.9 v2.0.1"
         // WebView 相关无 NDK 需求
     }
 

@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
+    <!-- Android 8.0–9 导出课表图片到相册需要存储权限（Android 10+ 走 MediaStore 无需权限） -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+
     <!-- 课前提醒通知（Android 13+ 运行时申请） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 精确闹钟（Android 12+ 特殊权限，需用户在系统设置中允许；未授予时自动降级为粗略提醒） -->

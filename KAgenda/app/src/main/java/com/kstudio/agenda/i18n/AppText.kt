@@ -2,6 +2,7 @@ package com.kstudio.agenda.i18n
 
 import android.app.LocaleManager
 import android.content.Context
+import android.os.Build
 import android.os.LocaleList
 import androidx.compose.runtime.staticCompositionLocalOf
 import com.kstudio.agenda.BuildConfig
@@ -1424,6 +1425,8 @@ object AppText {
      * SYSTEM → 空列表（跟随系统）。
      */
     fun applySystemLocale(context: Context, lang: AppLang) {
+        // 系统级「按应用设置语言」为 Android 13+；更低版本仅应用内文案即时切换
+        if (Build.VERSION.SDK_INT < 33) return
         runCatching {
             val lm = context.getSystemService(LocaleManager::class.java) ?: return
             lm.applicationLocales = when (lang) {

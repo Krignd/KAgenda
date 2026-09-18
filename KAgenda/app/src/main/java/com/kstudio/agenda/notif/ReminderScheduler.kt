@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import com.kstudio.agenda.data.ScheduleCache
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.model.Course
@@ -77,7 +78,7 @@ object ReminderScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         try {
-            if (am.canScheduleExactAlarms()) {
+            if (canExact(am)) {
                 am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
             } else {
                 // 未授予“闹钟和提醒”权限时降级：低功耗下仍可唤醒（比 setWindow 更可靠，无 10 分钟窗口延迟）
@@ -139,8 +140,12 @@ object ReminderScheduler {
     /** 供设置页/开发者工具展示：当前是否可调度精确闹钟 */
     fun canScheduleExact(context: Context): Boolean {
         val am = context.getSystemService(AlarmManager::class.java) ?: return false
-        return am.canScheduleExactAlarms()
+        return canExact(am)
     }
+
+    /** Android 12 起才有 canScheduleExactAlarms 门槛；12 以下无需授权即可精确闹钟 */
+    private fun canExact(am: AlarmManager): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
 
     /** 供开发者工具展示：当前已排提醒数量 */
     fun scheduledCount(context: Context): Int = readCodes(context).size

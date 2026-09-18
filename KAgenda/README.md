@@ -2,7 +2,7 @@
 
 > **支持范围**：目前仅支持北航系统。
 
-一个面向 **Android 15（API 35）及以上** 的非官方课表 / 日程工具：登录学校教务系统，抓取课表并提供
+一个面向 **Android 8.0（API 26）及以上** 的非官方课表 / 日程工具：登录学校教务系统，抓取课表并提供
 日 / 周 / 月视图、本地日程与计划管理、图片导出、课前提醒、桌面小组件与常驻状态通知；支持 中文 / English / Français 切换。
 
 > ⚠️ 本应用是非官方个人工具，仅供学习与个人便利使用。账号密码仅保存在本机
@@ -46,12 +46,12 @@
    - 自带 JDK 21（工程使用 JDK 17 语言级别，无需单独装 JDK）
    - Kotlin / Compose 支持已内置，**不需要额外安装 IDE 插件**
 2. **Android SDK**
-   - `SDK Platform 35 (Android 15)` ← 必须
+   - `SDK Platform 35 (Android 15)` ← 必须（仅编译需要；运行设备最低支持 Android 8.0）
    - `Build-Tools 35.0.x`、`Platform-Tools (adb)`、`Android SDK Command-line Tools`（默认勾选的都保留即可）
    - 在 Android Studio → Settings → Languages & Frameworks → Android SDK 中勾选安装
 3. **运行设备**
-   - 真机：Android 15+ 手机，打开开发者选项 + USB 调试；
-   - 或模拟器：Device Manager 中下载 **Android 15 (API 35)** 系统镜像（Google APIs x86_64）
+   - 真机：Android 8.0+ 手机，打开开发者选项 + USB 调试；
+   - 或模拟器：Device Manager 中下载 **Android 8.0 及以上（API 26+）** 系统镜像（Google APIs x86_64；建议较新版本，体验更佳）
 4. （可选，Windows）`Google USB Driver`：手机连不上电脑时在 SDK Manager → SDK Tools 中安装
 5. （可选）Git：版本管理
 
@@ -84,7 +84,7 @@
 1. Android Studio → **Open** → 选择本 `KAgenda` 目录（不是 `s` 根目录）。
 2. 等待 Gradle Sync（首次会自动下载依赖；若提示缺少 Gradle Wrapper，按提示
    “Create wrapper”或使用 Android Studio 自带的 Gradle 同步即可）。
-3. 连接 Android 15+ 设备或启动 API 35 模拟器，点击 **Run ▶**。
+3. 连接 Android 8.0+ 设备或启动任意 API 26+ 模拟器，点击 **Run ▶**。
 4. 首次启动会请求通知权限（用于课前提醒），允许即可。
 5. 想体验更流畅的性能版，可命令行构建 Release 包（已配置 R8 压缩 + 资源收缩 + debug 签名，可直接安装）：
    ```
