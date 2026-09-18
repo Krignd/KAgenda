@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 系统悬浮球：白色圆形底（图标保持 DeepSeek 原色） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <solid android:color="#F7FFFFFF" />
+    <stroke
+        android:width="0.5dp"
+        android:color="#22000000" />
+</shape>

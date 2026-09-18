@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- 访问教务系统 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 课前提醒通知（Android 13+ 运行时申请） -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 精确闹钟（Android 12+ 特殊权限，需用户在系统设置中允许；未授予时自动降级为粗略提醒） -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- 开机后重新安排提醒 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 请求忽略电池优化（后台提醒更可靠；用户可在设置页一键跳转授权） -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+
+    <!-- 系统悬浮球：在其他应用上层显示（特殊权限，需用户在系统设置中授权） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 承载悬浮球的前台服务 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+
+    <application
+        android:name=".KebiaoApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.KAgenda"
+        android:usesCleartextTraffic="false"
+        tools:targetApi="35">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 【已隐藏保留】网页登录：以可见 WebView 完成统一认证。
+             入口已按需求在设置页隐藏（SettingsScreen.SHOW_WEB_LOGIN_ENTRY=false），组件保留未删除 -->
+        <activity
+            android:name=".ui.WebLoginActivity"
+            android:exported="false"
+            android:label="@string/web_login_title" />
+
+        <!-- 上课提醒 -->
+        <receiver
+            android:name=".notif.ReminderReceiver"
+            android:exported="false" />
+
+        <!-- 系统悬浮球（其他应用上层显示 + 快速 AI 添加） -->
+        <service
+            android:name=".overlay.FloatingBallService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="floating AI quick-add button displayed over other apps" />
+        </service>
+
+        <!-- 开机/应用更新/系统时间变更后恢复提醒调度 -->
+        <receiver
+            android:name=".notif.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
+        <!-- 「下一节课」桌面小组件：2×1 / 2×2 / 4×1 / 4×2 四个尺寸入口 -->
+        <receiver
+            android:name=".widget.NextClassWidget2x1"
+            android:exported="false"
+            android:label="@string/widget_2x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_2x1" />
+        </receiver>
+        <receiver
+            android:name=".widget.NextClassWidget2x2"
+            android:exported="false"
+            android:label="@string/widget_2x2">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_2x2" />
+        </receiver>
+        <receiver
+            android:name=".widget.NextClassWidget4x1"
+            android:exported="false"
+            android:label="@string/widget_4x1">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_4x1" />
+        </receiver>
+        <receiver
+            android:name=".widget.NextClassWidget4x2"
+            android:exported="false"
+            android:label="@string/widget_4x2">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_info_4x2" />
+        </receiver>
+
+        <!-- 小组件定时刷新链（每次触发后自动安排下一次） -->
+        <receiver
+            android:name=".widget.WidgetRefreshReceiver"
+            android:exported="false" />
+
+        <!-- 常驻状态通知刷新链 -->
+        <receiver
+            android:name=".notif.StatusRefreshReceiver"
+            android:exported="false" />
+    </application>
+</manifest>

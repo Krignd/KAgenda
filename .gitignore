@@ -1,0 +1,25 @@
+# ---- 构建产物（大文件，不入库）----
+build/
+.gradle/
+captures/
+
+# ---- IDE 配置 ----
+.idea/
+*.iml
+
+# ---- 本机专属配置 ----
+local.properties
+
+# ---- 其他 ----
+*.log
+*.hprof
+
+# ---- 分享包与对话导出（大文件，不入库）----
+/*.zip
+对话记录/
+
+# ---- 本地私密资料（教务页面快照/原始通知等，不入库）----
+相关文件/
+
+# ---- Android Studio 构建输出（app/release：APK/baselineProfile 等）----
+KAgenda/app/release/

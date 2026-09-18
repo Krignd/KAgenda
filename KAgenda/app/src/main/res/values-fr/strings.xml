@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">K Agenda</string>
+    <string name="web_login_title">Connexion web</string>
+
+    <!-- Widgets d'écran d'accueil -->
+    <string name="widget_2x1">Prochain cours · 2×1</string>
+    <string name="widget_2x2">Prochain cours · 2×2</string>
+    <string name="widget_4x1">Prochain cours · 4×1</string>
+    <string name="widget_4x2">Prochain cours · 4×2</string>
+    <string name="widget_desc">Affiche le prochain cours et le temps restant</string>
+    <string name="widget_next_class">Prochain cours</string>
+    <string name="widget_no_data">Ouvrez l\'app pour synchroniser</string>
+    <string name="widget_none">Aucun cours à venir</string>
+    <string name="widget_starting">Bientôt</string>
+    <string name="widget_remaining">dans %1$s</string>
+    <string name="widget_days">%1$d j</string>
+    <string name="widget_hours">%1$d h</string>
+    <string name="widget_mins">%1$d min</string>
+    <string name="widget_next2">puis %1$s %2$s</string>
+    <string name="widget_in_class">En cours</string>
+    <string name="widget_until">jusqu\'à %1$s</string>
+    <string name="widget_until_end">fin dans %1$s</string>
+    <string name="widget_next_class_line">Suivant %1$s %2$s</string>
+    <string name="widget_tomorrow">Demain</string>
+    <string name="widget_day_after">Après-demain</string>
+    <string name="widget_next_agenda">Prochain événement</string>
+    <string name="widget_ongoing">En cours</string>
+    <string name="widget_today">Aujourd\'hui</string>
+</resources>

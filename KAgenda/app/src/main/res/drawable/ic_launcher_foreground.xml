@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应图标前景：日历 + 书本线条
+     配色（保持原有构图与风格）：
+     - 挂绳改为棕色（吊环），更贴近真实台历的挂绳质感
+     - 蓝色系统一：深蓝 #1D4ED8 / 柔蓝 #A9C7F8 交替格纹
+     - 顶栏琥珀 #FBBF24 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group android:scaleX="0.55"
+        android:scaleY="0.55"
+        android:translateX="24.3"
+        android:translateY="24.3">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M24,20 L84,20 A6,6 0 0 1 90,26 L90,84 A6,6 0 0 1 84,90 L24,90 A6,6 0 0 1 18,84 L18,26 A6,6 0 0 1 24,20 Z" />
+        <path
+            android:fillColor="#FBBF24"
+            android:pathData="M18,26 A6,6 0 0 1 24,20 L84,20 A6,6 0 0 1 90,26 L90,38 L18,38 Z" />
+        <path
+            android:fillColor="#8B4513"
+            android:pathData="M34,12 L40,12 L40,26 L34,26 Z M68,12 L74,12 L74,26 L68,26 Z" />
+        <group>
+            <path
+                android:fillColor="#1D4ED8"
+                android:pathData="M28,48 L40,48 L40,60 L28,60 Z" />
+            <path
+                android:fillColor="#A9C7F8"
+                android:pathData="M46,48 L58,48 L58,60 L46,60 Z" />
+            <path
+                android:fillColor="#1D4ED8"
+                android:pathData="M64,48 L76,48 L76,60 L64,60 Z" />
+            <path
+                android:fillColor="#A9C7F8"
+                android:pathData="M28,66 L40,66 L40,78 L28,78 Z" />
+            <path
+                android:fillColor="#1D4ED8"
+                android:pathData="M46,66 L58,66 L58,78 L46,78 Z" />
+            <path
+                android:fillColor="#A9C7F8"
+                android:pathData="M64,66 L76,66 L76,78 L64,78 Z" />
+        </group>
+    </group>
+</vector>

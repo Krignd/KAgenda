@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- 不备份设置（含加密后的密码），避免换机后无法解密 -->
+    <exclude domain="file" path="datastore/" />
+    <exclude domain="file" path="raw_capture/" />
+    <exclude domain="file" path="logs/" />
+</full-backup-content>

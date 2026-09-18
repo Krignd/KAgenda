@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">K日程</string>
+    <string name="web_login_title">网页登录</string>
+
+    <!-- 桌面小组件 -->
+    <string name="widget_2x1">下一节课 · 2×1</string>
+    <string name="widget_2x2">下一节课 · 2×2</string>
+    <string name="widget_4x1">下一节课 · 4×1</string>
+    <string name="widget_4x2">下一节课 · 4×2</string>
+    <string name="widget_desc">显示下一节课与剩余时间</string>
+    <string name="widget_next_class">下一节课</string>
+    <string name="widget_no_data">打开应用同步课表</string>
+    <string name="widget_none">近期没有课程</string>
+    <string name="widget_starting">即将开始</string>
+    <string name="widget_remaining">%1$s后</string>
+    <string name="widget_days">%1$d天</string>
+    <string name="widget_hours">%1$d小时</string>
+    <string name="widget_mins">%1$d分钟</string>
+    <string name="widget_next2">之后 %1$s %2$s</string>
+    <string name="widget_in_class">上课中</string>
+    <string name="widget_until">至 %1$s</string>
+    <string name="widget_until_end">距下课%1$s</string>
+    <string name="widget_next_class_line">下节 %1$s %2$s</string>
+    <string name="widget_tomorrow">明天</string>
+    <string name="widget_day_after">后天</string>
+    <string name="widget_next_agenda">下一日程</string>
+    <string name="widget_ongoing">进行中</string>
+    <string name="widget_today">今天</string>
+</resources>

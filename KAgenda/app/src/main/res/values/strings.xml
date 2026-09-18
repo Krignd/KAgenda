@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 默认（英文）；中文与法语见 values-zh / values-fr -->
+    <string name="app_name">K Agenda</string>
+    <string name="web_login_title">Web login</string>
+
+    <!-- 桌面小组件 -->
+    <string name="widget_2x1">Next class · 2×1</string>
+    <string name="widget_2x2">Next class · 2×2</string>
+    <string name="widget_4x1">Next class · 4×1</string>
+    <string name="widget_4x2">Next class · 4×2</string>
+    <string name="widget_desc">Shows the next class and time left</string>
+    <string name="widget_next_class">Next class</string>
+    <string name="widget_no_data">Open the app to sync</string>
+    <string name="widget_none">No upcoming classes</string>
+    <string name="widget_starting">Starting soon</string>
+    <string name="widget_remaining">in %1$s</string>
+    <string name="widget_days">%1$dd</string>
+    <string name="widget_hours">%1$dh</string>
+    <string name="widget_mins">%1$d min</string>
+    <string name="widget_next2">then %1$s %2$s</string>
+    <string name="widget_in_class">In class</string>
+    <string name="widget_until">until %1$s</string>
+    <string name="widget_until_end">ends in %1$s</string>
+    <string name="widget_next_class_line">Next %1$s %2$s</string>
+    <string name="widget_tomorrow">Tomorrow</string>
+    <string name="widget_day_after">Day after</string>
+    <string name="widget_next_agenda">Next event</string>
+    <string name="widget_ongoing">Ongoing</string>
+    <string name="widget_today">Today</string>
+</resources>
