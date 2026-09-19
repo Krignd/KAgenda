@@ -101,15 +101,21 @@ object SettingsStore {
         return Credentials(id, pwd)
     }
 
-    /** 保存账户；password 为 null 时保留旧密码 */
-    suspend fun setAccount(context: Context, studentId: String, password: String?) {
+    /** 保存账户；password 为 null 时保留旧密码。返回 false 表示密码加密失败（未保存） */
+    suspend fun setAccount(context: Context, studentId: String, password: String?): Boolean {
+        var ok = true
         context.settingsDataStore.edit { p ->
             p[KEY_STUDENT_ID] = studentId.trim()
             if (password != null) {
                 val enc = CryptoManager.encrypt(password)
-                if (enc != null) p[KEY_PASSWORD_ENC] = enc
+                if (enc != null) {
+                    p[KEY_PASSWORD_ENC] = enc
+                } else {
+                    ok = false
+                }
             }
         }
+        return ok
     }
 
     suspend fun clearAccount(context: Context) {
@@ -159,15 +165,22 @@ object SettingsStore {
         context.settingsDataStore.edit { it[KEY_SCHOOL] = id }
     }
 
-    /** 保存 AI Key（null=清除；加密存储，与本机账密同一机制） */
-    suspend fun setAiKey(context: Context, apiKey: String?) {
+    /** 保存 AI Key（null=清除；加密存储，与本机账密同一机制）。返回 false 表示加密失败（未保存） */
+    suspend fun setAiKey(context: Context, apiKey: String?): Boolean {
+        var ok = true
         context.settingsDataStore.edit { p ->
             if (apiKey == null) {
                 p.remove(KEY_AI_KEY_ENC)
             } else {
-                CryptoManager.encrypt(apiKey)?.let { p[KEY_AI_KEY_ENC] = it }
+                val enc = CryptoManager.encrypt(apiKey)
+                if (enc != null) {
+                    p[KEY_AI_KEY_ENC] = enc
+                } else {
+                    ok = false
+                }
             }
         }
+        return ok
     }
 
     /** 读取解密后的 AI Key（未配置返回 null） */

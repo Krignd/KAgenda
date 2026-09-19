@@ -312,12 +312,16 @@ class WebScheduleEngine(private val appContext: Context) {
             text.contains("invalid", ignoreCase = true) || text.contains("incorrect", ignoreCase = true)
 
     /**
-     * 执行一次完整同步（阶段化流程，全程带日志与超时保护）。
+     * 执行一次同步（阶段化流程，全程带日志与超时保护）。
      * 必须在主线程调用（内部会自行切换）。
+     * @param incrementalAgainstSemester 非空时启用增量模式：若页面解析出的学期与该值（缓存的学期标签）
+     *   一致，则跳过整学期按周重放，仅抓当前周 DOM（保存时由仓库与旧缓存合并）。用于静默自动刷新，
+     *   可省去十几次接口请求；学期不一致时会自动降级为完整抓取。
      */
     suspend fun fetchWeek(
         credentials: Credentials?,
         timeoutMillis: Long = 210_000L,
+        incrementalAgainstSemester: String? = null,
     ): SyncResult = withContext(Dispatchers.Main) {
         val startAt = SystemClock.uptimeMillis()
         val hardDeadline = startAt + timeoutMillis
@@ -363,7 +367,7 @@ class WebScheduleEngine(private val appContext: Context) {
                 AppLog.w(TAG, "首页显示网络异常但残留旧课表内容，判定会话已失效，转入登录流程")
             }
             if (looksReady(probe)) {
-                return@withContext extract(view, "首页直出")
+                return@withContext extract(view, "首页直出", incrementalAgainstSemester)
             }
 
             // ---------- 阶段 2：走统一身份认证 ----------
@@ -378,7 +382,7 @@ class WebScheduleEngine(private val appContext: Context) {
             }
 
             if (looksReady(loginProbe)) {
-                return@withContext extract(view, "登录页直达课表")
+                return@withContext extract(view, "登录页直达课表", incrementalAgainstSemester)
             }
             if (loginProbe == null || !loginProbe.hasLoginForm) {
                 val p = loginProbe
@@ -445,7 +449,7 @@ class WebScheduleEngine(private val appContext: Context) {
                 AppLog.i(TAG, "回首页验证#$attempts: ${homeProbe?.summary() ?: "超时无响应"}")
 
                 if (looksReady(homeProbe)) {
-                    return@withContext extract(view, "登录后首页")
+                    return@withContext extract(view, "登录后首页", incrementalAgainstSemester)
                 }
                 if (homeProbe?.hasLoginForm == true) {
                     if (homeProbe.error.isNotBlank()) {
@@ -540,13 +544,22 @@ class WebScheduleEngine(private val appContext: Context) {
     }
 
     /** 从当前页面提取课表并解析（接口数据优先，DOM 兜底；再按周重放接口抓取整学期） */
-    private suspend fun extract(view: WebView, phase: String): SyncResult {
+    private suspend fun extract(
+        view: WebView,
+        phase: String,
+        incrementalAgainstSemester: String? = null,
+    ): SyncResult {
         // 自定义适配：学校注册了 extractJs 时，优先走适配器路径（返回值即课表 JSON）
         school.extractJs?.let { return customExtract(view, it) }
 
-        // 提速：先立刻启动整学期重放（termCode 先由现有捕获推断，缺失时脚本自行获取），
-        // 与下面的 DOM 解析并行执行，整体更快
-        startWeeksFetch(view, ScheduleParser.inferTermParams(apiCaptures.map { it.second }))
+        // 增量模式（静默自动刷新）：先不启动整学期重放，待 DOM 解析出学期后再判定；
+        // 学期与缓存一致则直接跳过（省去十几次接口请求），不一致时补做完整重放。
+        val incremental = incrementalAgainstSemester != null
+        if (!incremental) {
+            // 提速：先立刻启动整学期重放（termCode 先由现有捕获推断，缺失时脚本自行获取），
+            // 与下面的 DOM 解析并行执行，整体更快
+            startWeeksFetch(view, ScheduleParser.inferTermParams(apiCaptures.map { it.second }))
+        }
 
         val extracted = evaluateJs(view, JsScripts.EXTRACT)
         AppLog.i(TAG, "DOM 提取[$phase]: ${extracted?.length ?: 0} 字符")
@@ -560,9 +573,14 @@ class WebScheduleEngine(private val appContext: Context) {
         val raws = apiCaptures.map { it.second }
         AppLog.i(TAG, "接口捕获数量: ${raws.size}")
 
-        // 1) 解析当前周（接口捕获优先，DOM 兜底），得到周次/学期 meta
-        val currentWeek = ScheduleParser.parseExtraction(extracted.orEmpty(), raws)
-        val meta = ScheduleParser.readPageMeta(extracted.orEmpty())
+        // 1) 解析当前周（接口捕获优先，DOM 兜底），得到周次/学期 meta。
+        //    解析切到后台线程：接口捕获/DOM 文本可能达数 MB，在主线程解析会造成明显卡顿（ANR 风险）
+        val currentWeek = withContext(Dispatchers.Default) {
+            ScheduleParser.parseExtraction(extracted.orEmpty(), raws)
+        }
+        val meta = withContext(Dispatchers.Default) {
+            ScheduleParser.readPageMeta(extracted.orEmpty())
+        }
         val weekNo = currentWeek?.weekNo ?: meta?.weekNo ?: 1
         val weekRange = currentWeek?.weekRangeLabel ?: meta?.weekRange.orEmpty()
         val semesterLabel = currentWeek?.semesterLabel ?: meta?.semester.orEmpty()
@@ -573,21 +591,42 @@ class WebScheduleEngine(private val appContext: Context) {
                 "学期=$semesterLabel, 范围=$weekRange"
         )
 
-        // 2) 等待已在并行执行的整学期重放结果（见 startWeeksFetch / fetchWeeksScript）
-        val weeks: Map<Int, List<Course>> = awaitWeeksResult(view)
+        // 2) 获取整学期重放结果：
+        //    - 完整模式：等待已在并行执行的整学期重放（见 startWeeksFetch / fetchWeeksScript）；
+        //    - 增量模式且学期与缓存一致：跳过（仅保留当前周，保存时与缓存自动合并）；
+        //    - 增量模式但条件不满足：补做完整重放。
+        var weeks: Map<Int, List<Course>> = emptyMap()
+        val canSkipReplay = incremental &&
+            semesterLabel.isNotBlank() &&
+            semesterLabel == incrementalAgainstSemester &&
+            !currentWeek?.courses.isNullOrEmpty()
+        if (canSkipReplay) {
+            AppLog.i(TAG, "增量同步：学期与缓存一致（$semesterLabel），跳过整学期重放")
+        } else {
+            if (incremental) {
+                AppLog.i(TAG, "增量条件不满足（学期=$semesterLabel），改为完整抓取")
+                startWeeksFetch(view, ScheduleParser.inferTermParams(raws))
+            }
+            weeks = awaitWeeksResult(view)
+        }
 
-        val semester = ScheduleParser.buildSemester(
-            currentWeekCourses = currentWeek?.courses.orEmpty(),
-            currentWeekNo = weekNo,
-            weekRange = weekRange,
-            semesterLabel = semesterLabel,
-            fetchedAt = fetchedAt,
-            weeks = weeks,
-        )
+        val semester = withContext(Dispatchers.Default) {
+            ScheduleParser.buildSemester(
+                currentWeekCourses = currentWeek?.courses.orEmpty(),
+                currentWeekNo = weekNo,
+                weekRange = weekRange,
+                semesterLabel = semesterLabel,
+                fetchedAt = fetchedAt,
+                weeks = weeks,
+            )
+        }
         if (semester == null) {
             return SyncResult.Failure("已进入课表页面但未解析到课程（可能页面改版），请把日志发给开发者")
         }
-        apiCaptures.take(5).forEach { (url, body) -> ScheduleCache.saveRawCapture(appContext, url, body) }
+        // 原始接口抓包用于排查改版问题：写盘切到 IO 线程（原实现占用主线程）
+        withContext(Dispatchers.IO) {
+            apiCaptures.take(5).forEach { (url, body) -> ScheduleCache.saveRawCapture(appContext, url, body) }
+        }
         AppLog.i(
             TAG,
             "解析成功: 共 ${semester.weeks.size} 周, 周次=${semester.weekNumbers}, " +

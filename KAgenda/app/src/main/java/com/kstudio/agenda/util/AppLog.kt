@@ -6,6 +6,8 @@ import com.kstudio.agenda.BuildConfig
 import java.io.File
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 /**
@@ -28,7 +30,7 @@ object AppLog {
 
     private val lock = Any()
     private val buffer = ArrayDeque<String>()      // 内存缓冲（界面展示用）
-    private val pending = ArrayDeque<String>()     // 待落盘队列（后台线程写入）
+    private val pending = LinkedBlockingQueue<String>()  // 待落盘队列（后台线程阻塞式消费）
 
     @Volatile
     private var currentFile: File? = null
@@ -73,6 +75,10 @@ object AppLog {
                 result = result.replace(s, "******")
             }
         }
+        // 快速短路：绝大多数日志行不含敏感特征（无 = / : / sk-），直接返回，跳过后续正则替换
+        if (result.indexOf("sk-") < 0 && result.indexOf('=') < 0 && result.indexOf(':') < 0) {
+            return result
+        }
         // 2) 常规敏感字段兜底（ticket=、CASTGC=、token:、sk- API Key 等）
         for (p in SECRET_PATTERNS) {
             result = p.replace(result) { m ->
@@ -110,41 +116,52 @@ object AppLog {
         if (writer?.isAlive == true) return
         writer = thread(name = "app-log-writer", isDaemon = true) {
             while (true) {
-                val flushed = synchronized(lock) {
-                    val f = currentFile
-                    if (f == null || pending.isEmpty()) 0 else drainLocked(f)
+                // 阻塞等待新日志（1 秒超时兜底），替代原来的 250ms 空轮询常驻唤醒
+                val first = try {
+                    pending.poll(1, TimeUnit.SECONDS)
+                } catch (_: InterruptedException) {
+                    null
+                } ?: continue
+                val rest = ArrayList<String>()
+                pending.drainTo(rest)
+                val batch = StringBuilder(first)
+                rest.forEach { batch.append(it) }
+                synchronized(lock) {
+                    currentFile?.let { appendToFileLocked(it, batch.toString()) }
                 }
-                if (flushed == 0) Thread.sleep(250)
             }
         }
     }
 
     /** 立即同步落盘（崩溃兕底等必须确保日志不丢的场景） */
     fun flushNow() {
+        drainQueueToFile()
+    }
+
+    /** 把待写队列全部落盘（跨线程可调用；写文件在 lock 内进行） */
+    private fun drainQueueToFile() {
+        val rest = ArrayList<String>()
+        pending.drainTo(rest)
+        if (rest.isEmpty()) return
         synchronized(lock) {
-            currentFile?.let { drainLocked(it) }
+            currentFile?.let { appendToFileLocked(it, rest.joinToString("")) }
         }
     }
 
-    /** 将待写队列落盘（须在 lock 内调用）；返回本次写出行数 */
-    private fun drainLocked(file: File): Int {
-        if (pending.isEmpty()) return 0
-        val count = pending.size
-        if (!sizeCapped) {
-            runCatching {
-                if (file.length() > MAX_FILE_BYTES) {
-                    sizeCapped = true
-                    file.appendText(
-                        "${LocalDateTime.now().format(timeFmt)} W/App: （日志已达大小上限，后续内容不再写入本文件）\n",
-                        Charsets.UTF_8,
-                    )
-                } else {
-                    file.appendText(pending.joinToString(""), Charsets.UTF_8)
-                }
+    /** 追加文本到日志文件（须在 lock 内调用）；达到大小上限后仅写一条提示并停止写入 */
+    private fun appendToFileLocked(file: File, text: String) {
+        if (sizeCapped || text.isEmpty()) return
+        runCatching {
+            if (file.length() > MAX_FILE_BYTES) {
+                sizeCapped = true
+                file.appendText(
+                    "${LocalDateTime.now().format(timeFmt)} W/App: （日志已达大小上限，后续内容不再写入本文件）\n",
+                    Charsets.UTF_8,
+                )
+            } else {
+                file.appendText(text, Charsets.UTF_8)
             }
         }
-        pending.clear()
-        return count
     }
 
     fun d(tag: String, message: String) = write("D", tag, message)
@@ -164,14 +181,14 @@ object AppLog {
             buffer.addLast(line)
             while (buffer.size > MAX_BUFFER_LINES) buffer.removeFirst()
             if (currentFile == null) return
-            pending.addLast(line + "\n")
+            pending.add(line + "\n")
         }
     }
 
     /** 读取全部日志（按日期升序拼接；读取前先落盘未刷新的队列，保证完整） */
     fun readAll(): String = synchronized(lock) {
         try {
-            currentFile?.let { drainLocked(it) }
+            drainQueueToFile()
             val dir = logDir ?: return ""
             val files = dir.listFiles()?.sortedBy { it.name } ?: return ""
             files.joinToString("\n") { file ->

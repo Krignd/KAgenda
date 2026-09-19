@@ -5,6 +5,7 @@ import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.AgendaTypes
 import com.kstudio.agenda.model.FuzzyTime
 import com.kstudio.agenda.model.RepeatRules
+import com.kstudio.agenda.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -43,6 +44,7 @@ object AgendaStore {
 
     /** 新增或更新（按 id 匹配） */
     fun upsert(context: Context, event: AgendaEvent) {
+        ensureLoaded(context)
         synchronized(this) {
             val list = _events.value.toMutableList()
             val idx = list.indexOfFirst { it.id == event.id }
@@ -54,8 +56,36 @@ object AgendaStore {
     }
 
     fun delete(context: Context, id: String) {
+        ensureLoaded(context)
         synchronized(this) {
             val list = _events.value.filterNot { it.id == id }
+            _events.value = list
+            persist(context, list)
+        }
+    }
+
+    /** 批量新增或更新：一次排序 + 一次写盘（AI 批量添加等场景不再逐条重写整文件） */
+    fun upsertAll(context: Context, events: List<AgendaEvent>) {
+        if (events.isEmpty()) return
+        ensureLoaded(context)
+        synchronized(this) {
+            val map = LinkedHashMap<String, AgendaEvent>(_events.value.size + events.size)
+            _events.value.forEach { map[it.id] = it }
+            events.forEach { map[it.id] = it }
+            val sorted = map.values.sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
+            _events.value = sorted
+            persist(context, sorted)
+        }
+    }
+
+    /** 批量删除：一次写盘 */
+    fun deleteAll(context: Context, ids: Collection<String>) {
+        if (ids.isEmpty()) return
+        ensureLoaded(context)
+        synchronized(this) {
+            val idSet = ids.toHashSet()
+            val list = _events.value.filterNot { it.id in idSet }
+            if (list.size == _events.value.size) return
             _events.value = list
             persist(context, list)
         }
@@ -70,8 +100,11 @@ object AgendaStore {
     }
 
     private fun persist(context: Context, list: List<AgendaEvent>) {
+        // 写盘失败不再静默：提示性日志（内存状态仍已更新，但重启后可能丢失该次改动）
         runCatching {
             File(context.filesDir, FILE_NAME).writeText(toJson(list), Charsets.UTF_8)
+        }.onFailure {
+            AppLog.e("AgendaStore", "日程写盘失败（改动仅在内存中，重启后可能丢失）", it)
         }
     }
 

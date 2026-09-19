@@ -29,8 +29,9 @@ data class Course(
     val timeRange: String
         get() = PeriodTimes.rangeOf(startPeriod, endPeriod)
 
-    val weeksRanges: List<IntRange>
-        get() = parseWeeks(weeksRaw)
+    // 周次区间解析结果缓存：occursInWeek 在月/周视图的循环中会被高频调用，
+    // 原实现每次访问都重新解析字符串；改为惰性求值，每个 Course 实例只解析一次
+    val weeksRanges: List<IntRange> by lazy { parseWeeks(weeksRaw) }
 
     /** 该课程在指定教学周是否上课；周次信息缺失时视为每周都上 */
     fun occursInWeek(weekNo: Int): Boolean {

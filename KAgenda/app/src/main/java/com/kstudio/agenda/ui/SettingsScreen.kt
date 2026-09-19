@@ -203,7 +203,8 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Button(onClick = {
                         vm.saveAccountAndSync(studentId, password.takeIf { it.isNotBlank() })
-                        password = ""
+                        // 学号为空时不清空密码框，方便用户补全学号后直接重试
+                        if (studentId.isNotBlank()) password = ""
                     }) {
                         Text(t.btnSaveAndSync)
                     }
@@ -219,7 +220,9 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(
                         onClick = { vm.logout() },
-                        enabled = settings.hasPassword,
+                        // 有已保存账密，或有有效网页会话时都可退出登录（否则拿了 Cookie 会话的用户
+                        // 只能走“重置应用”才能清会话）
+                        enabled = settings.hasPassword || syncState is SyncUi.Success,
                     ) { Text(t.btnLogout) }
                     TextButton(
                         onClick = { showClearCredConfirm = true },

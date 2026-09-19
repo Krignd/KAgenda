@@ -8,6 +8,7 @@ import com.kstudio.agenda.util.AppLog
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +39,9 @@ class ScheduleRepository private constructor(private val appContext: Context) {
         /** 单次同步的总超时（兜底，防止一直“正在同步”） */
         private const val SYNC_HARD_TIMEOUT_MS = 240_000L
 
+        /** 增量同步的缓存新鲜期：7 天内的缓存 + 同一学期时，静默刷新只抓当前周 DOM，跳过整学期重放 */
+        private const val INCREMENTAL_FRESH_MS = 7 * 24 * 60 * 60 * 1000L
+
         @Volatile
         private var INSTANCE: ScheduleRepository? = null
 
@@ -50,6 +54,17 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     val engine = WebScheduleEngine(appContext)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    /** 在飞的同步任务（重置/登出时取消，避免继续跑完再覆盖状态） */
+    private var syncJob: Job? = null
+
+    /** 数据世代号：重置/登出/清缓存时 +1，使在飞同步的过期结果无法写回 */
+    private val generationLock = Any()
+    private var generation = 0L
+
+    private fun bumpGeneration() = synchronized(generationLock) { generation++ }
+
+    private fun currentGeneration(): Long = synchronized(generationLock) { generation }
 
     private val _semester = MutableStateFlow<SemesterSchedule?>(null)
     val semester: StateFlow<SemesterSchedule?> = _semester.asStateFlow()
@@ -80,7 +95,22 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             if (_sync.value is SyncUi.Running) return
             _sync.value = SyncUi.Running
         }
-        scope.launch {
+        val generationAtStart = currentGeneration()
+        // 静默自动刷新走增量模式：缓存较新且同学期时只抓当前周 DOM（由引擎内部判定并降级），
+        // 显著减少联网耗时；手动刷新始终做完整同步
+        val incrementalAgainst = if (silent) {
+            val cached = ScheduleCache.load(appContext)
+            if (cached != null && cached.semesterLabel.isNotBlank() &&
+                System.currentTimeMillis() - cached.fetchedAtMillis < INCREMENTAL_FRESH_MS
+            ) {
+                cached.semesterLabel
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+        syncJob = scope.launch {
             val creds = credentials ?: SettingsStore.credentials(appContext)
             // 即使没有保存账号，也先让引擎用“已有网页会话”尝试抓取
             // （网页登录完成但未保存密码也可同步；未登录时由引擎引导登录）
@@ -89,8 +119,14 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             }
             AppLog.i(TAG, "开始同步（silent=$silent）")
             val result = withTimeoutOrNull(SYNC_HARD_TIMEOUT_MS) {
-                engine.fetchWeek(creds)
+                engine.fetchWeek(creds, incrementalAgainstSemester = incrementalAgainst)
             } ?: SyncResult.Failure("同步超时（超过 4 分钟），请重试")
+            // 重置/退出登录会提升世代号：过期的同步结果一律丢弃，
+            // 防止“刚清空/登出，又被旧结果写回”的错乱状态
+            if (generationAtStart != currentGeneration()) {
+                AppLog.w(TAG, "同步结果已过期（同步期间执行了重置或退出登录），已忽略")
+                return@launch
+            }
             when (result) {
                 is SyncResult.Success -> {
                     var semester = result.semester
@@ -159,6 +195,9 @@ class ScheduleRepository private constructor(private val appContext: Context) {
 
     /** 退出登录：清除网页会话 Cookie（保留本地课表缓存便于离线查看） */
     fun logoutAndClearSession() {
+        // 使在飞同步的写回失效并取消它：避免退出登录后又把“同步成功”状态写回来
+        bumpGeneration()
+        syncJob?.cancel()
         scope.launch {
             withContext(Dispatchers.Main) {
                 runCatching {
@@ -173,6 +212,9 @@ class ScheduleRepository private constructor(private val appContext: Context) {
 
     /** 恢复初始状态：清账号/设置/缓存/已排闹钟/网页会话/日志 */
     fun resetAll() {
+        // 取消在飞同步并使结果失效：防止重置后旧数据/旧状态被同步结果写回
+        bumpGeneration()
+        syncJob?.cancel()
         scope.launch {
             runCatching { ReminderScheduler.cancelAll(appContext) }
             SettingsStore.clearAll(appContext)
@@ -191,6 +233,9 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     }
 
     fun clearCache() {
+        // 清缓存同样使在飞同步失效：防止刚清完就被同步结果写回
+        bumpGeneration()
+        syncJob?.cancel()
         scope.launch {
             ScheduleCache.clear(appContext)
             _semester.value = null

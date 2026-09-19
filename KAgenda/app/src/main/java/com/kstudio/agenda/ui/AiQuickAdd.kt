@@ -54,6 +54,54 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     var msg by remember { mutableStateOf("") }
     var ops by remember { mutableStateOf<List<AiSkills.AiOp>>(emptyList()) }
     var editIndex by remember { mutableStateOf(-1) }
+    var askReparse by remember { mutableStateOf(false) }
+
+    // 发起识别：记录文本快照；等待期间用户若改动文字，返回结果作废
+    // （防止“改了内容却把旧文字的操作执行了”的误操作）
+    fun startRecognize() {
+        if (text.isBlank() || busy) return
+        busy = true
+        msg = t.aiRunning
+        ops = emptyList()
+        val asked = text
+        scope.launch {
+            try {
+                val key = SettingsStore.effectiveAiKey(context)
+                if (key.isNullOrBlank()) {
+                    msg = t.aiNeedKey
+                    return@launch
+                }
+                val model = SettingsStore.effectiveAiModel(context)
+                val reply = AiClient.chat(
+                    apiKey = key,
+                    model = model,
+                    systemPrompt = AiSkills.assistantSystemPrompt,
+                    userPrompt = AiSkills.assistantUserPrompt(
+                        asked,
+                        LocalDate.now(),
+                        AiAssistant.contextLines(vm.agenda.value),
+                    ),
+                )
+                if (asked != text) {
+                    msg = t.qaStaleResult
+                    return@launch
+                }
+                val list = AiSkills.parseOpsReply(reply)
+                if (list.isEmpty()) {
+                    msg = t.qaNothing
+                } else {
+                    ops = list
+                    msg = ""
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                msg = (e.message ?: t.parseFail).take(60)
+            } finally {
+                busy = false
+            }
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -101,48 +149,6 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(
                 onClick = {
-                    if (text.isBlank() || busy) return@TextButton
-                    busy = true
-                    msg = t.aiRunning
-                    ops = emptyList()
-                    scope.launch {
-                        try {
-                            val key = SettingsStore.effectiveAiKey(context)
-                            if (key.isNullOrBlank()) {
-                                msg = t.aiNeedKey
-                                return@launch
-                            }
-                            val model = SettingsStore.effectiveAiModel(context)
-                            val reply = AiClient.chat(
-                                apiKey = key,
-                                model = model,
-                                systemPrompt = AiSkills.assistantSystemPrompt,
-                                userPrompt = AiSkills.assistantUserPrompt(
-                                    text,
-                                    LocalDate.now(),
-                                    AiAssistant.contextLines(vm.agenda.value),
-                                ),
-                            )
-                            val list = AiSkills.parseOpsReply(reply)
-                            if (list.isEmpty()) {
-                                msg = t.qaNothing
-                            } else {
-                                ops = list
-                                msg = ""
-                            }
-                        } catch (e: Throwable) {
-                            msg = (e.message ?: t.parseFail).take(60)
-                        } finally {
-                            busy = false
-                        }
-                    }
-                },
-                enabled = text.isNotBlank() && !busy,
-            ) { Text(t.qaParse) }
-        },
-        dismissButton = {
-            TextButton(
-                onClick = {
                     val list = ops
                     if (list.isEmpty()) return@TextButton
                     // 防误触连点：先清空待执行列表，双击也不会重复执行
@@ -153,7 +159,34 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                 enabled = ops.isNotEmpty(),
             ) { Text(t.qaConfirm) }
         },
+        dismissButton = {
+            TextButton(
+                onClick = {
+                    // 已有预览时再次识别会清空（含手动修改的内容）：先让用户确认
+                    if (ops.isNotEmpty()) askReparse = true else startRecognize()
+                },
+                enabled = text.isNotBlank() && !busy,
+            ) { Text(t.qaParse) }
+        },
     )
+
+    // 重新识别前的确认：避免误点“识别”丢失已审阅/修改的预览
+    if (askReparse) {
+        AlertDialog(
+            onDismissRequest = { askReparse = false },
+            title = { Text(t.qaReparseTitle) },
+            text = { Text(t.qaReparseMsg) },
+            confirmButton = {
+                TextButton(onClick = {
+                    askReparse = false
+                    startRecognize()
+                }) { Text(t.qaParse) }
+            },
+            dismissButton = {
+                TextButton(onClick = { askReparse = false }) { Text(t.cancel) }
+            },
+        )
+    }
 
     if (editIndex in ops.indices) {
         AiOpEditDialog(
@@ -257,6 +290,7 @@ private fun AiOpEditDialog(
     var nLoc by remember { mutableStateOf(upd?.set?.location.orEmpty()) }
     var rp by remember { mutableStateOf(add?.item?.repeat.orEmpty()) }
     var nRp by remember { mutableStateOf(upd?.set?.repeat?.takeIf { it.isNotBlank() }.orEmpty()) }
+    var errMsg by remember { mutableStateOf("") }
 
     fun parseDate(s: String): LocalDate? = runCatching { LocalDate.parse(s.trim()) }.getOrNull()
 
@@ -284,7 +318,10 @@ private fun AiOpEditDialog(
                         OutlinedTextField(value = end, onValueChange = { end = it }, label = { Text(t.fieldEndTime) }, singleLine = true, modifier = Modifier.weight(1f))
                     }
                     OutlinedTextField(value = loc, onValueChange = { loc = it }, label = { Text(t.fieldLocation) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(value = rp, onValueChange = { rp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    if (isPlan) {
+                        // 重复规则仅对「计划」生效（与编辑器/执行器口径一致）
+                        OutlinedTextField(value = rp, onValueChange = { rp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    }
                     TextButton(onClick = { isPlan = !isPlan }) { Text(if (isPlan) t.qaPlanTag else t.qaAgendaTag) }
                 } else {
                     OutlinedTextField(value = matchTitle, onValueChange = { matchTitle = it }, label = { Text(t.opMatchTitle) }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -300,39 +337,101 @@ private fun AiOpEditDialog(
                         OutlinedTextField(value = nRp, onValueChange = { nRp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
                 }
+                if (errMsg.isNotBlank()) {
+                    Text(
+                        text = errMsg,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val edited: AiSkills.AiOp = when (op) {
-                    is AiSkills.AiOp.Add -> AiSkills.AiOp.Add(
-                        op.item.copy(
-                            title = title.trim().ifBlank { op.item.title },
-                            isPlan = isPlan,
-                            date = parseDate(date) ?: op.item.date,
-                            startTime = start.trim(),
-                            endTime = end.trim(),
-                            location = loc.trim(),
-                            repeat = if (rp.isBlank()) "" else (RepeatRules.parse(rp) ?: op.item.repeat),
+                    is AiSkills.AiOp.Add -> {
+                        val dateText = date.trim()
+                        val parsedDate = if (dateText.isBlank()) {
+                            op.item.date
+                        } else {
+                            val d = parseDate(dateText)
+                            if (d == null) {
+                                errMsg = t.opDateInvalid
+                                return@TextButton
+                            }
+                            d
+                        }
+                        AiSkills.AiOp.Add(
+                            op.item.copy(
+                                title = title.trim().ifBlank { op.item.title },
+                                isPlan = isPlan,
+                                date = parsedDate,
+                                startTime = start.trim(),
+                                endTime = end.trim(),
+                                location = loc.trim(),
+                                // 重复规则仅对「计划」生效（与编辑器/执行器口径一致）
+                                repeat = if (isPlan && rp.isNotBlank()) {
+                                    RepeatRules.parse(rp) ?: op.item.repeat
+                                } else {
+                                    ""
+                                },
+                            )
                         )
-                    )
-                    is AiSkills.AiOp.Update -> AiSkills.AiOp.Update(
-                        matchTitle = matchTitle.trim().ifBlank { op.matchTitle },
-                        matchDate = parseDate(matchDate),
-                        set = AiSkills.AiSet(
-                            title = nTitle.trim().takeIf { it.isNotBlank() },
-                            date = parseDate(nDate),
-                            startTime = nStart.trim().takeIf { it.isNotBlank() },
-                            endTime = nEnd.trim().takeIf { it.isNotBlank() },
-                            location = nLoc.trim().takeIf { it.isNotBlank() },
-                            note = op.set.note,
-                            repeat = if (nRp.isBlank()) op.set.repeat else (RepeatRules.parse(nRp) ?: op.set.repeat),
-                        ),
-                    )
-                    is AiSkills.AiOp.Delete -> AiSkills.AiOp.Delete(
-                        matchTitle = matchTitle.trim().ifBlank { op.matchTitle },
-                        matchDate = parseDate(matchDate),
-                    )
+                    }
+                    is AiSkills.AiOp.Update -> {
+                        val mdText = matchDate.trim()
+                        val parsedMatchDate = if (mdText.isBlank()) {
+                            null
+                        } else {
+                            val d = parseDate(mdText)
+                            if (d == null) {
+                                errMsg = t.opDateInvalid
+                                return@TextButton
+                            }
+                            d
+                        }
+                        val ndText = nDate.trim()
+                        val parsedNewDate = if (ndText.isBlank()) {
+                            null
+                        } else {
+                            val d = parseDate(ndText)
+                            if (d == null) {
+                                errMsg = t.opDateInvalid
+                                return@TextButton
+                            }
+                            d
+                        }
+                        AiSkills.AiOp.Update(
+                            matchTitle = matchTitle.trim().ifBlank { op.matchTitle },
+                            matchDate = parsedMatchDate,
+                            set = AiSkills.AiSet(
+                                title = nTitle.trim().takeIf { it.isNotBlank() },
+                                date = parsedNewDate,
+                                startTime = nStart.trim().takeIf { it.isNotBlank() },
+                                endTime = nEnd.trim().takeIf { it.isNotBlank() },
+                                location = nLoc.trim().takeIf { it.isNotBlank() },
+                                note = op.set.note,
+                                repeat = if (nRp.isBlank()) op.set.repeat else (RepeatRules.parse(nRp) ?: op.set.repeat),
+                            ),
+                        )
+                    }
+                    is AiSkills.AiOp.Delete -> {
+                        val mdText = matchDate.trim()
+                        val parsedMatchDate = if (mdText.isBlank()) {
+                            null
+                        } else {
+                            val d = parseDate(mdText)
+                            if (d == null) {
+                                errMsg = t.opDateInvalid
+                                return@TextButton
+                            }
+                            d
+                        }
+                        AiSkills.AiOp.Delete(
+                            matchTitle = matchTitle.trim().ifBlank { op.matchTitle },
+                            matchDate = parsedMatchDate,
+                        )
+                    }
                 }
                 onSave(edited)
             }) { Text(t.confirm) }

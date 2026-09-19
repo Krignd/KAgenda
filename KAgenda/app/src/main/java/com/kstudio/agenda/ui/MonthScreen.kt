@@ -278,7 +278,7 @@ private fun buildCourseMap(sem: SemesterSchedule?, monthStart: LocalDate): Map<L
         val weekNo = sem.teachingWeekOf(date)
         val weekCourses = sem.weeks[weekNo] ?: continue
         val list = weekCourses
-            .filter { it.dayOfWeek == date.dayOfWeek.value }
+            .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
             .sortedBy { it.startPeriod }
         if (list.isNotEmpty()) map[date.toEpochDay()] = list
     }

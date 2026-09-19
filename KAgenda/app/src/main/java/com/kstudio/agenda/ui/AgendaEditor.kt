@@ -56,6 +56,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -208,29 +209,53 @@ fun AgendaEditorDialog(
     asPlan: Boolean = false,
 ) {
     val t = LocalStrings.current
-    var title by remember { mutableStateOf(initial?.title ?: "") }
-    var type by remember { mutableStateOf(initial?.type ?: "") }
-    var colorArgb by remember { mutableStateOf(initial?.colorArgb ?: 0) }
-    var isLong by remember { mutableStateOf(initial?.isLong ?: false) }
-    var repeatRule by remember { mutableStateOf(initial?.repeatRule ?: "") }
-    var startDate by remember { mutableStateOf(initial?.date ?: defaultDate) }
-    var endDate by remember { mutableStateOf(initial?.endDate ?: (initial?.date ?: defaultDate)) }
-    var startTime by remember { mutableStateOf(initial?.startTime ?: "") }
-    var endTime by remember { mutableStateOf(initial?.endTime ?: "") }
-    var location by remember { mutableStateOf(initial?.location ?: "") }
-    var note by remember { mutableStateOf(initial?.note ?: "") }
+    // 编辑字段用 rememberSaveable：旋转屏幕 / 系统重建后输入不丢失
+    var title by rememberSaveable { mutableStateOf(initial?.title ?: "") }
+    var type by rememberSaveable { mutableStateOf(initial?.type ?: "") }
+    var colorArgb by rememberSaveable { mutableStateOf(initial?.colorArgb ?: 0) }
+    var isLong by rememberSaveable { mutableStateOf(initial?.isLong ?: false) }
+    var repeatRule by rememberSaveable { mutableStateOf(initial?.repeatRule ?: "") }
+    // 日期以 epochDay 保存（可保存类型）；startDate/endDate 为组合期派生值
+    var startDateEpoch by rememberSaveable { mutableStateOf((initial?.date ?: defaultDate).toEpochDay()) }
+    var endDateEpoch by rememberSaveable {
+        mutableStateOf((initial?.endDate ?: (initial?.date ?: defaultDate)).toEpochDay())
+    }
+    val startDate = LocalDate.ofEpochDay(startDateEpoch)
+    val endDate = LocalDate.ofEpochDay(endDateEpoch)
+    var startTime by rememberSaveable { mutableStateOf(initial?.startTime ?: "") }
+    var endTime by rememberSaveable { mutableStateOf(initial?.endTime ?: "") }
+    var location by rememberSaveable { mutableStateOf(initial?.location ?: "") }
+    var note by rememberSaveable { mutableStateOf(initial?.note ?: "") }
+    var pasteText by rememberSaveable { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var askDelete by remember { mutableStateOf(false) }
-    var pasteText by remember { mutableStateOf("") }
     var parseMsg by remember { mutableStateOf("") }
     var aiBusy by remember { mutableStateOf(false) }
+    var confirmDiscard by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val aiContext = LocalContext.current
     // 当前打开的弹窗选择器：""=无；"startDate"/"endDate"；"startTime"/"endTime"
     var picker by remember { mutableStateOf("") }
 
+    // 关闭前检查是否有未保存的修改（任何字段被改动就提示确认，防止点遮罩/返回键误丢内容）
+    val initialSnapshot = remember {
+        listOf(
+            initial?.title ?: "", initial?.type ?: "", (initial?.colorArgb ?: 0).toString(),
+            (initial?.isLong ?: false).toString(), initial?.repeatRule ?: "",
+            (initial?.date ?: defaultDate).toEpochDay().toString(),
+            (initial?.endDate ?: (initial?.date ?: defaultDate)).toEpochDay().toString(),
+            initial?.startTime ?: "", initial?.endTime ?: "",
+            initial?.location ?: "", initial?.note ?: "",
+        )
+    }
+    fun dirtyNow(): Boolean = listOf(
+        title, type, colorArgb.toString(), isLong.toString(), repeatRule,
+        startDateEpoch.toString(), endDateEpoch.toString(),
+        startTime, endTime, location, note,
+    ) != initialSnapshot
+
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (dirtyNow()) confirmDiscard = true else onDismiss() },
         title = {
             Text(
                 if (initial == null) {
@@ -279,9 +304,10 @@ fun AgendaEditorDialog(
                                     if (pasteText.isBlank()) return@Button
                                     val parsed = AgendaTextParser.parse(pasteText, startDate)
                                     if (parsed.title.isNotBlank()) title = parsed.title
-                                    type = parsed.type
-                                    startDate = LocalDate.ofEpochDay(parsed.dateEpochDay)
-                                    if (isLong && endDate.isBefore(startDate)) endDate = startDate
+                                    // 仅在识别出明确类型时才覆盖用户已选类型
+                                    if (parsed.type.isNotBlank()) type = parsed.type
+                                    startDateEpoch = parsed.dateEpochDay
+                                    if (isLong && endDateEpoch < startDateEpoch) endDateEpoch = startDateEpoch
                                     startTime = parsed.startTime
                                     endTime = parsed.endTime
                                     if (parsed.location.isNotBlank()) location = parsed.location
@@ -321,8 +347,8 @@ fun AgendaEditorDialog(
                                                 if (ev.title.isNotBlank()) title = ev.title
                                                 if (ev.type.isNotBlank() && ev.type in AgendaTypes.ORDER) type = ev.type
                                                 ev.date?.let {
-                                                    startDate = it
-                                                    if (isLong && endDate.isBefore(startDate)) endDate = startDate
+                                                    startDateEpoch = it.toEpochDay()
+                                                    if (isLong && endDateEpoch < startDateEpoch) endDateEpoch = startDateEpoch
                                                 }
                                                 if (ev.startTime.isNotBlank()) startTime = ev.startTime
                                                 if (ev.endTime.isNotBlank()) endTime = ev.endTime
@@ -521,6 +547,14 @@ fun AgendaEditorDialog(
                         error = t.errEndBeforeStart
                         return@TextButton
                     }
+                } else {
+                    // 短日程同样校验起止：结束早于开始会让“进行中”判定/小组件/月视图全部错乱
+                    val s = parseTimeOrNull(startTime)
+                    val e = parseTimeOrNull(endTime)
+                    if (s != null && e != null && e.isBefore(s)) {
+                        error = t.errEndBeforeStart
+                        return@TextButton
+                    }
                 }
                 val base = initial ?: AgendaEvent(
                     id = UUID.randomUUID().toString(),
@@ -552,10 +586,26 @@ fun AgendaEditorDialog(
                         Text(t.delete, color = MaterialTheme.colorScheme.error)
                     }
                 }
-                TextButton(onClick = onDismiss) { Text(t.cancel) }
+                TextButton(onClick = { if (dirtyNow()) confirmDiscard = true else onDismiss() }) { Text(t.cancel) }
             }
         },
     )
+
+    // 有未保存修改时，关闭前二次确认（防止点遮罩/返回键误丢内容）
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text(t.discardTitle) },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text(t.discardOk, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false }) { Text(t.cancel) }
+            },
+        )
+    }
 
     // ---------- 日期选择（月历/年历弹窗） ----------
     if (picker == "startDate" || picker == "endDate") {
@@ -568,9 +618,9 @@ fun AgendaEditorDialog(
             confirmButton = {
                 TextButton(onClick = {
                     dateState.selectedDateMillis?.let { millis ->
-                        val d = LocalDate.ofEpochDay(millis / 86_400_000L)
-                        if (picker == "endDate") endDate = d else startDate = d
-                        if (isLong && endDate.isBefore(startDate)) endDate = startDate
+                        val epoch = millis / 86_400_000L
+                        if (picker == "endDate") endDateEpoch = epoch else startDateEpoch = epoch
+                        if (isLong && endDateEpoch < startDateEpoch) endDateEpoch = startDateEpoch
                     }
                     picker = ""
                 }) { Text(t.confirm) }
@@ -820,3 +870,7 @@ private fun Wheel(range: IntRange, state: LazyListState) {
 
 private fun parseTimeOr(text: String, fallback: LocalTime): LocalTime =
     runCatching { LocalTime.parse(text) }.getOrDefault(fallback)
+
+/** 解析 "HH:mm"（空/失败返回 null；模糊时间如“下午”返回 null，不做起止校验） */
+private fun parseTimeOrNull(text: String): LocalTime? =
+    if (text.isBlank()) null else runCatching { LocalTime.parse(text) }.getOrNull()

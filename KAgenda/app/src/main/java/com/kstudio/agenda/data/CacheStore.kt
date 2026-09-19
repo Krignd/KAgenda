@@ -18,7 +18,17 @@ object ScheduleCache {
     private const val RAW_DIR = "raw_capture"
     private const val RAW_KEEP = 5
 
+    // 进程内内存缓存：课表会被 启动引导/提醒重排/小组件/常驻通知 等多条链路反复读取，
+    // 每次都“读文件 + 解析整学期 JSON”成本高；这里只在首次读取时解析，save/clear 时同步更新。
+    private val memLock = Any()
+    private var memLoaded = false
+    private var memValue: SemesterSchedule? = null
+
     fun save(context: Context, semester: SemesterSchedule) {
+        synchronized(memLock) {
+            memValue = semester
+            memLoaded = true
+        }
         try {
             context.openFileOutput(SCHEDULE_FILE, Context.MODE_PRIVATE).use { out ->
                 out.write(toJson(semester).toString().toByteArray(Charsets.UTF_8))
@@ -27,15 +37,32 @@ object ScheduleCache {
         }
     }
 
-    fun load(context: Context): SemesterSchedule? = try {
-        val file = File(context.filesDir, SCHEDULE_FILE)
-        if (!file.exists()) null
-        else fromJson(JSONObject(file.readText(Charsets.UTF_8)))
-    } catch (_: Throwable) {
-        null
+    /** 读取课表缓存（首次调用读盘并解析，之后直接返回内存实例） */
+    fun load(context: Context): SemesterSchedule? {
+        synchronized(memLock) {
+            if (memLoaded) return memValue
+        }
+        val parsed = try {
+            val file = File(context.filesDir, SCHEDULE_FILE)
+            if (!file.exists()) null
+            else fromJson(JSONObject(file.readText(Charsets.UTF_8)))
+        } catch (_: Throwable) {
+            null
+        }
+        synchronized(memLock) {
+            if (!memLoaded) {
+                memValue = parsed
+                memLoaded = true
+            }
+            return memValue
+        }
     }
 
     fun clear(context: Context) {
+        synchronized(memLock) {
+            memValue = null
+            memLoaded = true
+        }
         try {
             File(context.filesDir, SCHEDULE_FILE).delete()
             File(context.filesDir, RAW_DIR).deleteRecursively()

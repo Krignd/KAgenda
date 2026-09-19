@@ -32,7 +32,13 @@ object ReminderScheduler {
             return
         }
 
-        val semester = ScheduleCache.load(context) ?: return
+        val semester = ScheduleCache.load(context)
+        if (semester == null) {
+            // 课表缓存不存在（尚未同步 / 已被“清缓存”清掉）：取消残留闹钟，
+            // 避免按旧课表继续弹出“即将上课”提醒
+            cancelAll(context)
+            return
+        }
         val am = context.getSystemService(AlarmManager::class.java) ?: return
         // 先取消上一轮调度的闹钟，再统一重排（保证不重复、不错配）
         cancelAll(context)

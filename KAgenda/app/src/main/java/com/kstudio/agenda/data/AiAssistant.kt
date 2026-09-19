@@ -55,32 +55,45 @@ object AiAssistant {
         var updated = 0
         var deleted = 0
         var unmatched = 0
+        // 在内存副本上顺序推演匹配（同一批内的先后操作互不干扰），
+        // 最后统一批量写盘：避免 N 条操作触发 N 次整文件重写
+        val working = AgendaStore.events.value.toMutableList()
+        val toUpsert = mutableListOf<AgendaEvent>()
+        val toDelete = mutableListOf<String>()
         for (op in ops) {
             when (op) {
                 is AiSkills.AiOp.Add -> {
-                    AgendaStore.upsert(context, buildEvent(op.item))
+                    val event = buildEvent(op.item)
+                    toUpsert += event
+                    working += event
                     added++
                 }
                 is AiSkills.AiOp.Update -> {
-                    val target = findMatch(AgendaStore.events.value, op.matchTitle, op.matchDate)
+                    val target = findMatch(working, op.matchTitle, op.matchDate)
                     if (target == null) {
                         unmatched++
                     } else {
-                        AgendaStore.upsert(context, applySet(target, op.set))
+                        val edited = applySet(target, op.set)
+                        toUpsert += edited
+                        val idx = working.indexOfFirst { it.id == target.id }
+                        if (idx >= 0) working[idx] = edited
                         updated++
                     }
                 }
                 is AiSkills.AiOp.Delete -> {
-                    val target = findMatch(AgendaStore.events.value, op.matchTitle, op.matchDate)
+                    val target = findMatch(working, op.matchTitle, op.matchDate)
                     if (target == null) {
                         unmatched++
                     } else {
-                        AgendaStore.delete(context, target.id)
+                        toDelete += target.id
+                        working.removeAll { it.id == target.id }
                         deleted++
                     }
                 }
             }
         }
+        AgendaStore.upsertAll(context, toUpsert)
+        AgendaStore.deleteAll(context, toDelete)
         return ApplyResult(added, updated, deleted, unmatched)
     }
 
@@ -108,6 +121,8 @@ object AiAssistant {
         endTime = s.endTime ?: e.endTime,
         location = s.location ?: e.location,
         note = s.note ?: e.note,
-        repeatRule = s.repeat ?: e.repeatRule,
+        // 重复规则仅对“计划”生效（与编辑器口径一致）：非计划条目即使 AI 传了 repeat 也不落库，
+        // 避免“设置了重复却不显示”的困惑
+        repeatRule = if (e.isPlan) (s.repeat ?: e.repeatRule) else e.repeatRule,
     )
 }

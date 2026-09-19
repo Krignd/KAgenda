@@ -41,6 +41,7 @@ import com.kstudio.agenda.data.AiAssistant
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
@@ -95,6 +96,9 @@ class FloatingBallService : Service() {
     private var panelParams: WindowManager.LayoutParams? = null
     private var parsedOps: List<AiSkills.AiOp> = emptyList()
     private var busy = false
+
+    /** 在飞识别请求：收起面板时取消，避免下次打开面板时被 busy 拦住长时间无响应 */
+    private var requestJob: Job? = null
 
     private val ballSizePx: Int get() = dp(54)
 
@@ -379,7 +383,7 @@ class FloatingBallService : Service() {
             parseBtn.isEnabled = false
             addBtn.isEnabled = false
             setMsg(t.aiRunning)
-            scope.launch {
+            requestJob = scope.launch {
                 try {
                     val key = SettingsStore.effectiveAiKey(this@FloatingBallService)
                     if (key.isNullOrBlank()) {
@@ -397,6 +401,11 @@ class FloatingBallService : Service() {
                             AiAssistant.contextLines(AgendaStore.events.value),
                         ),
                     )
+                    // 等待期间用户改了文字：本次结果作废（防止与当前内容不符的操作入库）
+                    if (text != input.text?.toString().orEmpty()) {
+                        setMsg(t.qaStaleResult)
+                        return@launch
+                    }
                     val list = AiSkills.parseOpsReply(reply)
                     if (list.isEmpty()) {
                         parsedOps = emptyList()
@@ -423,6 +432,8 @@ class FloatingBallService : Service() {
                             }
                         )
                     }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    throw e
                 } catch (e: Throwable) {
                     setMsg((e.message ?: t.parseFail).take(80))
                 } finally {
@@ -490,6 +501,10 @@ class FloatingBallService : Service() {
         panel = null
         panelParams = null
         parsedOps = emptyList()
+        // 收起面板时取消在飞识别请求：否则重开面板后 busy 期间点“识别”会毫无反应
+        requestJob?.cancel()
+        requestJob = null
+        busy = false
         runCatching { windowManager.removeView(v) }
     }
 

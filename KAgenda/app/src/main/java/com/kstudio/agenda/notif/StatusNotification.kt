@@ -211,7 +211,7 @@ object StatusNotification {
         AgendaStore.ensureLoaded(context)
         val events = AgendaStore.events.value
         if ("plan" in sources) {
-            events.firstOrNull { it.isPlan && it.isOngoing(now) }?.let {
+            events.firstOrNull { it.isPlan && it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now) }?.let {
                 lines.add(t.statusOngoingPlanFmt(it.title))
             }
         }

@@ -335,6 +335,20 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
         }
     }
 
+    // 页面销毁/重组时销毁 WebView：释放渲染资源，并避免 WebView 持有 Activity 上下文造成泄漏
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose {
+            runCatching {
+                webView?.let { wv ->
+                    (wv.parent as? android.view.ViewGroup)?.removeView(wv)
+                    wv.removeJavascriptInterface("KebiaoBridge")
+                    wv.destroy()
+                }
+            }
+            webView = null
+        }
+    }
+
     // 未登录就点“返回/完成”时的确认提示
     pendingExit?.let { action ->
         AlertDialog(

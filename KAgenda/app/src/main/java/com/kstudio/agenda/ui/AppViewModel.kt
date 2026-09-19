@@ -26,6 +26,7 @@ import com.kstudio.agenda.overlay.FloatingBallService
 import com.kstudio.agenda.util.AppLog
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -41,6 +42,14 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
+
+    private companion object {
+        /** 打开 App 自动刷新的陈旧阈值：6 小时（学期课表极少中途变化，避免每次打开都全量重放） */
+        const val AUTO_SYNC_STALE_MS = 6 * 60 * 60 * 1000L
+
+        /** 自动刷新的启动延迟：避开启动首帧与 WebView 首次创建的主线程开销叠加 */
+        const val AUTO_SYNC_DELAY_MS = 4_000L
+    }
 
     private val repo = ScheduleRepository.get(app)
 
@@ -71,6 +80,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
+
+    /** 图片导出进行中：防止连点产生重复图片与并发大位图渲染（低内存设备可能 OOM） */
+    private val exportBusy = java.util.concurrent.atomic.AtomicBoolean(false)
 
     /** 一次性「定位并闪烁」请求（通知 / 小组件点击进入时使用） */
     private val _focusRequest = MutableStateFlow<FocusRequest?>(null)
@@ -116,7 +128,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val t get() = AppText.current
 
     init {
-        AgendaStore.ensureLoaded(getApplication())
+        // 日程文件读取放到 IO 线程（不在主线程做文件 IO；写操作内部也会确保已加载）
+        viewModelScope.launch(Dispatchers.IO) {
+            AgendaStore.ensureLoaded(getApplication())
+        }
         viewModelScope.launch {
             // 应用已保存的语言（默认跟随系统）；同步系统级“按应用设置语言”
             val saved = SettingsStore.read(getApplication())
@@ -124,12 +139,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AppText.applySystemLocale(getApplication(), AppText.state.value)
 
             settings.collect { s ->
-                // 打开 App 自动刷新：有账号且（无缓存 或 超过 30 分钟）时静默同步一次
+                // 打开 App 自动刷新：有账号且（无缓存 或 超过 6 小时）时静默同步一次。
+                // 阈值放宽 + 延后启动：减少不必要的全量重放，并避开首帧渲染与 WebView 首次创建的主线程开销叠加
                 if (!autoSyncTriggered && s.autoRefresh && s.hasPassword) {
                     autoSyncTriggered = true
-                    val stale = System.currentTimeMillis() - s.lastSyncAtMillis > 30 * 60 * 1000L
+                    val stale = System.currentTimeMillis() - s.lastSyncAtMillis > AUTO_SYNC_STALE_MS
                     if (semester.value == null || stale) {
-                        repo.syncNow(silent = true)
+                        launch {
+                            delay(AUTO_SYNC_DELAY_MS)
+                            repo.syncNow(silent = true)
+                        }
                     }
                 }
             }
@@ -225,7 +244,12 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         viewModelScope.launch {
-            SettingsStore.setAccount(getApplication(), id, password?.takeIf { it.isNotBlank() })
+            val saved = SettingsStore.setAccount(getApplication(), id, password?.takeIf { it.isNotBlank() })
+            if (!saved) {
+                // 加密失败（極少见）：如实提示，不假装保存成功
+                message(t.msgSaveFailed)
+                return@launch
+            }
             message(t.msgAccountSaved)
             repo.syncNow()
         }
@@ -260,6 +284,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // 语言恢复为跟随系统
             AppText.state.value = AppLang.SYSTEM
             AppText.applySystemLocale(getApplication(), AppLang.SYSTEM)
+            // 立即刷新常驻通知与桌面小组件：避免重置后仍显示旧内容（最长可残留 6 小时）
+            withContext(Dispatchers.IO) {
+                runCatching { StatusNotification.refresh(getApplication()) }
+                runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            }
             message(t.msgResetDone)
         }
     }
@@ -298,7 +327,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun saveAgendaEvents(events: List<AgendaEvent>) {
         if (events.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
-            events.forEach { AgendaStore.upsert(getApplication(), it) }
+            // 批量写盘：一次排序 + 一次落盘（原来逐条 upsert 会重复重写整文件）
+            AgendaStore.upsertAll(getApplication(), events)
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
         }
@@ -319,10 +349,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 新增自定义学校（适配代码 JSON）；成功后自动切换过去 */
     fun addCustomSchool(code: String, nameFallback: String, siteFallback: String) {
         viewModelScope.launch {
-            val result = runCatching {
-                com.kstudio.agenda.model.Schools.addOrUpdate(
-                    getApplication(), code, nameFallback, siteFallback,
-                )
+            // 适配器 JSON 解析与文件写入放到 IO 线程（不在主线程做文件 IO）
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    com.kstudio.agenda.model.Schools.addOrUpdate(
+                        getApplication(), code, nameFallback, siteFallback,
+                    )
+                }
             }
             result.getOrNull()?.let { school ->
                 SettingsStore.setSchool(getApplication(), school.id)
@@ -339,11 +372,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** 保存 AI Key（null=清除；加密存储） */
+    /** 保存 AI Key（null=清除；加密存储；加密失败时如实提示，不假装成功） */
     fun setAiKey(key: String?) {
         viewModelScope.launch {
-            SettingsStore.setAiKey(getApplication(), key)
-            message(if (key == null) t.aiClearedToast else t.aiSavedToast)
+            val saved = SettingsStore.setAiKey(getApplication(), key)
+            message(
+                when {
+                    !saved -> t.msgSaveFailed
+                    key == null -> t.aiClearedToast
+                    else -> t.aiSavedToast
+                }
+            )
         }
     }
 
@@ -360,7 +399,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setStatusNotifConfig(enabled: Boolean, sourcesCsv: String) {
         viewModelScope.launch {
             SettingsStore.setStatusNotif(getApplication(), enabled, sourcesCsv)
-            StatusNotification.refresh(getApplication())
+            // 刷新常驻通知会读缓存，放到 IO 线程执行
+            withContext(Dispatchers.IO) { StatusNotification.refresh(getApplication()) }
         }
     }
 
@@ -420,15 +460,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val events = agenda.value
             .filter { !it.isPlan && it.coversDate(date) }
             .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
+        if (!exportBusy.compareAndSet(false, true)) {
+            message(t.msgExporting)
+            return
+        }
         val context = getApplication<Application>()
         viewModelScope.launch {
-            val uri = withContext(Dispatchers.Default) {
-                val bitmap = ScheduleImageRenderer.renderDay(week, date, events)
-                withContext(Dispatchers.IO) {
-                    ImageExporter.saveToGallery(context, bitmap, "日课表_$date.png")
+            try {
+                val uri = withContext(Dispatchers.Default) {
+                    val bitmap = ScheduleImageRenderer.renderDay(week, date, events)
+                    withContext(Dispatchers.IO) {
+                        ImageExporter.saveToGallery(context, bitmap, "日课表_$date.png")
+                    }
                 }
+                message(if (uri != null) AppText.current.msgSavedDayImage else t.msgSaveFailed)
+            } finally {
+                exportBusy.set(false)
             }
-            message(if (uri != null) AppText.current.msgSavedDayImage else t.msgSaveFailed)
         }
     }
 
@@ -443,15 +491,23 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val events = agenda.value
             .filter { ev -> !ev.isPlan && (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
             .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
+        if (!exportBusy.compareAndSet(false, true)) {
+            message(t.msgExporting)
+            return
+        }
         val context = getApplication<Application>()
         viewModelScope.launch {
-            val uri = withContext(Dispatchers.Default) {
-                val bitmap = ScheduleImageRenderer.renderWeek(week, events)
-                withContext(Dispatchers.IO) {
-                    ImageExporter.saveToGallery(context, bitmap, "周课表_第${week.weekNo}周.png")
+            try {
+                val uri = withContext(Dispatchers.Default) {
+                    val bitmap = ScheduleImageRenderer.renderWeek(week, events)
+                    withContext(Dispatchers.IO) {
+                        ImageExporter.saveToGallery(context, bitmap, "周课表_第${week.weekNo}周.png")
+                    }
                 }
+                message(if (uri != null) AppText.current.msgSavedWeekImage else t.msgSaveFailed)
+            } finally {
+                exportBusy.set(false)
             }
-            message(if (uri != null) AppText.current.msgSavedWeekImage else t.msgSaveFailed)
         }
     }
 
@@ -461,23 +517,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val events = agenda.value.filter { ev ->
             !ev.isPlan && !(ev.endDate.isBefore(monthStart) || ev.date.isAfter(monthEnd))
         }
+        if (!exportBusy.compareAndSet(false, true)) {
+            message(t.msgExporting)
+            return
+        }
         val context = getApplication<Application>()
         viewModelScope.launch {
-            val uri = withContext(Dispatchers.Default) {
-                val bitmap = ScheduleImageRenderer.renderMonth(
-                    monthStart = monthStart,
-                    semester = semester.value,
-                    events = events,
-                )
-                withContext(Dispatchers.IO) {
-                    ImageExporter.saveToGallery(
-                        context,
-                        bitmap,
-                        "月课表_${monthStart.year}-%02d.png".format(monthStart.monthValue),
+            try {
+                val uri = withContext(Dispatchers.Default) {
+                    val bitmap = ScheduleImageRenderer.renderMonth(
+                        monthStart = monthStart,
+                        semester = semester.value,
+                        events = events,
                     )
+                    withContext(Dispatchers.IO) {
+                        ImageExporter.saveToGallery(
+                            context,
+                            bitmap,
+                            "月课表_${monthStart.year}-%02d.png".format(monthStart.monthValue),
+                        )
+                    }
                 }
+                message(if (uri != null) AppText.current.msgSavedMonthImage else t.msgSaveFailed)
+            } finally {
+                exportBusy.set(false)
             }
-            message(if (uri != null) AppText.current.msgSavedMonthImage else t.msgSaveFailed)
         }
     }
 }

@@ -227,6 +227,13 @@ interface AppStrings {
     val qaParse: String
     val qaConfirm: String
     val qaNothing: String
+    val qaStaleResult: String
+    val qaReparseTitle: String
+    val qaReparseMsg: String
+    val opDateInvalid: String
+    val discardTitle: String
+    val discardOk: String
+    val msgExporting: String
     val qaPlanTag: String
     val qaAgendaTag: String
     fun qaAdded(n: Int): String
@@ -616,6 +623,13 @@ object ZhStrings : AppStrings {
     override val qaParse = "AI 识别"
     override val qaConfirm = "全部执行"
     override val qaNothing = "未识别到可执行的操作"
+    override val qaStaleResult = "内容已修改，本次识别结果已忽略，请重新识别"
+    override val qaReparseTitle = "重新识别？"
+    override val qaReparseMsg = "重新识别将清空当前预览列表（含已手动修改的内容）"
+    override val opDateInvalid = "日期格式无效：请使用 2026-09-20 格式"
+    override val discardTitle = "放弃未保存的修改？"
+    override val discardOk = "放弃"
+    override val msgExporting = "正在生成图片，请稍候…"
     override val qaPlanTag = "计划"
     override val qaAgendaTag = "日程"
     override fun qaAdded(n: Int) = "已添加 $n 项"
@@ -1011,6 +1025,13 @@ object EnStrings : AppStrings {
     override val qaParse = "AI parse"
     override val qaConfirm = "Run all"
     override val qaNothing = "Nothing to run"
+    override val qaStaleResult = "Text changed — result ignored. Please recognize again."
+    override val qaReparseTitle = "Recognize again?"
+    override val qaReparseMsg = "Re-recognizing will clear the current preview list (including manual edits)."
+    override val opDateInvalid = "Invalid date — please use the format 2026-09-20"
+    override val discardTitle = "Discard unsaved changes?"
+    override val discardOk = "Discard"
+    override val msgExporting = "Generating image, please wait…"
     override val qaPlanTag = "Plan"
     override val qaAgendaTag = "Event"
     override fun qaAdded(n: Int) = "Added $n item(s)"
@@ -1407,6 +1428,13 @@ object FrStrings : AppStrings {
     override val qaParse = "Analyse IA"
     override val qaConfirm = "Tout exécuter"
     override val qaNothing = "Rien à exécuter"
+    override val qaStaleResult = "Texte modifié — résultat ignoré. Veuillez relancer l'analyse."
+    override val qaReparseTitle = "Relancer l'analyse ?"
+    override val qaReparseMsg = "Relancer l'analyse effacera l'aperçu actuel (y compris les modifications manuelles)."
+    override val opDateInvalid = "Date invalide — utilisez le format 2026-09-20"
+    override val discardTitle = "Abandonner les modifications non enregistrées ?"
+    override val discardOk = "Abandonner"
+    override val msgExporting = "Génération de l'image en cours…"
     override val qaPlanTag = "Plan"
     override val qaAgendaTag = "Événement"
     override fun qaAdded(n: Int) = "$n élément(s) ajouté(s)"

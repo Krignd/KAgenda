@@ -47,15 +47,18 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.kstudio.agenda.R
@@ -78,8 +81,11 @@ fun MainScreen(
     launch: LaunchRequest? = null,
     onLaunchHandled: () -> Unit = {},
 ) {
-    var tab by remember { mutableStateOf(HomeTab.Schedule) }
-    var showQuickAdd by remember { mutableStateOf(false) }
+    // 旋转屏幕/系统重建后保持当前页签与弹窗状态
+    var tab by rememberSaveable { mutableStateOf(HomeTab.Schedule) }
+    var showQuickAdd by rememberSaveable { mutableStateOf(false) }
+    // 内容区尺寸（用于把可拖拽悬浮按钮限制在屏幕内）
+    var contentSize by remember { mutableStateOf(IntSize.Zero) }
     val sync by vm.syncState.collectAsState()
     val syncActive = sync is SyncUi.Running || sync is SyncUi.NeedLogin
     val settings by vm.settings.collectAsState()
@@ -219,7 +225,12 @@ fun MainScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Box(Modifier.fillMaxSize().padding(padding)) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .onSizeChanged { contentSize = it },
+        ) {
             when (tab) {
                 // 日/周/月视图统一放在「日程表」页内，顶部切换
                 HomeTab.Schedule -> ScheduleScreen(vm)
@@ -253,10 +264,18 @@ fun MainScreen(
                         .size(52.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primaryContainer)
-                        .pointerInput(Unit) {
+                        .pointerInput(contentSize) {
+                            val fabPx = 52.dp.toPx()
+                            val marginPx = 18.dp.toPx()
                             detectDragGestures { change, drag ->
                                 change.consume()
-                                fabOffset += drag
+                                // 边界收敛：不允许把按钮拖出内容区（原来无限制，拖出屏幕后再也点不到）
+                                val minX = -(contentSize.width - fabPx - marginPx * 2).coerceAtLeast(0f)
+                                val minY = -(contentSize.height - fabPx - marginPx * 2).coerceAtLeast(0f)
+                                fabOffset = Offset(
+                                    (fabOffset.x + drag.x).coerceIn(minX, 0f),
+                                    (fabOffset.y + drag.y).coerceIn(minY, 0f),
+                                )
                             }
                         }
                         .clickable { showQuickAdd = true },
