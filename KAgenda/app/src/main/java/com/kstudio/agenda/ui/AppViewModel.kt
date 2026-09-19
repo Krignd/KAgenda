@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kstudio.agenda.data.AgendaStore
+import com.kstudio.agenda.data.AiAssistant
+import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.AppSettings
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SettingsStore
@@ -14,6 +16,8 @@ import com.kstudio.agenda.export.ScheduleImageRenderer
 import com.kstudio.agenda.i18n.AppLang
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.AgendaEvent
+import com.kstudio.agenda.model.FuzzyTime
+import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.model.WeekSchedule
@@ -34,6 +38,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
+import java.time.LocalDateTime
 
 class AppViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -81,6 +86,28 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearFocus() {
         _focusRequest.value = null
+    }
+
+    /**
+     * 小组件点击定位：优先定位“此刻正在进行”的课程（小组件状态可能滞后一分钟以上，
+     * 直接按小组件里的目标会偏到“下一节课”），没有正在进行的课程时再按传入目标定位。
+     */
+    fun focusFromWidget(fallbackDate: LocalDate, fallbackTitle: String) {
+        val now = LocalDateTime.now()
+        val live = semester.value?.let { sem ->
+            val wn = sem.teachingWeekOf(now.toLocalDate())
+            if (wn in 1..40) {
+                sem.weeks[wn].orEmpty()
+                    .filter { it.dayOfWeek == now.dayOfWeek.value && it.occursInWeek(wn) }
+                    .firstOrNull { c ->
+                        val t = now.toLocalTime()
+                        !t.isBefore(PeriodTimes.startOf(c.startPeriod)) &&
+                            t.isBefore(PeriodTimes.endOf(c.endPeriod))
+                    }
+            } else null
+        }
+        if (live != null) requestFocus(now.toLocalDate(), live.title)
+        else requestFocus(fallbackDate, fallbackTitle)
     }
 
     private var autoSyncTriggered = false
@@ -278,6 +305,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         message(t.qaAdded(events.size))
     }
 
+    /** AI 助手：执行“新增/修改/删除”操作并汇总反馈 */
+    fun applyAiOps(ops: List<AiSkills.AiOp>) {
+        if (ops.isEmpty()) return
+        viewModelScope.launch(Dispatchers.IO) {
+            val r = AiAssistant.apply(getApplication(), ops)
+            runCatching { StatusNotification.refresh(getApplication()) }
+            runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            message(t.qaOpsDone(r.added, r.updated, r.deleted, r.unmatched))
+        }
+    }
+
     /** 新增自定义学校（适配代码 JSON）；成功后自动切换过去 */
     fun addCustomSchool(code: String, nameFallback: String, siteFallback: String) {
         viewModelScope.launch {
@@ -381,7 +419,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // 导出包含当天日程（含跨天长日程，不含计划），按时间排序
         val events = agenda.value
             .filter { !it.isPlan && it.coversDate(date) }
-            .sortedWith(compareBy({ it.startTime.ifBlank { "00:00" } }, { it.dateEpochDay }))
+            .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
         val context = getApplication<Application>()
         viewModelScope.launch {
             val uri = withContext(Dispatchers.Default) {
@@ -404,7 +442,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val monday = week.monday
         val events = agenda.value
             .filter { ev -> !ev.isPlan && (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
-            .sortedWith(compareBy({ it.dateEpochDay }, { it.startTime.ifBlank { "00:00" } }))
+            .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
         val context = getApplication<Application>()
         viewModelScope.launch {
             val uri = withContext(Dispatchers.Default) {

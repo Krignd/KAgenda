@@ -140,6 +140,15 @@ interface AppStrings {
     val askDeleteAgenda: String
     val askDeletePlan: String
     val pickerTimeTitle: String
+    val repeatSection: String
+    val repeatNone: String
+    val repeatDailyMode: String
+    val repeatWeeklyMode: String
+    val repeatBiweeklyMode: String
+    val repeatMonthlyMode: String
+    val repeatFieldHint: String
+    fun repeatEveryNDays(n: Int): String
+    fun repeatLabel(rule: String): String     // 规则 → 展示文案（空规则返回空串）
     fun deleteBody(name: String): String
     fun typeLabel(key: String): String        // 类型键 → 本地化名称（空键返回空串）
 
@@ -222,6 +231,24 @@ interface AppStrings {
     val qaAgendaTag: String
     fun qaAdded(n: Int): String
 
+    // AI 助手操作（新增/修改/删除）
+    val opAdd: String
+    val opUpdate: String
+    val opDelete: String
+    val opMatchTitle: String
+    val opMatchDate: String
+    val opNewTitle: String
+    val opNewDate: String
+    val opNewStart: String
+    val opNewEnd: String
+    val opNewLocation: String
+    fun qaOpsDone(added: Int, updated: Int, deleted: Int, unmatched: Int): String
+
+    // 时间选择：具体 / 模糊
+    val timeExact: String
+    val timeFuzzy: String
+    val timeFuzzyHint: String
+
     // 系统悬浮球（app 外可用）
     val secOverlay: String
     val secOverlaySub: String
@@ -242,6 +269,7 @@ interface AppStrings {
     val aiKeyKeepHint: String
     val aiUseDevKey: String
     val aiDevKeyInUse: String
+    val aiDevModelFixed: String
     val aiModelLabel: String
     val aiSave: String
     val aiClear: String
@@ -472,6 +500,32 @@ object ZhStrings : AppStrings {
     override val askDeleteAgenda = "删除日程？"
     override val askDeletePlan = "删除计划？"
     override val pickerTimeTitle = "选择时间"
+    override val repeatSection = "重复"
+    override val repeatNone = "不重复"
+    override val repeatDailyMode = "按天"
+    override val repeatWeeklyMode = "每周"
+    override val repeatBiweeklyMode = "隔周"
+    override val repeatMonthlyMode = "每月"
+    override val repeatFieldHint = "例如：每周二/四/六、隔周周二、每3天（留空保持不变）"
+    override fun repeatEveryNDays(n: Int) = if (n <= 1) "每天" else "每${n}天"
+    override fun repeatLabel(rule: String) = when {
+        rule.isBlank() -> ""
+        rule == "monthly" -> "每月"
+        rule.startsWith("daily:") -> repeatEveryNDays(rule.removePrefix("daily:").toIntOrNull() ?: 1)
+        rule.startsWith("weekly:") -> {
+            val days = ruleDayList(rule.removePrefix("weekly:"))
+            if (days.size == 7) "每天" else "每周" + dayNamesOf(days)
+        }
+        rule.startsWith("biweekly:") -> "隔周" + dayNamesOf(ruleDayList(rule.removePrefix("biweekly:")))
+        else -> ""
+    }
+
+    private fun ruleDayList(body: String) =
+        body.split(",").mapNotNull { it.toIntOrNull() }.filter { it in 1..7 }
+
+    private fun dayNamesOf(days: List<Int>) =
+        days.joinToString("/") { weekdayShort(it).removePrefix("周") }
+
     override fun deleteBody(name: String) = "「${name}」将被删除，此操作不可撤销。"
     override fun typeLabel(key: String) = when (key) {
         "interview" -> "面试"; "contest" -> "比赛"; "lecture" -> "讲座"
@@ -556,15 +610,37 @@ object ZhStrings : AppStrings {
     override val adapterStageDone = "已生成适配代码，请核对后保存"
     override fun adapterWaiting(sec: Int) = "（已等待 $sec 秒，请耐心等待）"
 
-    // AI 快速添加（悬浮入口）
-    override val qaTitle = "AI 快速添加"
-    override val qaHint = "粘贴或输入文字（可含多个日程/计划），AI 自动识别并添加"
+    // AI 助手（悬浮入口）
+    override val qaTitle = "AI 助手"
+    override val qaHint = "输入或粘贴内容：可添加新日程/计划，也可让 AI 修改、删除已有条目（如“把体检改到明天下午”）"
     override val qaParse = "AI 识别"
-    override val qaConfirm = "全部添加"
-    override val qaNothing = "未识别到可添加的内容"
+    override val qaConfirm = "全部执行"
+    override val qaNothing = "未识别到可执行的操作"
     override val qaPlanTag = "计划"
     override val qaAgendaTag = "日程"
     override fun qaAdded(n: Int) = "已添加 $n 项"
+    override val opAdd = "添加"
+    override val opUpdate = "修改"
+    override val opDelete = "删除"
+    override val opMatchTitle = "目标标题"
+    override val opMatchDate = "目标日期（可选，如 2026-09-20）"
+    override val opNewTitle = "新标题（留空不变）"
+    override val opNewDate = "新日期（留空不变）"
+    override val opNewStart = "新开始（留空不变）"
+    override val opNewEnd = "新结束（留空不变）"
+    override val opNewLocation = "新地点（留空不变）"
+    override fun qaOpsDone(added: Int, updated: Int, deleted: Int, unmatched: Int): String {
+        val parts = buildList {
+            if (added > 0) add("已添加 $added 条")
+            if (updated > 0) add("已修改 $updated 条")
+            if (deleted > 0) add("已删除 $deleted 条")
+            if (unmatched > 0) add("$unmatched 条未找到目标")
+        }
+        return parts.joinToString(" · ").ifBlank { "没有可执行的操作" }
+    }
+    override val timeExact = "具体时间"
+    override val timeFuzzy = "模糊时间"
+    override val timeFuzzyHint = "选择大致时段（凌晨 / 早晨 / 上午 / 下午 / 晚上 / 午夜）；此日程只按天提示倒计时"
 
     override val secOverlay = "悬浮球"
     override val secOverlaySub = "在任意应用上方显示 DeepSeek 悬浮球，点按即可输入并添加日程"
@@ -580,11 +656,12 @@ object ZhStrings : AppStrings {
 
     // AI 识别（DeepSeek）
     override val secAi = "AI 识别（DeepSeek）"
-    override val secAiSub = "配置 API Key 后，可用一句话生成或修改日程/计划"
+    override val secAiSub = "配置 API Key 后，可用一句话添加、修改或删除日程/计划"
     override val aiKeyLabel = "DeepSeek API Key"
     override val aiKeyKeepHint = "已保存（留空则不修改）"
     override val aiUseDevKey = "使用开发者的 API key"
     override val aiDevKeyInUse = "已启用内置 API Key，无需自行申请即可使用 AI 识别"
+    override val aiDevModelFixed = "使用开发者 Key 时固定为 deepseek-flash（不可修改）"
     override val aiModelLabel = "模型"
     override val aiSave = "保存 AI 设置"
     override val aiClear = "清除 Key"
@@ -609,8 +686,8 @@ object ZhStrings : AppStrings {
     override fun statusNextClassFmt(name: String, time: String, left: String) = "下一节课：$name · $time · $left"
     override fun statusOngoingPlanFmt(name: String) = "进行中计划：$name"
     override fun statusNextAgendaFmt(name: String, time: String) = "下一日程：$name · $time"
-    override val statusAiEntryTitle = "AI 快速添加"
-    override val statusAiEntryHint = "点按输入文字 · 自动识别并添加日程"
+    override val statusAiEntryTitle = "AI 助手"
+    override val statusAiEntryHint = "点按输入文字 · 可添加 / 修改 / 删除日程"
     override val notifOk = "通知权限：已开启"
     override val notifNo = "通知权限：未开启"
     override val enableNotif = "开启通知"
@@ -663,7 +740,7 @@ object ZhStrings : AppStrings {
     override val aboutBody =
         "本地优先的课表与日程应用：课表从学校教务系统同步后缓存在本机，" +
             "支持日/周/月视图（左右滑动切换）、日程与计划、课前提醒、桌面小组件与常驻通知；" +
-            "内置 DeepSeek AI 快速添加（顶栏按钮或悬浮球）。" +
+            "内置 DeepSeek AI 助手（可添加/修改/删除日程，入口：顶栏按钮或悬浮球）。" +
             "除用户自行配置的 AI 接口外，不上传任何个人信息。"
     override val aboutTip = "提示：若同步失败而网页可正常访问，多为学校页面改版——北航可到「开发者工具」分享运行日志；其他学校可在「设置 → 学校 → 添加学校」更新适配代码。"
     override val aboutPeriods = "课程时间表：上午 4 节 + 下午 5 节 + 晚上 5 节（共 14 节），与教务处作息一致。"
@@ -819,6 +896,31 @@ object EnStrings : AppStrings {
     override val askDeleteAgenda = "Delete event?"
     override val askDeletePlan = "Delete plan?"
     override val pickerTimeTitle = "Select time"
+    override val repeatSection = "Repeat"
+    override val repeatNone = "No repeat"
+    override val repeatDailyMode = "Every N days"
+    override val repeatWeeklyMode = "Weekly"
+    override val repeatBiweeklyMode = "Every other week"
+    override val repeatMonthlyMode = "Monthly"
+    override val repeatFieldHint = "e.g. Tue/Thu/Sat weekly, every other Tue, every 3 days (blank = unchanged)"
+    override fun repeatEveryNDays(n: Int) = if (n <= 1) "Daily" else "Every $n days"
+    override fun repeatLabel(rule: String) = when {
+        rule.isBlank() -> ""
+        rule == "monthly" -> "Monthly"
+        rule.startsWith("daily:") -> repeatEveryNDays(rule.removePrefix("daily:").toIntOrNull() ?: 1)
+        rule.startsWith("weekly:") -> {
+            val days = ruleDayList(rule.removePrefix("weekly:"))
+            if (days.size == 7) "Every day" else "Every " + dayNamesOf(days)
+        }
+        rule.startsWith("biweekly:") -> "Every other week · " + dayNamesOf(ruleDayList(rule.removePrefix("biweekly:")))
+        else -> ""
+    }
+
+    private fun ruleDayList(body: String) =
+        body.split(",").mapNotNull { it.toIntOrNull() }.filter { it in 1..7 }
+
+    private fun dayNamesOf(days: List<Int>) = days.joinToString("/") { weekdayShort(it) }
+
     override fun deleteBody(name: String) = "\"${name}\" will be deleted. This cannot be undone."
     override fun typeLabel(key: String) = when (key) {
         "interview" -> "Interview"; "contest" -> "Contest"; "lecture" -> "Lecture"
@@ -903,15 +1005,37 @@ object EnStrings : AppStrings {
     override val adapterStageDone = "Adapter generated — review and save"
     override fun adapterWaiting(sec: Int) = " (waiting ${sec}s…)"
 
-    // AI 快速添加（悬浮入口）
-    override val qaTitle = "AI quick add"
-    override val qaHint = "Paste or type text (multiple events/plans allowed); AI detects and adds them"
+    // AI assistant (overlay entry)
+    override val qaTitle = "AI Assistant"
+    override val qaHint = "Type or paste: add new events/plans, or ask AI to update/delete existing ones (e.g. \"move the checkup to tomorrow afternoon\")"
     override val qaParse = "AI parse"
-    override val qaConfirm = "Add all"
-    override val qaNothing = "Nothing to add"
+    override val qaConfirm = "Run all"
+    override val qaNothing = "Nothing to run"
     override val qaPlanTag = "Plan"
     override val qaAgendaTag = "Event"
     override fun qaAdded(n: Int) = "Added $n item(s)"
+    override val opAdd = "Add"
+    override val opUpdate = "Update"
+    override val opDelete = "Delete"
+    override val opMatchTitle = "Target title"
+    override val opMatchDate = "Target date (optional, e.g. 2026-09-20)"
+    override val opNewTitle = "New title (blank = keep)"
+    override val opNewDate = "New date (blank = keep)"
+    override val opNewStart = "New start (blank = keep)"
+    override val opNewEnd = "New end (blank = keep)"
+    override val opNewLocation = "New location (blank = keep)"
+    override fun qaOpsDone(added: Int, updated: Int, deleted: Int, unmatched: Int): String {
+        val parts = buildList {
+            if (added > 0) add("$added added")
+            if (updated > 0) add("$updated updated")
+            if (deleted > 0) add("$deleted deleted")
+            if (unmatched > 0) add("$unmatched unmatched")
+        }
+        return parts.joinToString(" · ").ifBlank { "Nothing to run" }
+    }
+    override val timeExact = "Exact time"
+    override val timeFuzzy = "Rough time"
+    override val timeFuzzyHint = "Pick a rough period (凌晨 / 早晨 / 上午 / 下午 / 晚上 / 午夜); countdown is day-based"
 
     override val secOverlay = "Floating ball"
     override val secOverlaySub = "Show a DeepSeek ball over other apps; tap to type and add schedules"
@@ -927,11 +1051,12 @@ object EnStrings : AppStrings {
 
     // AI (DeepSeek)
     override val secAi = "AI recognition (DeepSeek)"
-    override val secAiSub = "With an API key, create or edit events/plans in natural language"
+    override val secAiSub = "With an API key, add, edit or delete events/plans in natural language"
     override val aiKeyLabel = "DeepSeek API Key"
     override val aiKeyKeepHint = "Saved (leave blank to keep)"
     override val aiUseDevKey = "Use developer's API key"
     override val aiDevKeyInUse = "Built-in API key enabled — AI works out of the box"
+    override val aiDevModelFixed = "Fixed to deepseek-flash when using the developer key"
     override val aiModelLabel = "Model"
     override val aiSave = "Save AI settings"
     override val aiClear = "Clear key"
@@ -956,8 +1081,8 @@ object EnStrings : AppStrings {
     override fun statusNextClassFmt(name: String, time: String, left: String) = "Next class: $name · $time · $left"
     override fun statusOngoingPlanFmt(name: String) = "Ongoing plan: $name"
     override fun statusNextAgendaFmt(name: String, time: String) = "Next event: $name · $time"
-    override val statusAiEntryTitle = "AI quick add"
-    override val statusAiEntryHint = "Tap to type · auto-detect and add schedules"
+    override val statusAiEntryTitle = "AI Assistant"
+    override val statusAiEntryHint = "Tap to type · add / update / delete events"
     override val notifOk = "Notifications: enabled"
     override val notifNo = "Notifications: disabled"
     override val enableNotif = "Enable"
@@ -1010,7 +1135,7 @@ object EnStrings : AppStrings {
     override val aboutBody =
         "Local-first timetable & agenda app: your schedule is fetched from the school's academic system and cached on-device. " +
             "Day/week/month views (swipe to switch), local events & plans, class reminders, home-screen widgets, " +
-            "persistent status notification, and a DeepSeek AI quick add (toolbar button or floating ball over other apps). " +
+            "persistent status notification, and a DeepSeek AI assistant (add/update/delete events; toolbar button or floating ball over other apps). " +
             "No personal data is uploaded except to the AI endpoint you configure."
     override val aboutTip = "Note: if syncing fails while the website works, the school pages may have changed. BUAA users can share the runtime log from Developer tools; other schools can update the adapter code in Settings → School → Add school."
     override val aboutPeriods = "Periods: 4 morning + 5 afternoon + 5 evening (14 total), matching the academic affairs office."
@@ -1167,6 +1292,31 @@ object FrStrings : AppStrings {
     override val askDeleteAgenda = "Supprimer l'événement ?"
     override val askDeletePlan = "Supprimer le plan ?"
     override val pickerTimeTitle = "Choisir l'heure"
+    override val repeatSection = "Répétition"
+    override val repeatNone = "Aucune"
+    override val repeatDailyMode = "Tous les N jours"
+    override val repeatWeeklyMode = "Chaque semaine"
+    override val repeatBiweeklyMode = "Une semaine sur deux"
+    override val repeatMonthlyMode = "Chaque mois"
+    override val repeatFieldHint = "ex. mar./jeu./sam. chaque semaine, un mardi sur deux, tous les 3 jours (vide = inchangé)"
+    override fun repeatEveryNDays(n: Int) = if (n <= 1) "Tous les jours" else "Tous les $n jours"
+    override fun repeatLabel(rule: String) = when {
+        rule.isBlank() -> ""
+        rule == "monthly" -> "Chaque mois"
+        rule.startsWith("daily:") -> repeatEveryNDays(rule.removePrefix("daily:").toIntOrNull() ?: 1)
+        rule.startsWith("weekly:") -> {
+            val days = ruleDayList(rule.removePrefix("weekly:"))
+            if (days.size == 7) "Tous les jours" else "Chaque semaine · " + dayNamesOf(days)
+        }
+        rule.startsWith("biweekly:") -> "Une semaine sur deux · " + dayNamesOf(ruleDayList(rule.removePrefix("biweekly:")))
+        else -> ""
+    }
+
+    private fun ruleDayList(body: String) =
+        body.split(",").mapNotNull { it.toIntOrNull() }.filter { it in 1..7 }
+
+    private fun dayNamesOf(days: List<Int>) = days.joinToString("/") { weekdayShort(it) }
+
     override fun deleteBody(name: String) = "« ${name} » sera supprimé. Action irréversible."
     override fun typeLabel(key: String) = when (key) {
         "interview" -> "Entretien"; "contest" -> "Compétition"; "lecture" -> "Conférence"
@@ -1251,15 +1401,37 @@ object FrStrings : AppStrings {
     override val adapterStageDone = "Adaptation générée — vérifiez puis enregistrez"
     override fun adapterWaiting(sec: Int) = " (en attente ${sec} s…)"
 
-    // AI 快速添加（悬浮入口）
-    override val qaTitle = "Ajout rapide IA"
-    override val qaHint = "Collez ou saisissez un texte (plusieurs événements possibles) ; l'IA les ajoute"
+    // AI 助手（悬浮入口）
+    override val qaTitle = "Assistant IA"
+    override val qaHint = "Saisissez ou collez : ajouter des événements/plans, ou demander à l'IA de modifier/supprimer (ex. « déplacer la visite à demain après-midi »)"
     override val qaParse = "Analyse IA"
-    override val qaConfirm = "Tout ajouter"
-    override val qaNothing = "Rien à ajouter"
+    override val qaConfirm = "Tout exécuter"
+    override val qaNothing = "Rien à exécuter"
     override val qaPlanTag = "Plan"
     override val qaAgendaTag = "Événement"
     override fun qaAdded(n: Int) = "$n élément(s) ajouté(s)"
+    override val opAdd = "Ajouter"
+    override val opUpdate = "Modifier"
+    override val opDelete = "Supprimer"
+    override val opMatchTitle = "Titre cible"
+    override val opMatchDate = "Date cible (optionnel, ex. 2026-09-20)"
+    override val opNewTitle = "Nouveau titre (vide = inchangé)"
+    override val opNewDate = "Nouvelle date (vide = inchangé)"
+    override val opNewStart = "Nouveau début (vide = inchangé)"
+    override val opNewEnd = "Nouvelle fin (vide = inchangé)"
+    override val opNewLocation = "Nouveau lieu (vide = inchangé)"
+    override fun qaOpsDone(added: Int, updated: Int, deleted: Int, unmatched: Int): String {
+        val parts = buildList {
+            if (added > 0) add("$added ajouté(s)")
+            if (updated > 0) add("$updated modifié(s)")
+            if (deleted > 0) add("$deleted supprimé(s)")
+            if (unmatched > 0) add("$unmatched sans cible")
+        }
+        return parts.joinToString(" · ").ifBlank { "Aucune action" }
+    }
+    override val timeExact = "Heure précise"
+    override val timeFuzzy = "Heure approximative"
+    override val timeFuzzyHint = "Choisissez une période (凌晨 / 早晨 / 上午 / 下午 / 晚上 / 午夜) ; compte à rebours par jour"
 
     override val secOverlay = "Bulle flottante"
     override val secOverlaySub = "Afficher la bulle DeepSeek par-dessus les autres applis ; appuyez pour saisir et ajouter"
@@ -1275,11 +1447,12 @@ object FrStrings : AppStrings {
 
     // IA (DeepSeek)
     override val secAi = "Reconnaissance IA (DeepSeek)"
-    override val secAiSub = "Avec une clé API, créez/modifiez en langage naturel"
+    override val secAiSub = "Avec une clé API, ajoutez, modifiez ou supprimez en langage naturel"
     override val aiKeyLabel = "Clé API DeepSeek"
     override val aiKeyKeepHint = "Enregistrée (laisser vide pour garder)"
     override val aiUseDevKey = "Utiliser la clé API du développeur"
     override val aiDevKeyInUse = "Clé API intégrée activée — l'IA est prête à l'emploi"
+    override val aiDevModelFixed = "Fixé sur deepseek-flash avec la clé du développeur"
     override val aiModelLabel = "Modèle"
     override val aiSave = "Enregistrer"
     override val aiClear = "Effacer la clé"
@@ -1304,8 +1477,8 @@ object FrStrings : AppStrings {
     override fun statusNextClassFmt(name: String, time: String, left: String) = "Cours suivant : $name · $time · $left"
     override fun statusOngoingPlanFmt(name: String) = "Plan en cours : $name"
     override fun statusNextAgendaFmt(name: String, time: String) = "Prochain événement : $name · $time"
-    override val statusAiEntryTitle = "Ajout rapide IA"
-    override val statusAiEntryHint = "Appuyez pour saisir · ajout automatique des événements"
+    override val statusAiEntryTitle = "Assistant IA"
+    override val statusAiEntryHint = "Appuyez pour saisir · ajouter / modifier / supprimer"
     override val notifOk = "Notifications : activées"
     override val notifNo = "Notifications : désactivées"
     override val enableNotif = "Activer"

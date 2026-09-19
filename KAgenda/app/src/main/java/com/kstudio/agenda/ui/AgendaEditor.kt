@@ -61,6 +61,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -71,8 +72,9 @@ import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.AgendaTypes
+import com.kstudio.agenda.ui.components.RepeatRulePicker
 import com.kstudio.agenda.ui.components.TagChip
-import com.kstudio.agenda.ui.components.rememberFlashAlpha
+import com.kstudio.agenda.ui.components.rememberFlashPulse
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -88,11 +90,17 @@ fun AgendaCard(
     flash: Boolean = false,
 ) {
     val t = LocalStrings.current
-    val pulse = rememberFlashAlpha(flash)
+    val pulse = rememberFlashPulse(flash)
     val accent = if (event.displayColor != 0) {
         Color(event.displayColor)
     } else {
         MaterialTheme.colorScheme.tertiary
+    }
+    // 卡片底色：闪烁时按条目色做“深浅变化”提醒；平时白底 + 细描边，与页面背景对比更清晰
+    val cardColor = if (flash) {
+        accent.copy(alpha = 0.10f + 0.30f * pulse).compositeOver(MaterialTheme.colorScheme.surface)
+    } else {
+        MaterialTheme.colorScheme.surface
     }
     val ongoing = event.isOngoing()
     // 类型标签：优先本地化类型名；否则按 计划/长日程/日程 显示
@@ -104,16 +112,20 @@ fun AgendaCard(
     }
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        color = cardColor,
+        tonalElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (flash) Modifier.border(
                     2.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                    accent.copy(alpha = 0.35f + 0.65f * pulse),
                     RoundedCornerShape(18.dp),
-                ) else Modifier
+                ) else Modifier.border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                    RoundedCornerShape(18.dp),
+                )
             )
             .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
@@ -142,6 +154,7 @@ fun AgendaCard(
                 val detail = listOfNotNull(
                     dateLabel,
                     event.rangeLabel.ifBlank { null },
+                    t.repeatLabel(event.repeatRule).ifBlank { null },
                 ).joinToString("  ·  ")
                 if (detail.isNotBlank()) {
                     Spacer(Modifier.height(6.dp))
@@ -199,6 +212,7 @@ fun AgendaEditorDialog(
     var type by remember { mutableStateOf(initial?.type ?: "") }
     var colorArgb by remember { mutableStateOf(initial?.colorArgb ?: 0) }
     var isLong by remember { mutableStateOf(initial?.isLong ?: false) }
+    var repeatRule by remember { mutableStateOf(initial?.repeatRule ?: "") }
     var startDate by remember { mutableStateOf(initial?.date ?: defaultDate) }
     var endDate by remember { mutableStateOf(initial?.endDate ?: (initial?.date ?: defaultDate)) }
     var startTime by remember { mutableStateOf(initial?.startTime ?: "") }
@@ -293,7 +307,7 @@ fun AgendaEditorDialog(
                                                 parseMsg = t.aiNeedKey
                                                 return@launch
                                             }
-                                            val model = SettingsStore.read(aiContext).aiModel
+                                            val model = SettingsStore.effectiveAiModel(aiContext)
                                             val reply = AiClient.chat(
                                                 apiKey = key,
                                                 model = model,
@@ -460,6 +474,16 @@ fun AgendaEditorDialog(
                     }
                 }
 
+                if (!isLong && (initial?.isPlan ?: asPlan)) {
+                    // 重复规则：仅计划（短日程）可用，如“每周二/四/六”“隔周周二”“每 3 天”
+                    RepeatRulePicker(
+                        rule = repeatRule,
+                        onChange = { repeatRule = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        anchorDayOfWeek = startDate.dayOfWeek.value,
+                    )
+                }
+
                 OutlinedTextField(
                     value = location,
                     onValueChange = { location = it },
@@ -516,6 +540,7 @@ fun AgendaEditorDialog(
                         type = type,
                         colorArgb = colorArgb,
                         isPlan = initial?.isPlan ?: asPlan,
+                        repeatRule = if (isLong) "" else repeatRule,
                     )
                 )
             }) { Text(t.save) }
@@ -652,7 +677,7 @@ private fun ColorDot(color: Color, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** 时/分滚轮时间选择弹窗（类似手机闹钟） */
+/** 时间选择弹窗：支持「具体时间」（时/分滚轮）与「模糊时间」（凌晨/早晨/上午/下午/晚上/午夜）两个选项卡 */
 @Composable
 private fun TimeWheelDialog(
     initial: String,
@@ -661,6 +686,7 @@ private fun TimeWheelDialog(
 ) {
     val t = LocalStrings.current
     val now = LocalTime.now()
+    var fuzzyMode by remember { mutableStateOf(com.kstudio.agenda.model.FuzzyTime.isFuzzy(initial)) }
     val initH = initial.substringBefore(":").toIntOrNull()?.coerceIn(0, 23) ?: now.hour
     val initM = initial.substringAfter(":", "").toIntOrNull()?.coerceIn(0, 59) ?: now.minute
     val hourState = rememberLazyListState(initH)
@@ -670,40 +696,94 @@ private fun TimeWheelDialog(
         onDismissRequest = onDismiss,
         title = { Text(t.pickerTimeTitle) },
         text = {
-            Box(Modifier.fillMaxWidth()) {
-                // 中央高亮条
-                Box(
-                    Modifier
-                        .align(Alignment.Center)
-                        .fillMaxWidth()
-                        .height(40.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
-                )
-                Row(
-                    modifier = Modifier.align(Alignment.Center),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Wheel(0..23, hourState)
-                    Text(
-                        text = ":",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp),
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // 选项卡：具体时间 / 模糊时间
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    androidx.compose.material3.FilterChip(
+                        selected = !fuzzyMode,
+                        onClick = { fuzzyMode = false },
+                        label = { Text(t.timeExact) },
                     )
-                    Wheel(0..59, minuteState)
+                    androidx.compose.material3.FilterChip(
+                        selected = fuzzyMode,
+                        onClick = { fuzzyMode = true },
+                        label = { Text(t.timeFuzzy) },
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                if (fuzzyMode) {
+                    // 模糊时间：六个选项，点选即确认
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        com.kstudio.agenda.model.FuzzyTime.ORDER.chunked(3).forEach { rowItems ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            ) {
+                                rowItems.forEach { label ->
+                                    androidx.compose.material3.FilterChip(
+                                        selected = initial.trim() == label,
+                                        onClick = { onConfirm(label) },
+                                        label = {
+                                            Text(
+                                                text = label,
+                                                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                                                modifier = Modifier.fillMaxWidth(),
+                                            )
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = t.timeFuzzyHint,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    Box(Modifier.fillMaxWidth()) {
+                        // 中央高亮条
+                        Box(
+                            Modifier
+                                .align(Alignment.Center)
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f))
+                        )
+                        Row(
+                            modifier = Modifier.align(Alignment.Center),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Wheel(0..23, hourState)
+                            Text(
+                                text = ":",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                            Wheel(0..59, minuteState)
+                        }
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onConfirm(
-                    "%02d:%02d".format(
-                        hourState.firstVisibleItemIndex,
-                        minuteState.firstVisibleItemIndex,
+            if (!fuzzyMode) {
+                TextButton(onClick = {
+                    onConfirm(
+                        "%02d:%02d".format(
+                            hourState.firstVisibleItemIndex,
+                            minuteState.firstVisibleItemIndex,
+                        )
                     )
-                )
-            }) { Text(t.confirm) }
+                }) { Text(t.confirm) }
+            }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text(t.cancel) } },
     )

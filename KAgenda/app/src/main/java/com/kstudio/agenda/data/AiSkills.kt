@@ -1,5 +1,7 @@
 package com.kstudio.agenda.data
 
+import com.kstudio.agenda.model.FuzzyTime
+import com.kstudio.agenda.model.RepeatRules
 import org.json.JSONObject
 import java.time.LocalDate
 
@@ -28,11 +30,25 @@ object AiSkills {
         规则：相对日期（今天/明天/后天/大后天/本周X/下周X）与“9.18”按基准日期推算；指令式（如“把体检改到明早10点”）用 action=update；全角转半角；不确定的字段留空串。
     """.trimIndent()
 
-    /** 多条目解析（AI 快速添加）：输入可含多个日程/计划 */
-    val parseItemsSystemPrompt: String = """
-        你是日程解析助手。用户文字中可能包含多个日程或计划，请全部提取（一个也不要遗漏），只输出一个 json 对象：
-        {"items":[{"tg":"agenda|plan","t":"标题≤20字","tp":"interview|contest|lecture|exam|meeting|other 或空","d":"YYYY-MM-DD 或空","s":"HH:mm 或空","e":"HH:mm 或空","l":"地点或空","n":"备注≤24字或空"}]}
-        规则：课程/通知/活动→agenda；个人计划、目标、习惯、锻炼→plan；相对日期与“9.18”按基准日期推算；时间不明确时 s/e 留空；全角转半角；无关内容忽略；确保输出完整合法的 json（数组内所有条目都要输出，不要省略或使用省略号）。
+    /**
+     * AI 助手解析（支持新增/修改/删除）：
+     * 输入一段文字 → 输出 ops 数组（add / update / delete）。
+     */
+    val assistantSystemPrompt: String = """
+        你是日程助手。用户会输入一段文字，可能是新日程/计划的描述，也可能是要求修改或删除已有日程/计划的指令。请解析为一个 json 对象（只输出 json，无其他文字）：
+        {"ops":[
+          {"op":"add","tg":"agenda|plan","t":"标题≤20字","tp":"interview|contest|lecture|exam|meeting|other 或空","d":"YYYY-MM-DD 或空","s":"时间或空","e":"时间或空","l":"地点或空","n":"备注≤24字或空","rp":"重复规则或空"},
+          {"op":"update","match":{"t":"已有条目标题","d":"YYYY-MM-DD 或空"},"set":{"t":"新标题或空","d":"新日期或空","s":"新开始或空","e":"新结束或空","l":"新地点或空","n":"新备注或空","rp":"新重复规则或空"}},
+          {"op":"delete","match":{"t":"已有条目标题","d":"YYYY-MM-DD 或空"}}
+        ]}
+        规则：
+        1. 新建内容用 add：课程/通知/活动→agenda；个人计划、目标、习惯、锻炼→plan；
+        2. “把X改到/推迟/提前/改成/换地点”等修改指令用 update，match.t 填用户提到的原条目标题（尽量与“现有条目”一致），set 只填需要修改的字段，未修改的字段留空串；
+        3. “删除/取消X”用 delete；
+        4. s/e 格式：精确时间用 24 小时制 "HH:mm"；时间段（“14:00-16:00”或“下午2点到4点”）必须拆分为 s=开始、e=结束；只知道大概时段时 s 用 凌晨|早晨|上午|下午|晚上|午夜 之一；
+        5. 相对日期（今天/明天/后天/本周X/下周X）与“9.18”按基准日期推算；全角转半角；无关内容忽略；确保输出完整合法的 json。
+        6. 重复规则 rp（仅 tg=plan 的个人计划需要）：用户描述“每周二/四/六”→weekly:2,4,6（1=周一…7=周日）；“隔周周二”→biweekly:2；“每3天”→daily:3；“每天”→daily:1；“每月X日”→monthly；不重复留空串；
+        7. 修改重复（如“改成每周一三五”）用 update，set.rp 填新规则；“不再重复”时 set.rp 填 "none"。
     """.trimIndent()
 
     /** 学校适配代码生成（KagendaSchoolAdapter/2：可容纳不同学校的登录/探测/提取逻辑） */
@@ -71,6 +87,16 @@ object AiSkills {
     fun userPrompt(text: String, baseDate: LocalDate): String =
         "基准日期：$baseDate（${weekdayCn(baseDate)}）\n用户输入：\n$text"
 
+    /** AI 助手用户提示词：附上现有条目清单，便于匹配“修改/删除”目标 */
+    fun assistantUserPrompt(text: String, baseDate: LocalDate, existingLines: List<String>): String = buildString {
+        append("基准日期：$baseDate（${weekdayCn(baseDate)}）\n")
+        if (existingLines.isNotEmpty()) {
+            append("现有日程/计划（供修改/删除匹配）：\n")
+            existingLines.take(60).forEach { append("- ").append(it).append('\n') }
+        }
+        append("用户输入：\n").append(text)
+    }
+
     private fun weekdayCn(date: LocalDate): String =
         "周" + "一二三四五六日"[date.dayOfWeek.value - 1]
 
@@ -79,20 +105,21 @@ object AiSkills {
         val json = extractJson(content) ?: return null
         return runCatching {
             val o = JSONObject(json)
+            val (start, end) = normalizeTimePair(o.optString("startTime"), o.optString("endTime"))
             AiEvent(
                 action = o.optString("action", "create"),
                 title = o.optString("title").trim(),
                 type = o.optString("type").trim().lowercase(),
                 date = parseAiDate(o.optString("date")),
-                startTime = normalizeTime(o.optString("startTime")),
-                endTime = normalizeTime(o.optString("endTime")),
+                startTime = start,
+                endTime = end,
                 location = o.optString("location").trim(),
                 note = o.optString("note").trim(),
             )
         }.getOrNull()
     }
 
-    /** 多条目回复解析（AI 快速添加） */
+    /** AI 助手单条目（add / set 共用字段解析结果） */
     data class AiItem(
         val isPlan: Boolean,
         val title: String,
@@ -102,30 +129,123 @@ object AiSkills {
         val endTime: String,
         val location: String,
         val note: String,
+        /** 重复规则 token（见 RepeatRules；空串=不重复） */
+        val repeat: String = "",
     )
 
-    fun parseItemsReply(content: String): List<AiItem> {
+    /** update 的“仅修改字段”（null=不变） */
+    data class AiSet(
+        val title: String?,
+        val date: LocalDate?,
+        val startTime: String?,
+        val endTime: String?,
+        val location: String?,
+        val note: String?,
+        /** 新重复规则（null=不变；""=取消重复） */
+        val repeat: String? = null,
+    )
+
+    /** AI 助手操作 */
+    sealed interface AiOp {
+        data class Add(val item: AiItem) : AiOp
+        data class Update(val matchTitle: String, val matchDate: LocalDate?, val set: AiSet) : AiOp
+        data class Delete(val matchTitle: String, val matchDate: LocalDate?) : AiOp
+    }
+
+    /** ops 回复解析（AI 助手）：支持新增/修改/删除 */
+    fun parseOpsReply(content: String): List<AiOp> {
         val json = extractJson(content) ?: return emptyList()
-        val arr = runCatching { JSONObject(json).optJSONArray("items") }.getOrNull() ?: return emptyList()
-        val out = mutableListOf<AiItem>()
+        val arr = runCatching { JSONObject(json).optJSONArray("ops") }.getOrNull()
+            ?: runCatching { JSONObject(json).optJSONArray("items") }.getOrNull()  // 兼容旧格式
+            ?: return emptyList()
+        val out = mutableListOf<AiOp>()
         for (i in 0 until arr.length()) {
             val o = arr.optJSONObject(i) ?: continue
-            val title = o.optString("t").trim()
-            if (title.isBlank()) continue
-            out.add(
-                AiItem(
-                    isPlan = o.optString("tg").trim() == "plan",
-                    title = title,
-                    type = o.optString("tp").trim().lowercase(),
-                    date = parseAiDate(o.optString("d")),
-                    startTime = normalizeTime(o.optString("s")),
-                    endTime = normalizeTime(o.optString("e")),
-                    location = o.optString("l").trim(),
-                    note = o.optString("n").trim(),
-                )
-            )
+            when (o.optString("op").trim().lowercase()) {
+                "update" -> {
+                    val match = o.optJSONObject("match") ?: continue
+                    val title = match.optString("t").trim()
+                    if (title.isBlank()) continue
+                    val setObj = o.optJSONObject("set")
+                    out.add(
+                        AiOp.Update(
+                            matchTitle = title,
+                            matchDate = parseAiDate(match.optString("d")),
+                            set = AiSet(
+                                title = setObj?.optString("t")?.trim()?.takeIf { it.isNotBlank() },
+                                date = setObj?.optString("d")?.let { parseAiDate(it) },
+                                startTime = setObj?.optString("s")?.let { fuzzyOrTime(it) }?.takeIf { it.isNotBlank() },
+                                endTime = setObj?.optString("e")?.let { fuzzyOrTime(it) }?.takeIf { it.isNotBlank() },
+                                location = setObj?.optString("l")?.trim()?.takeIf { it.isNotBlank() },
+                                note = setObj?.optString("n")?.trim()?.takeIf { it.isNotBlank() },
+                                repeat = if (setObj != null && setObj.has("rp")) normalizeRepeat(setObj.optString("rp")) else null,
+                            ),
+                        )
+                    )
+                }
+                "delete" -> {
+                    val match = o.optJSONObject("match") ?: continue
+                    val title = match.optString("t").trim()
+                    if (title.isBlank()) continue
+                    out.add(AiOp.Delete(matchTitle = title, matchDate = parseAiDate(match.optString("d"))))
+                }
+                else -> parseAiItem(o)?.let { out.add(AiOp.Add(it)) }
+            }
         }
         return out
+    }
+
+    /** 单条目解析（add / 旧版 items 兼容） */
+    private fun parseAiItem(o: JSONObject): AiItem? {
+        val title = o.optString("t").trim()
+        if (title.isBlank()) return null
+        val (s, e) = normalizeTimePair(o.optString("s"), o.optString("e"))
+        return AiItem(
+            isPlan = o.optString("tg").trim() == "plan",
+            title = title,
+            type = o.optString("tp").trim().lowercase(),
+            date = parseAiDate(o.optString("d")),
+            startTime = s,
+            endTime = e,
+            location = o.optString("l").trim(),
+            note = o.optString("n").trim(),
+            repeat = normalizeRepeat(o.optString("rp")),
+        )
+    }
+
+    /** 重复字段归一化：空/none/不重复 → ""；合法 token 原样；中文描述→宽松解析；解析失败→"" */
+    private fun normalizeRepeat(raw: String): String {
+        val s = raw.trim()
+        if (s.isEmpty() || s == "none" || s == "无" || s.contains("不重复")) return ""
+        if (s == RepeatRules.MONTHLY || s.contains(':') && RepeatRules.isValid(s)) return s
+        return RepeatRules.parse(s) ?: ""
+    }
+
+    /** 模糊时刻词（凌晨/早晨/上午/下午/晚上/午夜）→ 原样返回；否则按 "HH:mm" 规整 */
+    private fun fuzzyOrTime(raw: String): String {
+        val t = raw.trim()
+        FuzzyTime.ORDER.firstOrNull { t.contains(it) }?.let { return it }
+        return normalizeTime(t)
+    }
+
+    /** s/e 规整：支持“时间段”自动拆分（如 s="14:00-16:00" 或 s="下午2点到4点"） */
+    private fun normalizeTimePair(sRaw: String, eRaw: String): Pair<String, String> {
+        val sList = collectTimes(sRaw)
+        if (sList.size >= 2) return sList[0] to sList[1]
+        val s = sList.firstOrNull() ?: fuzzyOrTime(sRaw)
+        val e = collectTimes(eRaw).firstOrNull() ?: fuzzyOrTime(eRaw)
+        return s to e
+    }
+
+    /** 从文本中收集所有可解析的时刻（带“下午/晚上”提示时自动 +12） */
+    private fun collectTimes(raw: String): List<String> {
+        val pm = raw.contains("下午") || raw.contains("晚上") || raw.contains("傍晚")
+        return Regex("(\\d{1,2})\\s*[:：点时]\\s*(\\d{1,2})?").findAll(raw).mapNotNull { m ->
+            var h = m.groupValues[1].toIntOrNull() ?: return@mapNotNull null
+            val min = m.groupValues[2].toIntOrNull() ?: 0
+            if (pm && h in 1..11) h += 12
+            if (h !in 0..23 || min !in 0..59) null else "%02d:%02d".format(h, min)
+        }.toList()
     }
 
     /** 供 UI 使用：从回复中取出第一个 JSON 对象（如适配代码生成） */

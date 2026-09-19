@@ -1,14 +1,14 @@
 package com.kstudio.agenda.ui.components
 
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -16,7 +16,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
 
 /**
  * 页面级横向滑动切换（日/周/月视图通用）。
@@ -29,14 +31,14 @@ import kotlin.math.abs
  *
  * @param key 重建手势监听的 key
  * @param enabled 是否启用
- * @param threshold 触发阈值（建议 56~72dp）
+ * @param threshold 触发阈值（建议 36~48dp；默认 40dp，滑动更省力）
  * @param canStep 该方向是否允许切换（返回 false 则不抢占，交给内层横向滚动）
  * @param onStep 切换回调：+1 = 向后（下一日/周/月），-1 = 向前
  */
 fun Modifier.swipeStep(
     key: Any? = Unit,
     enabled: Boolean = true,
-    threshold: Dp = 60.dp,
+    threshold: Dp = 40.dp,
     canStep: (Int) -> Boolean = { true },
     onStep: (Int) -> Unit,
 ): Modifier = composed {
@@ -58,8 +60,8 @@ fun Modifier.swipeStep(
                 dy += delta.y
                 if (!decided && (abs(dx) > viewConfiguration.touchSlop || abs(dy) > viewConfiguration.touchSlop)) {
                     decided = true
-                    // 水平占优（1.2 倍）才认为用户想翻页；否则视为纵向滚动，不再干扰
-                    capture = abs(dx) > abs(dy) * 1.2f && canStep(if (dx < 0f) 1 else -1)
+                    // 水平略占优即认为用户想翻页（1.05 倍，允许斜向滑动）；否则视为纵向滚动，不再干扰
+                    capture = abs(dx) > abs(dy) * 1.05f && canStep(if (dx < 0f) 1 else -1)
                 }
                 if (!decided) continue
                 if (!capture) break
@@ -74,18 +76,41 @@ fun Modifier.swipeStep(
 }
 
 /**
- * 闪烁反馈透明度（0.25 ↔ 1 循环）。
- * [active] 为 false 时返回固定 1f，不会创建动画（避免无谓的重组）。
+ * 双指缩放（pinch）：仅在两指按下时生效并消费手势；单指拖动完全放行，
+ * 不影响内层滚动与 swipeStep 翻页。
+ */
+fun Modifier.pinchZoom(onZoom: (Float) -> Unit): Modifier = this.pointerInput(Unit) {
+    awaitEachGesture {
+        awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+        do {
+            val event = awaitPointerEvent(PointerEventPass.Initial)
+            if (event.changes.count { it.pressed } >= 2) {
+                val zoomChange = event.calculateZoom()
+                if (zoomChange.isFinite() && zoomChange != 1f) onZoom(zoomChange)
+                // 双指期间消化事件：防止内层滚动/翻页抖动
+                event.changes.forEach { if (it.pressed) it.consume() }
+            }
+        } while (event.changes.any { it.pressed })
+    }
+}
+
+/**
+ * 定位闪烁脉冲值：[active] 为 true 时，在 [periodMillis] 内完成 [pulses] 次“明↔暗”脉冲后回到 0；
+ * 返回值 0..1（0=基线、1=峰值）。默认 3 次、每次约 440ms（比旧版 380ms 半周期更快），用于“闪三下”提醒。
+ * [active] 为 false 时固定返回 0f，不创建动画。
  */
 @Composable
-fun rememberFlashAlpha(active: Boolean): Float {
-    if (!active) return 1f
-    val transition = rememberInfiniteTransition(label = "flash")
-    val alpha by transition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(tween(380), RepeatMode.Reverse),
-        label = "flashAlpha",
-    )
-    return alpha
+fun rememberFlashPulse(active: Boolean, pulses: Int = 3, periodMillis: Int = 440): Float {
+    if (!active) return 0f
+    val progress = remember { Animatable(0f) }
+    LaunchedEffect(active) {
+        progress.snapTo(0f)
+        progress.animateTo(
+            targetValue = 1f,
+            animationSpec = tween(durationMillis = periodMillis * pulses, easing = LinearEasing),
+        )
+    }
+    // 余弦波：progress 0→1 过程中恰好起伏 pulses 次，结尾回到 0
+    val angle = (progress.value * pulses * 2f).toFloat() * PI.toFloat()
+    return 0.5f - 0.5f * cos(angle)
 }

@@ -343,7 +343,7 @@ private fun syncLabel(
 ): String = when (sync) {
     is SyncUi.Success -> "✓"
     is SyncUi.Error -> sync.message
-    SyncUi.NeedLogin -> notLoggedIn
+    is SyncUi.NeedLogin -> if (sync.message.isNotBlank()) sync.message else notLoggedIn
     SyncUi.Running -> running
     SyncUi.Idle -> none
 }

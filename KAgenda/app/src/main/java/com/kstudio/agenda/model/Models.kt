@@ -97,10 +97,12 @@ data class WeekSchedule(
         !date.isBefore(monday) && !date.isAfter(monday.plusDays(6))
 
     /**
-     * 指定日期对应的教学周（以第 1 周周一为基准）
+     * 指定日期对应的教学周（以第 1 周周一为基准）。
+     * 注意：epochDay 差值可能为负，必须用向下取整——普通整除会向 0 取整，
+     * 导致第 1 周之前的日期被误判为第 1 周（周条不再前移、选中框消失）。
      */
     fun teachingWeekOf(date: LocalDate): Int =
-        ((date.toEpochDay() - anchorEpochDay) / 7).toInt() + 1
+        Math.floorDiv(date.toEpochDay() - anchorEpochDay, 7L).toInt() + 1
 
     /** 指定日期要上的课程（日期不在本学期范围或该课程当天不上课则为空） */
     fun coursesOnDate(date: LocalDate): List<Course> {
@@ -130,8 +132,9 @@ data class SemesterSchedule(
     fun mondayOf(weekNo: Int): LocalDate =
         LocalDate.ofEpochDay(anchorEpochDay).plusWeeks((weekNo - 1).toLong())
 
+    /** 教学周计算同样需要向下取整（见 WeekSchedule.teachingWeekOf 的说明） */
     fun teachingWeekOf(date: LocalDate): Int =
-        ((date.toEpochDay() - anchorEpochDay) / 7).toInt() + 1
+        Math.floorDiv(date.toEpochDay() - anchorEpochDay, 7L).toInt() + 1
 
     /** 转换为单周模型（供日/周视图、图片导出、提醒等复用原有逻辑） */
     fun week(weekNo: Int): WeekSchedule = WeekSchedule(

@@ -3,6 +3,8 @@ package com.kstudio.agenda.data
 import android.content.Context
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.AgendaTypes
+import com.kstudio.agenda.model.FuzzyTime
+import com.kstudio.agenda.model.RepeatRules
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +37,7 @@ object AgendaStore {
                 val f = File(context.filesDir, FILE_NAME)
                 if (!f.exists()) emptyList() else parse(f.readText(Charsets.UTF_8))
             }.getOrDefault(emptyList())
-            _events.value = list.sortedWith(compareBy({ it.dateEpochDay }, { it.startTime }))
+            _events.value = list.sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
         }
     }
 
@@ -45,7 +47,7 @@ object AgendaStore {
             val list = _events.value.toMutableList()
             val idx = list.indexOfFirst { it.id == event.id }
             if (idx >= 0) list[idx] = event else list.add(event)
-            val sorted = list.sortedWith(compareBy({ it.dateEpochDay }, { it.startTime }))
+            val sorted = list.sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
             _events.value = sorted
             persist(context, sorted)
         }
@@ -97,6 +99,7 @@ object AgendaStore {
                     type = AgendaTypes.fromLegacy(o.optString("type")),
                     colorArgb = o.optInt("colorArgb", 0),
                     isPlan = o.optBoolean("isPlan", false),
+                    repeatRule = o.optString("repeat").takeIf { RepeatRules.isValid(it) } ?: "",
                 )
             )
         }
@@ -123,6 +126,7 @@ object AgendaStore {
                     put("type", e.type)
                     put("colorArgb", e.colorArgb)
                     put("isPlan", e.isPlan)
+                    if (e.repeatRule.isNotBlank()) put("repeat", e.repeatRule)
                 }
             )
         }

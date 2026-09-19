@@ -46,6 +46,9 @@ data class Credentials(val studentId: String, val password: String)
 
 object SettingsStore {
 
+    /** 内置（开发者）Key 固定使用的模型：不可修改 */
+    const val DEV_AI_MODEL = "deepseek-flash"
+
     private val KEY_STUDENT_ID = stringPreferencesKey("student_id")
     private val KEY_PASSWORD_ENC = stringPreferencesKey("password_enc")
     private val KEY_REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
@@ -186,6 +189,12 @@ object SettingsStore {
         }
         val enc = p[KEY_AI_KEY_ENC] ?: return null
         return CryptoManager.decrypt(enc)?.takeIf { it.isNotBlank() }
+    }
+
+    /** 实际用于 AI 请求的模型：使用开发者内置 Key 时固定 deepseek-flash（不可修改）；否则用用户设置 */
+    suspend fun effectiveAiModel(context: Context): String {
+        val p = context.settingsDataStore.data.first()
+        return if (p[KEY_USE_DEV_AI_KEY] ?: true) DEV_AI_MODEL else p[KEY_AI_MODEL] ?: DEV_AI_MODEL
     }
 
     suspend fun setAiModel(context: Context, model: String) {

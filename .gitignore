@@ -23,3 +23,6 @@ local.properties
 
 # ---- Android Studio 构建输出（app/release：APK/baselineProfile 等）----
 KAgenda/app/release/
+
+# ---- 临时日志文件（分析用，不入库）----
+/log.md

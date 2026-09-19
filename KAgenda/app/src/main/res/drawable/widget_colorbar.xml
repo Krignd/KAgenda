@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 小组件左侧颜色条：白色圆角矩形，运行时用 setColorFilter 染色 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <size android:width="4dp" />
+    <corners android:radius="2dp" />
+    <solid android:color="#FFFFFF" />
+</shape>

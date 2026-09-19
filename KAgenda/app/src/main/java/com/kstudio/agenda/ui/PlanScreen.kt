@@ -39,6 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
+import com.kstudio.agenda.model.FuzzyTime
+import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
 
 /** 计划页内的三种视图模式 */
@@ -124,9 +126,10 @@ private fun PlanDayView(vm: AppViewModel) {
         }
 
         val dayPlans = plans
-            .filter { it.coversDate(selected) }
-            .sortedWith(compareBy({ it.startTime.ifBlank { "00:00" } }, { it.dateEpochDay }))
+            .filter { it.occursOn(selected) }
+            .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
         LazyColumn(
+            modifier = Modifier.weight(1f).swipeStep(key = "plan-day", onStep = { vm.stepDay(it) }),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
@@ -189,10 +192,14 @@ private fun PlanWeekView(vm: AppViewModel) {
 
     val monday = selected.minusDays((selected.dayOfWeek.value - 1).toLong())
     val weekPlans = plans
-        .filter { ev -> (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
-        .sortedWith(compareBy({ it.dateEpochDay }, { it.startTime.ifBlank { "00:00" } }))
+        .filter { ev -> (0L..6L).any { off -> ev.occursOn(monday.plusDays(off)) } }
+        .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
 
-    Column(Modifier.fillMaxSize()) {
+    Column(
+        Modifier
+            .fillMaxSize()
+            .swipeStep(key = "plan-week", onStep = { vm.stepWeek(it) }),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -273,22 +280,38 @@ private fun PlanMonthView(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit) {
     var monthStart by remember { mutableStateOf(selected.withDayOfMonth(1)) }
     val today = LocalDate.now()
 
-    val planMap = remember(agendaAll, monthStart) {
-        plans
-            .filter {
-                val d = LocalDate.ofEpochDay(it.dateEpochDay)
-                d.year == monthStart.year && d.monthValue == monthStart.monthValue
-            }
-            .groupBy { it.dateEpochDay }
+    // 月份导航边界（与日程表月视图一致）：当前年份往前 4 年的 1 月 ~ 往后 4 年的 12 月
+    val monthMin = remember { LocalDate.of(today.year - 4, 1, 1) }
+    val monthMax = remember { LocalDate.of(today.year + 4, 12, 1) }
+    val shiftMonth: (Int) -> Unit = { delta ->
+        val target = monthStart.plusMonths(delta.toLong())
+        if (!target.isBefore(monthMin) && !target.isAfter(monthMax)) monthStart = target
     }
 
-    Column(Modifier.fillMaxSize()) {
+    val planMap = remember(agendaAll, monthStart) {
+        // 按天展开：普通计划只出现在开始日；带重复规则的计划逐日命中
+        val map = mutableMapOf<Long, List<AgendaEvent>>()
+        for (day in 1..monthStart.lengthOfMonth()) {
+            val d = monthStart.withDayOfMonth(day)
+            val hit = plans
+                .filter { it.occursOn(d) }
+                .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
+            if (hit.isNotEmpty()) map[d.toEpochDay()] = hit
+        }
+        map
+    }
+
+    Column(
+        Modifier
+            .fillMaxSize()
+            .swipeStep(key = "plan-month", onStep = shiftMonth),
+    ) {
         // 月份导航
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { monthStart = monthStart.minusMonths(1) }) {
+            IconButton(onClick = { shiftMonth(-1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevMonth)
             }
             Text(
@@ -296,7 +319,7 @@ private fun PlanMonthView(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit) {
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
-            IconButton(onClick = { monthStart = monthStart.plusMonths(1) }) {
+            IconButton(onClick = { shiftMonth(1) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = t.nextMonth)
             }
             Spacer(Modifier.weight(1f))

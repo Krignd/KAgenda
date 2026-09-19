@@ -70,7 +70,8 @@ object NextClassWidgetUpdater {
         val manager = AppWidgetManager.getInstance(context) ?: return
         val semester = ScheduleCache.load(context)
         AgendaStore.ensureLoaded(context)
-        val events = AgendaStore.events.value
+        // 小组件只展示「日程/课程」，不展示「计划」
+        val events = AgendaStore.events.value.filter { !it.isPlan }
         val now = LocalDateTime.now()
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 2) }.orEmpty()
@@ -111,16 +112,18 @@ object NextClassWidgetUpdater {
 
         val semester = ScheduleCache.load(context)
         AgendaStore.ensureLoaded(context)
-        val events = AgendaStore.events.value
+        // 小组件只展示「日程/课程」，不展示「计划」
+        val events = AgendaStore.events.value.filter { !it.isPlan }
         val now = LocalDateTime.now()
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 1) }.orEmpty()
-        val agendaOngoing = events.firstOrNull { it.isOngoing(now) }
-        val agendaNext = events.filter { it.startDateTime().isAfter(now) }
-            .minByOrNull { it.startDateTime() }
+        // “进行中”只适用于起止时间都精确的日程（模糊/无时间的条目仅显示倒计时）
+        val agendaOngoing = events.firstOrNull { it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now) }
+        val agendaNext = events.filter { it.anchorDateTime().isAfter(now) }
+            .minByOrNull { it.anchorDateTime() }
         val nextStarts = listOfNotNull(
             upcoming.firstOrNull()?.start,
-            agendaNext?.startDateTime(),
+            agendaNext?.anchorDateTime(),
         )
         val delayMs = when {
             current != null || agendaOngoing != null -> 60_000L
@@ -167,24 +170,33 @@ object NextClassWidgetUpdater {
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, spec.layoutRes)
 
-        // 自建日程（含计划）：进行中 / 下一项（需先算好，用于点击定位）
-        val agendaOngoing = events.firstOrNull { it.isOngoing(now) }
+        // 自建日程：进行中 / 下一项（均不含计划；“进行中”仅限起止时间都精确的条目，
+        // 模糊或无时间的条目只显示“距离还有多久”，不会显示“正在进行”）
+        val agendaOngoing = events.firstOrNull { it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now) }
         val agendaNext = events
-            .filter { it.startDateTime().isAfter(now) }
-            .minByOrNull { it.startDateTime() }
+            .filter { it.anchorDateTime().isAfter(now) }
+            .minByOrNull { it.anchorDateTime() }
 
-        // 点击小组件：打开应用并定位到“当前展示项”的日/周/月，同时闪烁对应课程/日期
+        // “下一项”是课程还是自建日程：取时间更早者（与下方展示逻辑保持一致）
+        val nextCourseStart = upcoming.firstOrNull()?.start
+        val agendaEarlier = agendaNext != null &&
+            (nextCourseStart == null || agendaNext.anchorDateTime().isBefore(nextCourseStart))
+
+        // 点击小组件：打开应用并定位到“当前展示项”的日/周/月，同时闪烁对应课程/日程
+        // （fromWidget=true：应用侧会优先定位“此刻正在进行”的课程，避免小组件状态滞后导致偏到下一节）
+        // 修复：展示“下一项”为自建日程时，点击也必须定位该日程，而不是无条件优先下一节课
         val focusTarget: Pair<LocalDate, String> = when {
             current != null -> current.date to current.course.title
             agendaOngoing != null -> LocalDate.ofEpochDay(agendaOngoing.dateEpochDay) to agendaOngoing.title
+            agendaEarlier -> agendaNext!!.date to agendaNext.title
             upcoming.firstOrNull() != null -> upcoming.first().date to upcoming.first().course.title
-            agendaNext != null -> agendaNext.startDateTime().toLocalDate() to agendaNext.title
             else -> now.toLocalDate() to ""
         }
         val openIntent = Intent(context, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             putExtra(MainActivity.EXTRA_FOCUS_EPOCH_DAY, focusTarget.first.toEpochDay())
             putExtra(MainActivity.EXTRA_FOCUS_TITLE, focusTarget.second)
+            putExtra(MainActivity.EXTRA_FOCUS_FROM_WIDGET, true)
         }
         val openPi = PendingIntent.getActivity(
             context,
@@ -204,6 +216,7 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_remaining, "")
             rv.setTextViewText(R.id.widget_next2, "")
             rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
+            applyAccent(rv, null, null)
             return rv
         }
 
@@ -249,6 +262,7 @@ object NextClassWidgetUpdater {
             )
             rv.setTextColor(R.id.widget_remaining, CoursePalette.colorFor(current.course))
             rv.setTextViewText(R.id.widget_next2, if (spec.showNext2) (nextLabel ?: "") else "")
+            applyAccent(rv, CoursePalette.colorFor(current.course), R.drawable.ic_type_course)
             return rv
         }
 
@@ -271,6 +285,7 @@ object NextClassWidgetUpdater {
                 R.id.widget_next2,
                 if (spec.showNext2) nextItemLabel(context, upcoming, agendaNext) else "",
             )
+            applyAccent(rv, agendaAccent(agendaOngoing), iconForType(agendaOngoing.type))
             return rv
         }
 
@@ -281,13 +296,12 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_remaining, "")
             rv.setTextViewText(R.id.widget_next2, "")
             rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
+            applyAccent(rv, null, null)
             return rv
         }
 
-        // ---------- 三态之二：下一项（课程与自建日程取更早者） ----------
+        // ---------- 三态之二：下一项（课程与自建日程取更早者；agendaEarlier 与点击定位保持一致） ----------
         val nextCourse = upcoming.firstOrNull()
-        val agendaEarlier = agendaNext != null &&
-            (nextCourse == null || agendaNext.startDateTime().isBefore(nextCourse.start))
         if (agendaEarlier) {
             val ev = agendaNext!!
             rv.setTextViewText(R.id.widget_title, context.getString(R.string.widget_next_agenda))
@@ -296,16 +310,19 @@ object NextClassWidgetUpdater {
                 R.id.widget_info,
                 listOfNotNull(agendaTimeLabel(context, ev), ev.location.ifBlank { null }).joinToString(" · "),
             )
-            val minutes = Duration.between(now, ev.startDateTime()).toMinutes().coerceAtLeast(0)
-            rv.setTextViewText(
-                R.id.widget_remaining,
-                if (ev.startTime.isNotBlank()) remainingText(context, minutes) else "",
-            )
+            // 有精确开始时间 → 倒计时到开始；模糊/无时间 → 只提示“距离还有多久”（今天/明天/后天/日期）
+            val remainLabel = if (ev.hasPreciseStart) {
+                remainingText(context, Duration.between(now, ev.startDateTime()).toMinutes().coerceAtLeast(0))
+            } else {
+                dayDistanceLabel(context, ev.date)
+            }
+            rv.setTextViewText(R.id.widget_remaining, remainLabel)
             rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
             rv.setTextViewText(
                 R.id.widget_next2,
                 if (spec.showNext2) nextItemLabel(context, upcoming, null) else "",
             )
+            applyAccent(rv, agendaAccent(ev), iconForType(ev.type))
             return rv
         }
 
@@ -331,6 +348,7 @@ object NextClassWidgetUpdater {
         val minutes = Duration.between(now, first.start).toMinutes().coerceAtLeast(0)
         rv.setTextViewText(R.id.widget_remaining, remainingText(context, minutes))
         rv.setTextColor(R.id.widget_remaining, CoursePalette.colorFor(first.course))
+        applyAccent(rv, CoursePalette.colorFor(first.course), R.drawable.ic_type_course)
 
         if (spec.showNext2) {
             val second = upcoming.getOrNull(1)
@@ -346,6 +364,45 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_next2, "")
         }
         return rv
+    }
+
+    /** 日程展示色（无自定义色且无类型色时回退默认蓝） */
+    private fun agendaAccent(ev: AgendaEvent): Int =
+        ev.displayColor.takeIf { it != 0 } ?: ACCENT_DEFAULT
+
+    /** 日程类型 → 小图标（无类型/未知类型用「其他」） */
+    private fun iconForType(type: String): Int = when (type.trim()) {
+        "interview" -> R.drawable.ic_type_interview
+        "contest" -> R.drawable.ic_type_contest
+        "lecture" -> R.drawable.ic_type_lecture
+        "exam" -> R.drawable.ic_type_exam
+        "meeting" -> R.drawable.ic_type_meeting
+        else -> R.drawable.ic_type_other
+    }
+
+    /** 左侧颜色条 + 类型小图标；[color]/[iconRes] 为 null 时隐藏（无数据状态） */
+    private fun applyAccent(rv: RemoteViews, color: Int?, iconRes: Int?) {
+        if (color == null || iconRes == null) {
+            rv.setViewVisibility(R.id.widget_colorbar, View.GONE)
+            rv.setViewVisibility(R.id.widget_icon, View.GONE)
+        } else {
+            rv.setViewVisibility(R.id.widget_colorbar, View.VISIBLE)
+            rv.setInt(R.id.widget_colorbar, "setColorFilter", color)
+            rv.setViewVisibility(R.id.widget_icon, View.VISIBLE)
+            rv.setImageViewResource(R.id.widget_icon, iconRes)
+            rv.setInt(R.id.widget_icon, "setColorFilter", color)
+        }
+    }
+
+    /** 天粒度倒计时（用于模糊/无具体时间的日程）：今天 / 明天 / 后天 / M/d */
+    private fun dayDistanceLabel(context: Context, date: LocalDate): String {
+        val today = LocalDate.now()
+        return when (date) {
+            today -> context.getString(R.string.widget_today)
+            today.plusDays(1) -> context.getString(R.string.widget_tomorrow)
+            today.plusDays(2) -> context.getString(R.string.widget_day_after)
+            else -> "${date.monthValue}/${date.dayOfMonth}"
+        }
     }
 
     /** 日程时间文案：今天 "08:00"，明天 "明天 08:00"，更远 "9/24 08:00"（无具体时刻时为日期/今天） */

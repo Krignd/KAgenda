@@ -11,6 +11,21 @@
     android:paddingTop="6dp"
     android:paddingBottom="6dp">
 
+    <ImageView
+        android:id="@+id/widget_colorbar"
+        android:layout_width="4dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="10dp"
+        android:scaleType="fitXY"
+        android:src="@drawable/widget_colorbar" />
+
+    <ImageView
+        android:id="@+id/widget_icon"
+        android:layout_width="22dp"
+        android:layout_height="22dp"
+        android:layout_marginEnd="8dp"
+        android:src="@drawable/ic_type_course" />
+
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"

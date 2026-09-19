@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.SyncUi
@@ -47,13 +48,14 @@ import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.CoursePalette
+import com.kstudio.agenda.model.FuzzyTime
 import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.WeekSchedule
 import com.kstudio.agenda.ui.components.EmptyState
 import com.kstudio.agenda.ui.components.StatusBanner
 import com.kstudio.agenda.ui.components.TagChip
-import com.kstudio.agenda.ui.components.rememberFlashAlpha
+import com.kstudio.agenda.ui.components.rememberFlashPulse
 import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
 import java.time.LocalTime
@@ -105,11 +107,8 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         flashDate == selected && flashTitle.isNotBlank() && title.trim() == flashTitle
     }
 
-    Column(
-        Modifier
-            .fillMaxSize()
-            .swipeStep(key = "day", onStep = { vm.stepDay(it) }),
-    ) {
+    // 外层不加滑动手势：在日期条 / 周导航上滑动不应切换日期（手势只作用于下方内容列表）
+    Column(Modifier.fillMaxSize()) {
         DayStrip(currentWeek.monday, selected, vm::selectDate, flashDate = flashDate)
 
         Row(
@@ -141,10 +140,11 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         // 显示覆盖当天的所有日程（含跨天长日程），按时间排序
         val dayEvents = agenda
             .filter { it.coversDate(selected) }
-            .sortedWith(compareBy({ it.startTime.ifBlank { "00:00" } }, { it.dateEpochDay }))
+            .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
 
         if (timetableMode) {
             LazyColumn(
+                modifier = Modifier.weight(1f).swipeStep(key = "day", onStep = { vm.stepDay(it) }),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -205,6 +205,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             // ---------------- 混合模式：课程与日程按时间混排 ----------------
             val merged = mergeDayItems(courses, dayEvents)
             LazyColumn(
+                modifier = Modifier.weight(1f).swipeStep(key = "day", onStep = { vm.stepDay(it) }),
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -283,12 +284,7 @@ private fun mergeDayItems(courses: List<Course>, events: List<AgendaEvent>): Lis
         items.add(DayItem.CourseItem(c, PeriodTimes.startOf(c.startPeriod).toSecondOfDay() / 60))
     }
     for (e in events) {
-        val mins = if (e.startTime.isNotBlank()) {
-            val h = e.startTime.substringBefore(":").toIntOrNull() ?: 0
-            val m = e.startTime.substringAfter(":", "").toIntOrNull() ?: 0
-            h * 60 + m
-        } else 0
-        items.add(DayItem.EventItem(e, mins))
+        items.add(DayItem.EventItem(e, FuzzyTime.sortKey(e.startTime).coerceAtLeast(0)))
     }
     return items.sortedWith(
         compareBy(
@@ -345,17 +341,24 @@ internal fun DayStrip(
                 else -> MaterialTheme.colorScheme.onSurface
             }
             val flashing = flashDate == date
-            val pulse = rememberFlashAlpha(flashing)
+            val pulse = rememberFlashPulse(flashing)
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(14.dp))
                     .background(bg)
+                    // 定位闪烁：底色深浅变化提醒（三下）
+                    .then(
+                        if (flashing) Modifier.background(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f + 0.42f * pulse),
+                            RoundedCornerShape(14.dp),
+                        ) else Modifier
+                    )
                     .then(
                         if (flashing) Modifier.border(
                             2.dp,
-                            MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.35f + 0.65f * pulse),
                             RoundedCornerShape(14.dp),
                         ) else Modifier
                     )
@@ -394,21 +397,31 @@ fun CourseCard(
     onClick: (() -> Unit)? = null,
 ) {
     val t = LocalStrings.current
-    val pulse = rememberFlashAlpha(flash)
+    val pulse = rememberFlashPulse(flash)
     // CoursePalette 返回 Android 原生 ARGB Int，这里转换为 Compose Color
     val color = Color(CoursePalette.colorFor(course))
+    // 卡片底色：闪烁时按课程色做“深浅变化”；平时白底 + 细描边，与页面背景区分更清晰
+    val cardColor = if (flash) {
+        color.copy(alpha = 0.10f + 0.30f * pulse).compositeOver(MaterialTheme.colorScheme.surface)
+    } else {
+        MaterialTheme.colorScheme.surface
+    }
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        color = cardColor,
+        tonalElevation = 2.dp,
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (flash) Modifier.border(
                     2.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                    color.copy(alpha = 0.35f + 0.65f * pulse),
                     RoundedCornerShape(18.dp),
-                ) else Modifier
+                ) else Modifier.border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                    RoundedCornerShape(18.dp),
+                )
             )
             .then(
                 if (onClick != null) Modifier.clip(RoundedCornerShape(18.dp)).clickable { onClick() }
@@ -482,7 +495,10 @@ internal fun SyncHint(sync: SyncUi) {
     val t = LocalStrings.current
     when (sync) {
         // 【已隐藏保留】原提示含“或点「网页登录」完成统一认证”；入口隐藏后仅保留账密登录引导
-        is SyncUi.NeedLogin -> StatusBanner(t.syncHintNeedLogin)
+        is SyncUi.NeedLogin -> StatusBanner(
+            if (sync.message.isNotBlank()) t.syncHintNeedLogin + "\n" + sync.message else t.syncHintNeedLogin,
+            isError = sync.message.isNotBlank(),
+        )
         is SyncUi.Error -> StatusBanner(sync.message, isError = true)
         is SyncUi.Running -> StatusBanner(t.syncHintRunning)
         else -> Unit

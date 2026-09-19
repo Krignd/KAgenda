@@ -21,7 +21,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 sealed interface SyncUi {
     data object Idle : SyncUi
     data object Running : SyncUi
-    data object NeedLogin : SyncUi
+    data class NeedLogin(val message: String = "") : SyncUi
     data class Success(val atMillis: Long) : SyncUi
     data class Error(val message: String) : SyncUi
 }
@@ -133,7 +133,7 @@ class ScheduleRepository private constructor(private val appContext: Context) {
 
                 is SyncResult.LoginRequired -> {
                     AppLog.w(TAG, "需要登录：${result.message}")
-                    _sync.value = SyncUi.NeedLogin
+                    _sync.value = SyncUi.NeedLogin(result.message)
                 }
 
                 is SyncResult.Failure -> {
@@ -166,7 +166,7 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                     CookieManager.getInstance().flush()
                 }
             }
-            _sync.value = SyncUi.NeedLogin
+            _sync.value = SyncUi.NeedLogin()
             AppLog.i(TAG, "已退出登录并清除网页会话 Cookie")
         }
     }

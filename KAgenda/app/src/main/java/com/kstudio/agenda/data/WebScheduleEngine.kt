@@ -102,6 +102,10 @@ class WebScheduleEngine(private val appContext: Context) {
         private const val LOGIN_PAGE_WAIT_MS = 25_000L    // 等待登录表单出现的时间
         private const val SUBMIT_JUMP_WAIT_MS = 15_000L   // 提交后等待 CAS 跳转的时间
         private const val HOME_RETRY_WAIT_MS = 45_000L    // 登录后等待课表的时间
+
+        /** 账密被明确拒绝时的统一提示（此时重试同一份凭据无意义，立即终止登录流程） */
+        private const val MSG_CREDENTIAL_ERROR =
+            "登录失败：账号或密码错误，请核对「设置」中的学号与密码后重试"
     }
 
     private var webView: WebView? = null
@@ -300,6 +304,13 @@ class WebScheduleEngine(private val appContext: Context) {
             hostOf(p.url).isNotBlank() && hostOf(p.url).endsWith(school.host)
     }
 
+    /** 登录页反馈是否为「账号或密码错误」类提示（该情况下重试同一凭据无意义，应立即终止） */
+    private fun isCredentialError(text: String): Boolean =
+        text.contains("凭据错误") || text.contains("密码错误") ||
+            text.contains("用户名或密码") || text.contains("账号或密码") ||
+            text.contains("密码不正确") || text.contains("密码有误") ||
+            text.contains("invalid", ignoreCase = true) || text.contains("incorrect", ignoreCase = true)
+
     /**
      * 执行一次完整同步（阶段化流程，全程带日志与超时保护）。
      * 必须在主线程调用（内部会自行切换）。
@@ -417,6 +428,11 @@ class WebScheduleEngine(private val appContext: Context) {
                             "登录需要验证码，暂时无法自动完成，请稍后重试"
                         )
                     }
+                    if (isCredentialError(lastError)) {
+                        // 账密被明确拒绝：重试同一份凭据无法成功，且连续尝试可能触发学校风控/锁定 → 立即终止
+                        AppLog.w(TAG, "账号或密码错误，终止登录重试")
+                        return@withContext SyncResult.LoginRequired(MSG_CREDENTIAL_ERROR)
+                    }
                     continue
                 }
 
@@ -435,15 +451,22 @@ class WebScheduleEngine(private val appContext: Context) {
                     if (homeProbe.error.isNotBlank()) {
                         lastError = homeProbe.error
                         AppLog.w(TAG, "登录失败：$lastError")
-                        if (lastError.contains("密码") || lastError.contains("验证码")) {
-                            return@withContext SyncResult.LoginRequired("登录失败：$lastError")
+                        if (lastError.contains("验证码")) {
+                            return@withContext SyncResult.LoginRequired(
+                                "登录需要验证码，暂时无法自动完成，请稍后重试"
+                            )
+                        }
+                        if (isCredentialError(lastError)) {
+                            AppLog.w(TAG, "账号或密码错误，终止登录重试")
+                            return@withContext SyncResult.LoginRequired(MSG_CREDENTIAL_ERROR)
                         }
                     }
                     // 会话未建立：此时停留在 SSO 登录页，进入下一轮自动填写
                     AppLog.w(TAG, "会话未建立，准备重试（已尝试 $attempts 次）")
                     continue
                 }
-                lastError = homeProbe?.snippet?.take(80).orEmpty()
+                // 注：不再用首页文本快照覆盖错误信息——教务系统 SPA 在会话失效时会渲染
+                // “网络异常”字样，用它当失败原因会误导用户（真实原因通常在表单校验分支）
             }
 
             if (lastError.isNotBlank()) {

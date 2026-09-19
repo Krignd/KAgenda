@@ -361,27 +361,38 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                 }
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(
-                    value = aiModel,
-                    onValueChange = { aiModel = it },
+                    value = if (settings.useDevAiKey) SettingsStore.DEV_AI_MODEL else aiModel,
+                    onValueChange = { if (!settings.useDevAiKey) aiModel = it },
                     label = { Text(t.aiModelLabel) },
                     singleLine = true,
+                    enabled = !settings.useDevAiKey,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Spacer(Modifier.height(12.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = {
-                        vm.setAiModel(aiModel)
-                        if (aiKeyInput.isNotBlank()) {
-                            vm.setAiKey(aiKeyInput.trim())
-                            aiKeyInput = ""
-                        } else {
-                            vm.message(t.aiSavedToast)
-                        }
-                    }) { Text(t.aiSave) }
-                    OutlinedButton(
-                        onClick = { vm.setAiKey(null) },
-                        enabled = settings.aiKeySet,
-                    ) { Text(t.aiClear) }
+                if (settings.useDevAiKey) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = t.aiDevModelFixed,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (!settings.useDevAiKey) {
+                    Spacer(Modifier.height(12.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = {
+                            vm.setAiModel(aiModel)
+                            if (aiKeyInput.isNotBlank()) {
+                                vm.setAiKey(aiKeyInput.trim())
+                                aiKeyInput = ""
+                            } else {
+                                vm.message(t.aiSavedToast)
+                            }
+                        }) { Text(t.aiSave) }
+                        OutlinedButton(
+                            onClick = { vm.setAiKey(null) },
+                            enabled = settings.aiKeySet,
+                        ) { Text(t.aiClear) }
+                    }
                 }
             }
         }
@@ -717,7 +728,7 @@ private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                                     msg = t.aiNeedKey
                                     return@launch
                                 }
-                                val model = SettingsStore.read(context).aiModel
+                                val model = SettingsStore.effectiveAiModel(context)
                                 val reply = AiClient.chat(
                                     apiKey = key,
                                     model = model,

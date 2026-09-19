@@ -45,7 +45,7 @@ import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.CoursePalette
 import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.SemesterSchedule
-import com.kstudio.agenda.ui.components.rememberFlashAlpha
+import com.kstudio.agenda.ui.components.rememberFlashPulse
 import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
 
@@ -189,16 +189,23 @@ internal fun MonthCell(
         date.dayOfWeek.value >= 6 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
     }
-    val pulse = rememberFlashAlpha(flash)
+    val pulse = rememberFlashPulse(flash)
     Column(
         modifier = modifier
             .height(84.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(bg)
+            // 定位闪烁：底色深浅变化提醒（三下）
+            .then(
+                if (flash) Modifier.background(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.06f + 0.34f * pulse),
+                    RoundedCornerShape(10.dp),
+                ) else Modifier
+            )
             .then(
                 if (flash) Modifier.border(
                     2.dp,
-                    MaterialTheme.colorScheme.primary.copy(alpha = pulse),
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.35f + 0.65f * pulse),
                     RoundedCornerShape(10.dp),
                 ) else Modifier
             )
@@ -236,7 +243,7 @@ internal fun MonthCell(
                         .padding(top = 2.dp)
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(4.dp))
-                        .background(color.copy(alpha = 0.16f))
+                        .background(color.copy(alpha = 0.22f))
                         .padding(horizontal = 3.dp, vertical = 1.dp),
                 ) {
                     Text(

@@ -37,7 +37,7 @@ import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.notif.StatusNotification
 import com.kstudio.agenda.ui.MainActivity
-import com.kstudio.agenda.ui.buildAgendaEvents
+import com.kstudio.agenda.data.AiAssistant
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -93,7 +93,7 @@ class FloatingBallService : Service() {
 
     private var panel: View? = null
     private var panelParams: WindowManager.LayoutParams? = null
-    private var parsedItems: List<AiSkills.AiItem> = emptyList()
+    private var parsedOps: List<AiSkills.AiOp> = emptyList()
     private var busy = false
 
     private val ballSizePx: Int get() = dp(54)
@@ -347,7 +347,7 @@ class FloatingBallService : Service() {
         addBtn.isEnabled = false
         msg.setTextColor(subColor)
         msg.visibility = View.GONE
-        parsedItems = emptyList()
+        parsedOps = emptyList()
 
         fun setMsg(text: String) {
             msg.visibility = if (text.isBlank()) View.GONE else View.VISIBLE
@@ -359,8 +359,8 @@ class FloatingBallService : Service() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: Editable?) {
-                if (parsedItems.isNotEmpty()) {
-                    parsedItems = emptyList()
+                if (parsedOps.isNotEmpty()) {
+                    parsedOps = emptyList()
                     addBtn.isEnabled = false
                     setMsg(t.qaReParse)
                 }
@@ -386,27 +386,39 @@ class FloatingBallService : Service() {
                         setMsg(t.aiNeedKey)
                         return@launch
                     }
-                    val model = SettingsStore.read(this@FloatingBallService).aiModel
+                    val model = SettingsStore.effectiveAiModel(this@FloatingBallService)
                     val reply = AiClient.chat(
                         apiKey = key,
                         model = model,
-                        systemPrompt = AiSkills.parseItemsSystemPrompt,
-                        userPrompt = AiSkills.userPrompt(text, LocalDate.now()),
+                        systemPrompt = AiSkills.assistantSystemPrompt,
+                        userPrompt = AiSkills.assistantUserPrompt(
+                            text,
+                            LocalDate.now(),
+                            AiAssistant.contextLines(AgendaStore.events.value),
+                        ),
                     )
-                    val list = AiSkills.parseItemsReply(reply)
+                    val list = AiSkills.parseOpsReply(reply)
                     if (list.isEmpty()) {
-                        parsedItems = emptyList()
+                        parsedOps = emptyList()
                         setMsg(t.qaNothing)
                     } else {
-                        parsedItems = list
+                        parsedOps = list
                         setMsg(
-                            list.joinToString("\n") { item ->
-                                val tag = if (item.isPlan) t.qaPlanTag else t.qaAgendaTag
-                                buildString {
-                                    append("[").append(tag).append("] ").append(item.title)
-                                    item.date?.let { d -> append(" · ${d.monthValue}/${d.dayOfMonth}") }
-                                    if (item.startTime.isNotBlank()) append(" ").append(item.startTime)
-                                    if (item.location.isNotBlank()) append(" · ").append(item.location)
+                            list.joinToString("\n") { op ->
+                                val badge = when (op) {
+                                    is AiSkills.AiOp.Add -> t.opAdd
+                                    is AiSkills.AiOp.Update -> t.opUpdate
+                                    is AiSkills.AiOp.Delete -> t.opDelete
+                                }
+                                "[$badge] " + when (op) {
+                                    is AiSkills.AiOp.Add -> buildString {
+                                        append(op.item.title)
+                                        op.item.date?.let { d -> append(" · ${d.monthValue}/${d.dayOfMonth}") }
+                                        if (op.item.startTime.isNotBlank()) append(" ").append(op.item.startTime)
+                                        if (op.item.endTime.isNotBlank()) append("-").append(op.item.endTime)
+                                    }
+                                    is AiSkills.AiOp.Update -> op.matchTitle
+                                    is AiSkills.AiOp.Delete -> op.matchTitle
                                 }
                             }
                         )
@@ -416,25 +428,29 @@ class FloatingBallService : Service() {
                 } finally {
                     busy = false
                     parseBtn.isEnabled = true
-                    addBtn.isEnabled = parsedItems.isNotEmpty()
+                    addBtn.isEnabled = parsedOps.isNotEmpty()
                 }
             }
         }
         addBtn.setOnClickListener {
-            val list = parsedItems
+            val list = parsedOps
             if (list.isEmpty() || busy) return@setOnClickListener
             busy = true
             addBtn.isEnabled = false
             scope.launch {
                 try {
-                    val events = buildAgendaEvents(list)
-                    withContext(Dispatchers.IO) {
-                        events.forEach { AgendaStore.upsert(this@FloatingBallService, it) }
+                    val r = withContext(Dispatchers.IO) {
+                        val result = AiAssistant.apply(this@FloatingBallService, list)
                         runCatching { StatusNotification.refresh(this@FloatingBallService) }
                         runCatching { NextClassWidgetUpdater.updateAndSchedule(this@FloatingBallService) }
+                        result
                     }
-                    Toast.makeText(this@FloatingBallService, t.qaAdded(events.size), Toast.LENGTH_SHORT).show()
-                    parsedItems = emptyList()
+                    Toast.makeText(
+                        this@FloatingBallService,
+                        t.qaOpsDone(r.added, r.updated, r.deleted, r.unmatched),
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                    parsedOps = emptyList()
                     hidePanel()
                 } finally {
                     busy = false
@@ -473,7 +489,7 @@ class FloatingBallService : Service() {
         val v = panel ?: return
         panel = null
         panelParams = null
-        parsedItems = emptyList()
+        parsedOps = emptyList()
         runCatching { windowManager.removeView(v) }
     }
 

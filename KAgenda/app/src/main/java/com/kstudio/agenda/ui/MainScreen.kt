@@ -125,7 +125,13 @@ fun MainScreen(
         val l = launch ?: return@LaunchedEffect
         tab = HomeTab.Schedule
         if (l.quickAdd) showQuickAdd = true
-        l.focusEpochDay?.let { day -> vm.requestFocus(LocalDate.ofEpochDay(day), l.focusTitle) }
+        l.focusEpochDay?.let { day ->
+            val date = LocalDate.ofEpochDay(day)
+            // 小组件点击：优先定位“此刻正在进行”的课程（小组件状态可能滞后），
+            // 没有正在进行的课程时再按小组件传来的目标定位
+            if (l.fromWidget) vm.focusFromWidget(date, l.focusTitle)
+            else vm.requestFocus(date, l.focusTitle)
+        }
         onLaunchHandled()
     }
 
@@ -146,10 +152,14 @@ fun MainScreen(
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
                             )
-                            SyncUi.NeedLogin -> Text(
-                                t.syncNotLoggedIn,
+                            is SyncUi.NeedLogin -> Text(
+                                text = s.message.ifBlank { t.syncNotLoggedIn },
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (s.message.isBlank()) {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                } else {
+                                    MaterialTheme.colorScheme.error
+                                },
                             )
                             SyncUi.Running -> Text(
                                 t.syncRunning,

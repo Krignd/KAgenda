@@ -40,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +49,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -64,7 +66,8 @@ import com.kstudio.agenda.model.WeekSchedule
 import com.kstudio.agenda.ui.components.EmptyState
 import com.kstudio.agenda.ui.components.InfoLine
 import com.kstudio.agenda.ui.components.TagChip
-import com.kstudio.agenda.ui.components.rememberFlashAlpha
+import com.kstudio.agenda.ui.components.rememberFlashPulse
+import com.kstudio.agenda.ui.components.pinchZoom
 import com.kstudio.agenda.ui.components.swipeStep
 import kotlinx.coroutines.delay
 import java.time.LocalDate
@@ -104,6 +107,9 @@ fun WeekScreen(
     var selected by remember { mutableStateOf<Course?>(null) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
+    // 双指缩放（0.7x~2x）；默认列宽：课程表模式一屏显示周一到周五，时间线模式一屏显示周一至周日
+    val screenW = LocalConfiguration.current.screenWidthDp.dp
+    var zoom by rememberSaveable { mutableStateOf(1f) }
 
     val currentWeek = week
     if (currentWeek == null) {
@@ -120,8 +126,9 @@ fun WeekScreen(
     // 日程表页只展示「日程」（「计划」页的个人计划不在此混排）
     val agenda = agendaAll.filter { !it.isPlan }
 
-    // 闪烁反馈目标（通知/小组件定位进入）：闪烁对应日期表头
+    // 闪烁反馈目标（通知/小组件定位进入）：闪烁对应日期表头，命中标题时对应课程块/日程卡一并闪烁
     val flashDate = flash?.let { LocalDate.ofEpochDay(it.epochDay) }
+    val flashTitle = flash?.title.orEmpty()
 
     Column(Modifier.fillMaxSize()) {
         Row(
@@ -149,13 +156,16 @@ fun WeekScreen(
         }
 
         // 纵向滚动容器：周网格 + 本周日程同屏滚动（滚动位置由页面级保持）
-        // 横向滑动切周：仅当内层网格已滑到边界（还能滑的方向不抢手势）时生效
         Column(
             Modifier
                 .fillMaxSize()
+                .pinchZoom { f -> zoom = (zoom * f).coerceIn(0.7f, 2f) }
                 .verticalScroll(contentScroll)
-                .swipeStep(
-                    key = "week",
+        ) {
+            // 周网格区：先在内层横向滚动；已滑到边界时继续横滑才切周
+            Column(
+                Modifier.swipeStep(
+                    key = "week-grid",
                     canStep = { dir ->
                         val max = gridScroll.maxValue
                         when {
@@ -166,19 +176,39 @@ fun WeekScreen(
                     },
                     onStep = { vm.stepWeek(it) },
                 )
-        ) {
-            if (timetableMode) {
-                WeekGrid(currentWeek, gridScroll, flashDate = flashDate) { selected = it }
-            } else {
-                WeekTimelineGrid(currentWeek, gridScroll, flashDate = flashDate) { selected = it }
+            ) {
+                if (timetableMode) {
+                    WeekGrid(
+                        week = currentWeek,
+                        hScroll = gridScroll,
+                        screenW = screenW,
+                        zoom = zoom,
+                        flashDate = flashDate,
+                        flashTitle = flashTitle,
+                    ) { selected = it }
+                } else {
+                    WeekTimelineGrid(
+                        week = currentWeek,
+                        hScroll = gridScroll,
+                        screenW = screenW,
+                        zoom = zoom,
+                        flashDate = flashDate,
+                        flashTitle = flashTitle,
+                    ) { selected = it }
+                }
             }
 
             // ---------------- 我的日程（本周，按时间排序） ----------------
+            // 该区域内横滑始终切换周（不在课表上，无需让横向滚动先消费）
             val monday = currentWeek.monday
             val weekEvents = agenda
                 .filter { ev -> (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
-                .sortedWith(compareBy({ it.dateEpochDay }, { it.startTime.ifBlank { "00:00" } }))
-            Column(Modifier.padding(horizontal = 16.dp)) {
+                .sortedWith(compareBy({ it.dateEpochDay }, { com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
+            Column(
+                Modifier
+                    .swipeStep(key = "week-agenda", onStep = { vm.stepWeek(it) })
+                    .padding(horizontal = 16.dp)
+            ) {
                 Spacer(Modifier.height(10.dp))
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -204,6 +234,8 @@ fun WeekScreen(
                         AgendaCard(
                             event = ev,
                             dateLabel = "${d.monthValue}/${d.dayOfMonth} ${t.weekdayShort(d.dayOfWeek.value)}",
+                            flash = flashDate != null && flashTitle.isNotBlank() &&
+                                ev.title.trim() == flashTitle && ev.coversDate(flashDate),
                             onClick = {
                                 editing = ev
                                 editorOpen = true
@@ -277,14 +309,14 @@ private fun WeekHeaderRow(week: WeekSchedule, timeColWidth: Dp, dayWidth: Dp, fl
                 else -> MaterialTheme.colorScheme.onSurfaceVariant
             }
             val flashing = flashDate == date
-            val pulse = rememberFlashAlpha(flashing)
+            val pulse = rememberFlashPulse(flashing)
             Column(
                 modifier = Modifier
                     .width(dayWidth)
                     .height(58.dp)
                     .then(
                         if (flashing) Modifier.background(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.16f + 0.26f * pulse),
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f + 0.42f * pulse),
                             RoundedCornerShape(10.dp),
                         ) else Modifier
                     ),
@@ -318,12 +350,16 @@ private fun WeekHeaderRow(week: WeekSchedule, timeColWidth: Dp, dayWidth: Dp, fl
 private fun WeekGrid(
     week: WeekSchedule,
     hScroll: ScrollState,
+    screenW: Dp,
+    zoom: Float,
     flashDate: LocalDate? = null,
+    flashTitle: String = "",
     onSelect: (Course) -> Unit,
 ) {
-    val rowHeight = 58.dp
-    val dayWidth = 100.dp
+    // 默认：课程表模式按“手机宽度刚好显示周一到周五”计算列宽；双指缩放可调整（0.7x~2x）
+    val rowHeight = 58.dp * zoom
     val timeColWidth = 52.dp
+    val dayWidth = ((screenW - timeColWidth) / 5f) * zoom
 
     // 注意：纵向滚动交给外层容器（周网格与「我的日程」同屏滚动），这里只保留横向滚动
     Column(
@@ -363,12 +399,14 @@ private fun WeekGrid(
                         }
                     }
                 }
-                // 7 天课程列
+                // 7 天课程列（定位闪烁：命中日期+标题的课程块底色深浅变化）
                 for (d in 1..7) {
+                    val dayDate = week.dateOfWeekday(d)
                     DayColumn(
                         courses = week.coursesOfDay(d),
                         width = dayWidth,
                         rowHeight = rowHeight,
+                        flashTitle = if (flashDate == dayDate) flashTitle else "",
                         onSelect = onSelect,
                     )
                 }
@@ -420,6 +458,7 @@ private fun DayColumn(
     courses: List<Course>,
     width: Dp,
     rowHeight: Dp,
+    flashTitle: String = "",
     onSelect: (Course) -> Unit,
 ) {
     // 空档与课程块的位置一次性算好：空档用 Canvas 一次绘制，课程块绝对定位，
@@ -454,6 +493,8 @@ private fun DayColumn(
         for ((course, row, span) in layout.second) {
             // CoursePalette 返回 Android 原生 ARGB Int，这里转换为 Compose Color
             val color = Color(CoursePalette.colorFor(course))
+            val flashing = flashTitle.isNotBlank() && course.title.trim() == flashTitle
+            val pulse = rememberFlashPulse(flashing)
             Box(
                 Modifier
                     .offset(y = rowHeight * row)
@@ -461,7 +502,7 @@ private fun DayColumn(
                     .height(rowHeight * span)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(color.copy(alpha = 0.16f))
+                    .background(color.copy(alpha = 0.22f + if (flashing) 0.33f * pulse else 0f))
                     .clickable { onSelect(course) }
                     .padding(6.dp)
             ) {
@@ -517,11 +558,15 @@ private data class MinuteRange(val start: Int, val end: Int)
 private fun WeekTimelineGrid(
     week: WeekSchedule,
     hScroll: ScrollState,
+    screenW: Dp,
+    zoom: Float,
     flashDate: LocalDate? = null,
+    flashTitle: String = "",
     onSelect: (Course) -> Unit,
 ) {
+    // 默认：时间线模式按“手机宽度刚好显示周一至周日”计算列宽；双指缩放只横向缩放（竖向保持 0.85dp/分）
     val timeColWidth = 56.dp
-    val dayWidth = 100.dp
+    val dayWidth = ((screenW - timeColWidth) / 7f) * zoom
     val totalH = ((DAY_END_MIN - DAY_START_MIN) * MINUTE_SCALE).dp
 
     Column(
@@ -546,12 +591,14 @@ private fun WeekTimelineGrid(
                         )
                     }
                 }
-                // 7 天时间线列
+                // 7 天时间线列（定位闪烁：命中日期+标题的课程块底色深浅变化）
                 for (d in 1..7) {
+                    val dayDate = week.dateOfWeekday(d)
                     TimelineDayColumn(
                         courses = week.coursesOfDay(d),
                         width = dayWidth,
                         height = totalH,
+                        flashTitle = if (flashDate == dayDate) flashTitle else "",
                         onSelect = onSelect,
                     )
                 }
@@ -604,6 +651,7 @@ private fun TimelineDayColumn(
     courses: List<Course>,
     width: Dp,
     height: Dp,
+    flashTitle: String = "",
     onSelect: (Course) -> Unit,
 ) {
     // 休息时段 = 当日时间范围内未被课程覆盖的部分（含午休、晚休与课间）
@@ -667,6 +715,8 @@ private fun TimelineDayColumn(
             val mins = e - s
             val blockH = (mins * MINUTE_SCALE).dp
             val color = Color(CoursePalette.colorFor(course))
+            val flashing = flashTitle.isNotBlank() && course.title.trim() == flashTitle
+            val pulse = rememberFlashPulse(flashing)
             Box(
                 Modifier
                     .offset(y = ((s - DAY_START_MIN) * MINUTE_SCALE).dp)
@@ -674,7 +724,7 @@ private fun TimelineDayColumn(
                     .height(blockH)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(color.copy(alpha = 0.16f))
+                    .background(color.copy(alpha = 0.22f + if (flashing) 0.33f * pulse else 0f))
                     .clickable { onSelect(course) }
                     .padding(5.dp)
             ) {

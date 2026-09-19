@@ -28,6 +28,7 @@ data class LaunchRequest(
     val quickAdd: Boolean,
     val focusEpochDay: Long?,
     val focusTitle: String,
+    val fromWidget: Boolean = false,
     val id: Long = System.nanoTime(),
 )
 
@@ -79,16 +80,19 @@ class MainActivity : ComponentActivity() {
             quickAdd = quickAdd,
             focusEpochDay = focusDay,
             focusTitle = intent.getStringExtra(EXTRA_FOCUS_TITLE).orEmpty(),
+            fromWidget = intent.getBooleanExtra(EXTRA_FOCUS_FROM_WIDGET, false),
         )
         // 消费后清除 extras：避免旋转/恢复时重复触发快速添加或闪烁
         intent.removeExtra(EXTRA_QUICK_ADD)
         intent.removeExtra(EXTRA_FOCUS_EPOCH_DAY)
         intent.removeExtra(EXTRA_FOCUS_TITLE)
+        intent.removeExtra(EXTRA_FOCUS_FROM_WIDGET)
     }
 
     companion object {
         const val EXTRA_QUICK_ADD = "com.kstudio.agenda.extra.QUICK_ADD"
         const val EXTRA_FOCUS_EPOCH_DAY = "com.kstudio.agenda.extra.FOCUS_EPOCH_DAY"
         const val EXTRA_FOCUS_TITLE = "com.kstudio.agenda.extra.FOCUS_TITLE"
+        const val EXTRA_FOCUS_FROM_WIDGET = "com.kstudio.agenda.extra.FOCUS_FROM_WIDGET"
     }
 }

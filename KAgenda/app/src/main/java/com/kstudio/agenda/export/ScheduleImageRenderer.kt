@@ -315,7 +315,7 @@ object ScheduleImageRenderer {
                     ?.forEach { bars.add(it.title to CoursePalette.colorFor(it)) }
             }
             events.filter { it.coversDate(date) }
-                .sortedWith(compareBy({ it.startTime.ifBlank { "00:00" } }))
+                .sortedWith(compareBy({ com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
                 .forEach {
                     // 时间标记：有开始时间时以 "HH:mm 标题" 完整展示
                     val label = if (it.startTime.isNotBlank()) "${it.startTime} ${it.title}" else it.title

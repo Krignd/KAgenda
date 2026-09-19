@@ -34,6 +34,8 @@ data class AgendaEvent(
     val colorArgb: Int = 0,
     /** true=「计划」页的个人计划；false=「日程表」的日程 */
     val isPlan: Boolean = false,
+    /** 重复规则 token（见 [RepeatRules]；空串=不重复；仅短日程使用） */
+    val repeatRule: String = "",
 ) {
     val date: LocalDate get() = LocalDate.ofEpochDay(dateEpochDay)
 
@@ -59,6 +61,21 @@ data class AgendaEvent(
             }
         } else timeLabel
 
+    /** 开始时间是否为精确 "HH:mm"（模糊时间词或空串都返回 false） */
+    val hasPreciseStart: Boolean get() = FuzzyTime.isPrecise(startTime)
+
+    /** 结束时间是否为精确 "HH:mm" */
+    val hasPreciseEnd: Boolean get() = FuzzyTime.isPrecise(endTime)
+
+    /**
+     * 小组件排序/倒计时用的锚点时刻：
+     * 精确或模糊都能给出大致时间；完全没有时间时按当天 23:59（让同日“有具体时间”的条目优先）。
+     */
+    fun anchorDateTime(): LocalDateTime =
+        date.atTime(
+            FuzzyTime.minutesOf(startTime)?.let { LocalTime.of(it / 60, it % 60) } ?: LocalTime.of(23, 59)
+        )
+
     fun startDateTime(): LocalDateTime = date.atTime(parseTime(startTime) ?: LocalTime.MIN)
 
     fun endDateTime(): LocalDateTime = endDate.atTime(parseTime(endTime) ?: LocalTime.MAX)
@@ -74,6 +91,13 @@ data class AgendaEvent(
         val end = maxOf(dateEpochDay, endDateEpochDay ?: dateEpochDay)
         return day in start..end
     }
+
+    /**
+     * 该事件是否“出现在”指定日期：
+     * 无重复时等同 [coversDate]；有重复规则（短日程）时 = 从开始日期起按规则命中的日期。
+     */
+    fun occursOn(d: LocalDate): Boolean =
+        if (repeatRule.isBlank()) coversDate(d) else RepeatRules.occursOn(date, repeatRule, d)
 
     /** 展示颜色（0 表示未指定，由 UI 决定默认色） */
     val displayColor: Int
