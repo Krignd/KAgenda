@@ -127,6 +127,15 @@ interface AppStrings {
     val colorAuto: String
     val segShort: String
     val segLong: String
+    val segShortPlan: String
+    val segLongPlan: String
+    val secTimelineRange: String
+    val secTimelineRangeSub: String
+    val labelNextDay: String
+    val secWidget: String
+    val secWidgetSub: String
+    val widgetPinHint: String
+    val widgetPinUnsupported: String
     val fieldDate: String
     val fieldStartTime: String
     val fieldEndTime: String
@@ -494,6 +503,15 @@ object ZhStrings : AppStrings {
     override val colorAuto = "自动"
     override val segShort = "短日程"
     override val segLong = "长日程"
+    override val segShortPlan = "短计划"
+    override val segLongPlan = "长计划"
+    override val secTimelineRange = "时间线显示范围"
+    override val secTimelineRangeSub = "非课程表模式下周视图的起止时间；结束早于开始表示跨到次日（默认 06:00 – 次日 02:00）"
+    override val labelNextDay = "次日"
+    override val secWidget = "小组件"
+    override val secWidgetSub = "一键把课表小组件添加到桌面"
+    override val widgetPinHint = "点选尺寸即可添加到桌面；若桌面不支持应用内添加，可长按桌面空白处从小组件列表中选择「K日程」"
+    override val widgetPinUnsupported = "当前桌面不支持应用内快捷添加：请长按桌面空白处，从小组件列表中添加 K日程"
     override val fieldDate = "日期"
     override val fieldStartTime = "开始时间"
     override val fieldEndTime = "结束时间"
@@ -547,11 +565,11 @@ object ZhStrings : AppStrings {
     override val parsePartial = "部分识别成功，请补充缺失项"
     override val parseFail = "未识别到有效信息，请手动填写"
 
-    override fun ongoingHeader(n: Int) = "正在进行的长日程（${n}）"
-    override val ongoingEmptyTitle = "暂无正在进行的长日程"
+    override fun ongoingHeader(n: Int) = "正在进行的长日程或长计划（${n}）"
+    override val ongoingEmptyTitle = "暂无正在进行的长日程或长计划"
     override val ongoingEmptyHint =
-        "长日程用于跨天的时间段（如考试报名 9/10 10:00 ~ 10/30 22:00）。" +
-            "可在「日程表」或「计划」页点「添加」按钮，选择“长日程”创建。"
+        "长日程或长计划用于跨天的时间段（如考试报名 9/10 10:00 ~ 10/30 22:00）。" +
+            "可在「日程表」或「计划」页点「添加」按钮，选择「长日程」或「长计划」创建。"
     override fun remaining(days: Long, hours: Long, mins: Long): String = when {
         days > 0 -> "剩余 ${days}天${hours}小时"
         hours > 0 -> "剩余 ${hours}小时${mins}分"
@@ -897,6 +915,15 @@ object EnStrings : AppStrings {
     override val colorAuto = "Auto"
     override val segShort = "Single day"
     override val segLong = "Long term"
+    override val segShortPlan = "Short plan"
+    override val segLongPlan = "Long plan"
+    override val secTimelineRange = "Timeline range"
+    override val secTimelineRangeSub = "Start/end of the week timeline (non-timetable mode). An end earlier than the start wraps to the next day (default 06:00 – 02:00 next day)"
+    override val labelNextDay = "next day"
+    override val secWidget = "Widget"
+    override val secWidgetSub = "Pin a timetable widget to the home screen"
+    override val widgetPinHint = "Tap a size to pin it; if your launcher doesn't support in-app pinning, long-press the home screen and add K Agenda from the widget list"
+    override val widgetPinUnsupported = "In-app pinning isn't supported by your launcher — long-press the home screen and add K Agenda from the widget list"
     override val fieldDate = "Date"
     override val fieldStartTime = "Start time"
     override val fieldEndTime = "End time"
@@ -949,11 +976,11 @@ object EnStrings : AppStrings {
     override val parsePartial = "Partially recognized — complete the missing fields"
     override val parseFail = "Could not recognize — please fill in manually"
 
-    override fun ongoingHeader(n: Int) = "Ongoing long events (${n})"
-    override val ongoingEmptyTitle = "No ongoing long events"
+    override fun ongoingHeader(n: Int) = "Ongoing long events / plans (${n})"
+    override val ongoingEmptyTitle = "No ongoing long events or plans"
     override val ongoingEmptyHint =
-        "Long events span multiple days (e.g. exam registration 9/10 10:00 – 10/30 22:00). " +
-            "Create one from Schedule or Plans with \"Long term\" selected."
+        "Long events or plans span multiple days (e.g. exam registration 9/10 10:00 – 10/30 22:00). " +
+            "Create one from Schedule or Plans with \"Long term\" / \"Long plan\" selected."
     override fun remaining(days: Long, hours: Long, mins: Long): String = when {
         days > 0 -> "${days}d ${hours}h left"
         hours > 0 -> "${hours}h ${mins}m left"
@@ -1300,6 +1327,15 @@ object FrStrings : AppStrings {
     override val colorAuto = "Auto"
     override val segShort = "Un jour"
     override val segLong = "Longue durée"
+    override val segShortPlan = "Plan court"
+    override val segLongPlan = "Plan long"
+    override val secTimelineRange = "Plage de la frise"
+    override val secTimelineRangeSub = "Heures de début/fin de la frise hebdomadaire (mode emploi du temps désactivé). Une fin antérieure au début passe au lendemain (par défaut 06:00 – 02:00 le lendemain)"
+    override val labelNextDay = "lendemain"
+    override val secWidget = "Widget"
+    override val secWidgetSub = "Épingler un widget d'emploi du temps à l'accueil"
+    override val widgetPinHint = "Touchez une taille pour l'épingler ; si votre lanceur ne le permet pas, appuyez longuement sur l'écran d'accueil et ajoutez K Agenda depuis la liste des widgets"
+    override val widgetPinUnsupported = "L'épinglage depuis l'appli n'est pas pris en charge — appuyez longuement sur l'accueil et ajoutez K Agenda depuis la liste des widgets"
     override val fieldDate = "Date"
     override val fieldStartTime = "Début"
     override val fieldEndTime = "Fin"
@@ -1352,11 +1388,11 @@ object FrStrings : AppStrings {
     override val parsePartial = "Partiellement reconnu — complétez les champs manquants"
     override val parseFail = "Non reconnu — saisissez manuellement"
 
-    override fun ongoingHeader(n: Int) = "Événements longs en cours (${n})"
-    override val ongoingEmptyTitle = "Aucun événement long en cours"
+    override fun ongoingHeader(n: Int) = "Événements longs / plans en cours (${n})"
+    override val ongoingEmptyTitle = "Aucun événement long ni plan en cours"
     override val ongoingEmptyHint =
-        "Les événements longs couvrent plusieurs jours (ex. inscription 9/10 10:00 – 10/30 22:00). " +
-            "Créez-en un depuis Agenda ou Plans en choisissant « Longue durée »."
+        "Les événements longs ou plans couvrent plusieurs jours (ex. inscription 9/10 10:00 – 10/30 22:00). " +
+            "Créez-en un depuis Agenda ou Plans en choisissant « Longue durée » ou « Plan long »."
     override fun remaining(days: Long, hours: Long, mins: Long): String = when {
         days > 0 -> "Reste ${days} j ${hours} h"
         hours > 0 -> "Reste ${hours} h ${mins} min"

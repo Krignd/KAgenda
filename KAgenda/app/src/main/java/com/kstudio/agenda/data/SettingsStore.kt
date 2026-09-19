@@ -39,7 +39,18 @@ data class AppSettings(
     val statusNotifSources: String = "course,plan,agenda",
     /** 系统悬浮球（需「显示在其他应用上层」权限） */
     val floatingBall: Boolean = false,
-)
+    /** 时间线模式（非课程表）显示范围：起止分钟数（0~1439；结束 ≤ 开始表示跨到次日，如 06:00–次日 02:00） */
+    val timelineStartMinutes: Int = 6 * 60,
+    val timelineEndMinutes: Int = 2 * 60,
+) {
+    /** 时间线实际显示窗口（分钟）：结束时间 ≤ 开始时间时视为跨到次日（end 可 > 1440） */
+    val timelineWindow: Pair<Int, Int>
+        get() {
+            val s = timelineStartMinutes
+            val e = if (timelineEndMinutes <= s) timelineEndMinutes + 24 * 60 else timelineEndMinutes
+            return s to e
+        }
+}
 
 /** 登录凭据 */
 data class Credentials(val studentId: String, val password: String)
@@ -66,6 +77,8 @@ object SettingsStore {
     private val KEY_STATUS_ENABLED = booleanPreferencesKey("status_notif_enabled")
     private val KEY_STATUS_SOURCES = stringPreferencesKey("status_notif_sources")
     private val KEY_FLOATING_BALL = booleanPreferencesKey("floating_ball")
+    private val KEY_TIMELINE_START = intPreferencesKey("timeline_start_minutes")
+    private val KEY_TIMELINE_END = intPreferencesKey("timeline_end_minutes")
 
     fun settingsFlow(context: Context): Flow<AppSettings> = context.settingsDataStore.data.map { p ->
         AppSettings(
@@ -86,6 +99,8 @@ object SettingsStore {
             statusNotifEnabled = p[KEY_STATUS_ENABLED] ?: false,
             statusNotifSources = p[KEY_STATUS_SOURCES] ?: "course,plan,agenda",
             floatingBall = p[KEY_FLOATING_BALL] ?: false,
+            timelineStartMinutes = (p[KEY_TIMELINE_START] ?: 6 * 60).coerceIn(0, 1439),
+            timelineEndMinutes = (p[KEY_TIMELINE_END] ?: 2 * 60).coerceIn(0, 1439),
         )
     }
 
@@ -144,6 +159,15 @@ object SettingsStore {
 
     suspend fun setTimetableMode(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_TIMETABLE_MODE] = enabled }
+    }
+
+    /** 时间线显示范围：开始/结束时间（分钟，0~1439；结束 ≤ 开始表示跨到次日） */
+    suspend fun setTimelineStart(context: Context, minutes: Int) {
+        context.settingsDataStore.edit { it[KEY_TIMELINE_START] = minutes.coerceIn(0, 1439) }
+    }
+
+    suspend fun setTimelineEnd(context: Context, minutes: Int) {
+        context.settingsDataStore.edit { it[KEY_TIMELINE_END] = minutes.coerceIn(0, 1439) }
     }
 
     suspend fun setAppLanguage(context: Context, tag: String) {

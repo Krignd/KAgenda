@@ -103,6 +103,7 @@ fun WeekScreen(
     val sync by vm.syncState.collectAsState()
     val agendaAll by vm.agenda.collectAsState()
     val selDate by vm.selectedDate.collectAsState()
+    val settings by vm.settings.collectAsState()
     val t = LocalStrings.current
     var selected by remember { mutableStateOf<Course?>(null) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
@@ -187,11 +188,15 @@ fun WeekScreen(
                         flashTitle = flashTitle,
                     ) { selected = it }
                 } else {
+                    // 时间线显示范围可在「设置 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
+                    val (timelineStartMin, timelineEndMin) = settings.timelineWindow
                     WeekTimelineGrid(
                         week = currentWeek,
                         hScroll = gridScroll,
                         screenW = screenW,
                         zoom = zoom,
+                        startMin = timelineStartMin,
+                        endMin = timelineEndMin,
                         flashDate = flashDate,
                         flashTitle = flashTitle,
                     ) { selected = it }
@@ -541,8 +546,6 @@ private fun DayColumn(
 
 // ---------------------------------------------------------------- 时间线网格（非课程表模式）
 
-private const val DAY_START_MIN = 8 * 60          // 08:00
-private const val DAY_END_MIN = 22 * 60 + 15      // 22:15
 private const val MINUTE_SCALE = 0.85f            // 每 1 分钟 ≈ 0.85dp，方格大小与持续时间成正比
 
 private data class MinuteRange(val start: Int, val end: Int)
@@ -560,6 +563,8 @@ private fun WeekTimelineGrid(
     hScroll: ScrollState,
     screenW: Dp,
     zoom: Float,
+    startMin: Int,
+    endMin: Int,
     flashDate: LocalDate? = null,
     flashTitle: String = "",
     onSelect: (Course) -> Unit,
@@ -567,7 +572,9 @@ private fun WeekTimelineGrid(
     // 默认：时间线模式按“手机宽度刚好显示周一至周日”计算列宽；双指缩放只横向缩放（竖向保持 0.85dp/分）
     val timeColWidth = 56.dp
     val dayWidth = ((screenW - timeColWidth) / 7f) * zoom
-    val totalH = ((DAY_END_MIN - DAY_START_MIN) * MINUTE_SCALE).dp
+    val totalH = ((endMin - startMin) * MINUTE_SCALE).dp
+    // 首个整点刻度（起始恰为整点时从该整点开始）
+    val firstHour = (startMin + 59) / 60
 
     Column(
         Modifier
@@ -581,14 +588,16 @@ private fun WeekTimelineGrid(
             Row {
                 // 整点刻度列
                 Box(Modifier.width(timeColWidth).height(totalH)) {
-                    for (h in 8..22) {
-                        val y = ((h * 60 - DAY_START_MIN) * MINUTE_SCALE).dp
+                    var h = firstHour
+                    while (h * 60 <= endMin) {
+                        val y = ((h * 60 - startMin) * MINUTE_SCALE).dp
                         Text(
                             text = "%02d:00".format(h),
                             modifier = Modifier.offset(x = 4.dp, y = y - 6.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                         )
+                        h++
                     }
                 }
                 // 7 天时间线列（定位闪烁：命中日期+标题的课程块底色深浅变化）
@@ -598,6 +607,8 @@ private fun WeekTimelineGrid(
                         courses = week.coursesOfDay(d),
                         width = dayWidth,
                         height = totalH,
+                        startMin = startMin,
+                        endMin = endMin,
                         flashTitle = if (flashDate == dayDate) flashTitle else "",
                         onSelect = onSelect,
                     )
@@ -613,30 +624,32 @@ private fun WeekTimelineGrid(
                     .height(totalH)
             ) {
                 val lineH = 0.5.dp.toPx()
-                for (h in 8..22) {
-                    val y = ((h * 60 - DAY_START_MIN) * MINUTE_SCALE).dp.toPx()
+                var h = firstHour
+                while (h * 60 <= endMin) {
+                    val y = ((h * 60 - startMin) * MINUTE_SCALE).dp.toPx()
                     drawRect(
                         color = lineColor,
                         topLeft = Offset(0f, y),
                         size = Size(size.width, lineH),
                     )
+                    h++
                 }
             }
 
             // ---------------- 当前时间横线（今天在本周时显示；计时器只重组线条本身） ----------------
-            TimelineNowLine(week, dayWidth, timeColWidth)
+            TimelineNowLine(week, dayWidth, timeColWidth, startMin, endMin)
         }
     }
 }
 
 /** 时间线模式当前时刻横线：自持 30 秒计时器，定时刷新只重组这一小块 */
 @Composable
-private fun TimelineNowLine(week: WeekSchedule, dayWidth: Dp, timeColWidth: Dp) {
+private fun TimelineNowLine(week: WeekSchedule, dayWidth: Dp, timeColWidth: Dp, startMin: Int, endMin: Int) {
     val today = LocalDate.now()
     if (!week.containsDate(today)) return
     val nowMin = rememberNowMinutes()
-    if (nowMin !in DAY_START_MIN..DAY_END_MIN) return
-    val nowY = ((nowMin - DAY_START_MIN) * MINUTE_SCALE).dp
+    if (nowMin < startMin || nowMin > endMin) return
+    val nowY = ((nowMin - startMin) * MINUTE_SCALE).dp
     Box(
         Modifier
             .offset(x = timeColWidth + dayWidth * (today.dayOfWeek.value - 1), y = nowY)
@@ -651,21 +664,30 @@ private fun TimelineDayColumn(
     courses: List<Course>,
     width: Dp,
     height: Dp,
+    startMin: Int,
+    endMin: Int,
     flashTitle: String = "",
     onSelect: (Course) -> Unit,
 ) {
-    // 休息时段 = 当日时间范围内未被课程覆盖的部分（含午休、晚休与课间）
-    val rests = remember(courses) {
-        val sorted = courses.sortedBy { it.startPeriod }
-        val result = mutableListOf<MinuteRange>()
-        var cursor = DAY_START_MIN
-        for (c in sorted) {
+    // 与显示范围求交后的课程区间（完全在范围外的课程不显示；跨范围的裁剪到范围内）
+    val ranges = remember(courses, startMin, endMin) {
+        courses.mapNotNull { c ->
             val s = PeriodTimes.startOf(c.startPeriod).toSecondOfDay() / 60
             val e = PeriodTimes.endOf(c.endPeriod).toSecondOfDay() / 60
-            if (s > cursor) result.add(MinuteRange(cursor, minOf(s, DAY_END_MIN)))
+            val cs = maxOf(s, startMin)
+            val ce = minOf(e, endMin)
+            if (ce <= cs) null else Triple(c, cs, ce)
+        }.sortedBy { it.second }
+    }
+    // 休息时段 = 显示范围内未被课程覆盖的部分（含午休、晚休与课间）
+    val rests = remember(ranges, startMin, endMin) {
+        val result = mutableListOf<MinuteRange>()
+        var cursor = startMin
+        for ((_, s, e) in ranges) {
+            if (s > cursor) result.add(MinuteRange(cursor, minOf(s, endMin)))
             cursor = maxOf(cursor, e)
         }
-        if (cursor < DAY_END_MIN) result.add(MinuteRange(cursor, DAY_END_MIN))
+        if (cursor < endMin) result.add(MinuteRange(cursor, endMin))
         result
     }
     val restColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f)
@@ -679,7 +701,7 @@ private fun TimelineDayColumn(
             for (r in rests) {
                 drawRoundRect(
                     color = restColor,
-                    topLeft = Offset(insetX, ((r.start - DAY_START_MIN) * MINUTE_SCALE).dp.toPx() + insetY),
+                    topLeft = Offset(insetX, ((r.start - startMin) * MINUTE_SCALE).dp.toPx() + insetY),
                     size = Size(
                         size.width - insetX * 2,
                         ((r.end - r.start) * MINUTE_SCALE).dp.toPx() - insetY * 2,
@@ -693,7 +715,7 @@ private fun TimelineDayColumn(
             if (blockH >= 34.dp) {
                 Box(
                     modifier = Modifier
-                        .offset(y = ((r.start - DAY_START_MIN) * MINUTE_SCALE).dp)
+                        .offset(y = ((r.start - startMin) * MINUTE_SCALE).dp)
                         .fillMaxWidth()
                         .height(blockH),
                     contentAlignment = Alignment.Center,
@@ -708,18 +730,16 @@ private fun TimelineDayColumn(
                 }
             }
         }
-        // 课程块（高度与起止时间成正比）
-        for (course in courses) {
-            val s = PeriodTimes.startOf(course.startPeriod).toSecondOfDay() / 60
-            val e = PeriodTimes.endOf(course.endPeriod).toSecondOfDay() / 60
-            val mins = e - s
+        // 课程块（高度与起止时间成正比；超出显示范围的会被裁剪）
+        for ((course, cs, ce) in ranges) {
+            val mins = ce - cs
             val blockH = (mins * MINUTE_SCALE).dp
             val color = Color(CoursePalette.colorFor(course))
             val flashing = flashTitle.isNotBlank() && course.title.trim() == flashTitle
             val pulse = rememberFlashPulse(flashing)
             Box(
                 Modifier
-                    .offset(y = ((s - DAY_START_MIN) * MINUTE_SCALE).dp)
+                    .offset(y = ((cs - startMin) * MINUTE_SCALE).dp)
                     .fillMaxWidth()
                     .height(blockH)
                     .padding(2.dp)

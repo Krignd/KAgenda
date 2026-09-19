@@ -323,6 +323,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { SettingsStore.setTimetableMode(getApplication(), enabled) }
     }
 
+    /** 时间线模式（非课程表）显示范围：开始/结束时间（分钟，0~1439；结束 ≤ 开始表示跨到次日） */
+    fun setTimelineStart(minutes: Int) {
+        viewModelScope.launch { SettingsStore.setTimelineStart(getApplication(), minutes) }
+    }
+
+    fun setTimelineEnd(minutes: Int) {
+        viewModelScope.launch { SettingsStore.setTimelineEnd(getApplication(), minutes) }
+    }
+
     /** 批量保存日程 / 计划（AI 快速添加等场景） */
     fun saveAgendaEvents(events: List<AgendaEvent>) {
         if (events.isEmpty()) return

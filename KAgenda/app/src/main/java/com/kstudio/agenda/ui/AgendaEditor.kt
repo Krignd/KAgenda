@@ -209,6 +209,8 @@ fun AgendaEditorDialog(
     asPlan: Boolean = false,
 ) {
     val t = LocalStrings.current
+    // 计划语境：用于“短/长计划”“重复规则”等仅计划适用的文案与选项
+    val isPlanContext = initial?.isPlan ?: asPlan
     // 编辑字段用 rememberSaveable：旋转屏幕 / 系统重建后输入不丢失
     var title by rememberSaveable { mutableStateOf(initial?.title ?: "") }
     var type by rememberSaveable { mutableStateOf(initial?.type ?: "") }
@@ -428,19 +430,19 @@ fun AgendaEditorDialog(
                     }
                 }
 
-                // ---------- 短日程 / 长日程 ----------
+                // ---------- 短 / 长（计划语境显示“短计划 / 长计划”） ----------
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     SegmentedButton(
                         selected = !isLong,
                         onClick = { isLong = false },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
-                        label = { Text(t.segShort) },
+                        label = { Text(if (isPlanContext) t.segShortPlan else t.segShort) },
                     )
                     SegmentedButton(
                         selected = isLong,
                         onClick = { isLong = true },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
-                        label = { Text(t.segLong) },
+                        label = { Text(if (isPlanContext) t.segLongPlan else t.segLong) },
                     )
                 }
 
@@ -500,7 +502,7 @@ fun AgendaEditorDialog(
                     }
                 }
 
-                if (!isLong && (initial?.isPlan ?: asPlan)) {
+                if (!isLong && isPlanContext) {
                     // 重复规则：仅计划（短日程）可用，如“每周二/四/六”“隔周周二”“每 3 天”
                     RepeatRulePicker(
                         rule = repeatRule,
@@ -727,16 +729,20 @@ private fun ColorDot(color: Color, selected: Boolean, onClick: () -> Unit) {
     )
 }
 
-/** 时间选择弹窗：支持「具体时间」（时/分滚轮）与「模糊时间」（凌晨/早晨/上午/下午/晚上/午夜）两个选项卡 */
+/**
+ * 时间选择弹窗：支持「具体时间」（时/分滚轮）与「模糊时间」（凌晨/早晨/上午/下午/晚上/午夜）两个选项卡；
+ * allowFuzzy=false 时仅提供精确时间（用于设置页的时间范围选择等场景）。
+ */
 @Composable
-private fun TimeWheelDialog(
+internal fun TimeWheelDialog(
     initial: String,
+    allowFuzzy: Boolean = true,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
 ) {
     val t = LocalStrings.current
     val now = LocalTime.now()
-    var fuzzyMode by remember { mutableStateOf(com.kstudio.agenda.model.FuzzyTime.isFuzzy(initial)) }
+    var fuzzyMode by remember { mutableStateOf(allowFuzzy && com.kstudio.agenda.model.FuzzyTime.isFuzzy(initial)) }
     val initH = initial.substringBefore(":").toIntOrNull()?.coerceIn(0, 23) ?: now.hour
     val initM = initial.substringAfter(":", "").toIntOrNull()?.coerceIn(0, 59) ?: now.minute
     val hourState = rememberLazyListState(initH)
@@ -747,20 +753,22 @@ private fun TimeWheelDialog(
         title = { Text(t.pickerTimeTitle) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                // 选项卡：具体时间 / 模糊时间
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    androidx.compose.material3.FilterChip(
-                        selected = !fuzzyMode,
-                        onClick = { fuzzyMode = false },
-                        label = { Text(t.timeExact) },
-                    )
-                    androidx.compose.material3.FilterChip(
-                        selected = fuzzyMode,
-                        onClick = { fuzzyMode = true },
-                        label = { Text(t.timeFuzzy) },
-                    )
+                // 选项卡：具体时间 / 模糊时间（allowFuzzy=false 时仅精确时间）
+                if (allowFuzzy) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        androidx.compose.material3.FilterChip(
+                            selected = !fuzzyMode,
+                            onClick = { fuzzyMode = false },
+                            label = { Text(t.timeExact) },
+                        )
+                        androidx.compose.material3.FilterChip(
+                            selected = fuzzyMode,
+                            onClick = { fuzzyMode = true },
+                            label = { Text(t.timeFuzzy) },
+                        )
+                    }
+                    Spacer(Modifier.height(12.dp))
                 }
-                Spacer(Modifier.height(12.dp))
                 if (fuzzyMode) {
                     // 模糊时间：六个选项，点选即确认
                     Column(

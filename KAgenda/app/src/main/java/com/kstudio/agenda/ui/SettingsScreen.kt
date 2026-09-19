@@ -106,6 +106,8 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
     var showClearCredConfirm by remember { mutableStateOf(false) }
     var showSchoolPicker by remember { mutableStateOf(false) }
     var showAdapterDialog by remember { mutableStateOf(false) }
+    // 时间线范围选择器：""=无；"start"/"end"
+    var timelinePick by remember { mutableStateOf("") }
     var aiKeyInput by rememberSaveable { mutableStateOf("") }
     var aiModel by rememberSaveable { mutableStateOf("") }
 
@@ -334,6 +336,29 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
+        // ---------------------------------------------------------- 时间线显示范围（非课程表模式）
+        item {
+            SectionCard(t.secTimelineRange, t.secTimelineRangeSub) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(t.fieldStartTime, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { timelinePick = "start" }) {
+                        Text("%02d:%02d".format(settings.timelineStartMinutes / 60, settings.timelineStartMinutes % 60))
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(t.fieldEndTime, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { timelinePick = "end" }) {
+                        // 结束时间 ≤ 开始时间时显示为“次日 HH:mm”（跨天）
+                        val crossDay = settings.timelineEndMinutes <= settings.timelineStartMinutes
+                        Text(
+                            (if (crossDay) t.labelNextDay + " " else "") +
+                                "%02d:%02d".format(settings.timelineEndMinutes / 60, settings.timelineEndMinutes % 60)
+                        )
+                    }
+                }
+            }
+        }
+
         // ---------------------------------------------------------- AI 识别（DeepSeek）
         item {
             SectionCard(t.secAi, t.secAiSub) {
@@ -484,6 +509,39 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
+        // ---------------------------------------------------------- 小组件
+        item {
+            SectionCard(t.secWidget, t.secWidgetSub) {
+                Text(
+                    text = t.widgetPinHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    listOf(
+                        "2×1" to com.kstudio.agenda.widget.NextClassWidget2x1::class.java,
+                        "2×2" to com.kstudio.agenda.widget.NextClassWidget2x2::class.java,
+                        "4×1" to com.kstudio.agenda.widget.NextClassWidget4x1::class.java,
+                        "4×2" to com.kstudio.agenda.widget.NextClassWidget4x2::class.java,
+                    ).forEach { (label, cls) ->
+                        OutlinedButton(onClick = {
+                            val awm = android.appwidget.AppWidgetManager.getInstance(context)
+                            if (awm.isRequestPinAppWidgetSupported) {
+                                // 向桌面请求钉住对应尺寸的小组件（系统会弹确认框）
+                                awm.requestPinAppWidget(android.content.ComponentName(context, cls), null, null)
+                            } else {
+                                vm.message(t.widgetPinUnsupported)
+                            }
+                        }) { Text(label) }
+                    }
+                }
+            }
+        }
+
         // ---------------------------------------------------------- 数据
         item {
             SectionCard(t.secData, t.secDataSub) {
@@ -579,6 +637,26 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                 )
             }
         }
+    }
+
+    // 时间线显示范围：开始/结束时间选择（仅精确时间滚轮）
+    if (timelinePick.isNotEmpty()) {
+        val isStart = timelinePick == "start"
+        val cur = if (isStart) settings.timelineStartMinutes else settings.timelineEndMinutes
+        TimeWheelDialog(
+            initial = "%02d:%02d".format(cur / 60, cur % 60),
+            allowFuzzy = false,
+            onDismiss = { timelinePick = "" },
+            onConfirm = { v ->
+                val hh = v.substringBefore(":").toIntOrNull()
+                val mm = v.substringAfter(":", "").toIntOrNull()
+                if (hh != null && mm != null) {
+                    val minutes = (hh * 60 + mm).coerceIn(0, 1439)
+                    if (isStart) vm.setTimelineStart(minutes) else vm.setTimelineEnd(minutes)
+                }
+                timelinePick = ""
+            },
+        )
     }
 
     if (showClearCredConfirm) {
