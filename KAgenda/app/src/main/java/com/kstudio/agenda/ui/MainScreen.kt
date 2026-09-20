@@ -68,6 +68,13 @@ import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.notif.Notifier
 import java.time.LocalDate
 
+/**
+ * 【已隐藏保留】应用内 AI 助手悬浮按钮（可拖拽的圆形 DeepSeek 按钮）开关。
+ * 默认隐藏：开启系统悬浮球时它多余；未开启悬浮球时也不应出现在右下角（易被误认为悬浮球已开启）。
+ * 改为 true 即可恢复（按钮代码完整保留）。
+ */
+private const val SHOW_IN_APP_AI_BUTTON = false
+
 private enum class HomeTab {
     Schedule,
     Plan,
@@ -127,10 +134,13 @@ fun MainScreen(
         vm.messages.collect { snackbarHostState.showSnackbar(it) }
     }
 
-    // 通知 / 小组件点击带入的启动请求：打开 AI 快速添加，或定位到指定日期并闪烁反馈
+    // 通知 / 小组件点击带入的启动请求：打开 AI 助手，或定位到指定日期并闪烁反馈
     LaunchedEffect(launch?.id) {
         val l = launch ?: return@LaunchedEffect
-        tab = HomeTab.Schedule
+        // 只有「定位日期」类请求才需要回到日程表页；
+        // 打开 AI 助手（顶栏图标 / 常驻通知 / 悬浮球）不应改动当前页签，
+        // 否则在计划/进行中/设置页点悬浮球会被强行跳回日程表
+        if (l.focusEpochDay != null) tab = HomeTab.Schedule
         if (l.quickAdd) showQuickAdd = true
         l.focusEpochDay?.let { day ->
             val date = LocalDate.ofEpochDay(day)
@@ -270,47 +280,53 @@ fun MainScreen(
                     },
                 )
             }
-            // AI 快速添加：可拖拽悬浮按钮（点击打开输入框）。
-            // 系统悬浮球已开启时隐藏（悬浮球本身就显示在应用上方，避免重复）
-            val overlayActive = settings.floatingBall && Settings.canDrawOverlays(context)
-            if (!overlayActive) {
-                var fabOffset by remember { mutableStateOf(Offset.Zero) }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(18.dp)
-                        .offset {
-                            IntOffset(
-                                Math.round(fabOffset.x).toInt(),
-                                Math.round(fabOffset.y).toInt(),
-                            )
-                        }
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                        .pointerInput(contentSize) {
-                            val fabPx = 52.dp.toPx()
-                            val marginPx = 18.dp.toPx()
-                            detectDragGestures { change, drag ->
-                                change.consume()
-                                // 边界收敛：不允许把按钮拖出内容区（原来无限制，拖出屏幕后再也点不到）
-                                val minX = -(contentSize.width - fabPx - marginPx * 2).coerceAtLeast(0f)
-                                val minY = -(contentSize.height - fabPx - marginPx * 2).coerceAtLeast(0f)
-                                fabOffset = Offset(
-                                    (fabOffset.x + drag.x).coerceIn(minX, 0f),
-                                    (fabOffset.y + drag.y).coerceIn(minY, 0f),
+            // 【已隐藏保留】AI 助手悬浮按钮（应用内可拖拽的圆形 DeepSeek 按钮）。
+            // 隐藏原因：开启系统悬浮球时它本就多余；未开启悬浮球时也不应在右下角出现这个圆形图标
+            // （用户会误以为悬浮球开着自己没开）。应用内仍可用顶栏的 DeepSeek 图标或常驻通知入口。
+            // 如需恢复，把 SHOW_IN_APP_AI_BUTTON 改为 true 即可（代码完整保留）。
+            if (SHOW_IN_APP_AI_BUTTON) {
+                val overlayActive = settings.floatingBall && Settings.canDrawOverlays(context)
+                if (!overlayActive) {
+                    var fabOffset by remember { mutableStateOf(Offset.Zero) }
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(18.dp)
+                            .offset {
+                                IntOffset(
+                                    Math.round(fabOffset.x).toInt(),
+                                    Math.round(fabOffset.y).toInt(),
                                 )
                             }
-                        }
-                        .clickable { showQuickAdd = true },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_deepseek),
-                        contentDescription = t.qaTitle,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(30.dp),
-                    )
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                            .pointerInput(contentSize) {
+                                val fabPx = 52.dp.toPx()
+                                val marginPx = 18.dp.toPx()
+                                detectDragGestures { change, drag ->
+                                    change.consume()
+                                    // 边界收敛：不允许把按钮拖出内容区（原来无限制，拖出屏幕后再也点不到）
+                                    val minX =
+                                        -(contentSize.width - fabPx - marginPx * 2).coerceAtLeast(0f)
+                                    val minY =
+                                        -(contentSize.height - fabPx - marginPx * 2).coerceAtLeast(0f)
+                                    fabOffset = Offset(
+                                        (fabOffset.x + drag.x).coerceIn(minX, 0f),
+                                        (fabOffset.y + drag.y).coerceIn(minY, 0f),
+                                    )
+                                }
+                            }
+                            .clickable { showQuickAdd = true },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_deepseek),
+                            contentDescription = t.qaTitle,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(30.dp),
+                        )
+                    }
                 }
             }
 

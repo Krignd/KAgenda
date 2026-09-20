@@ -73,7 +73,8 @@ class FloatingBallService : Service() {
         private const val KEY_Y = "y"
         private const val KEY_PANEL_X = "panel_x"
         private const val KEY_PANEL_Y = "panel_y"
-        private const val REST_ALPHA = 0.78f
+        /** 闲置（未触摸/未拖动）时的透明度：数值越小越通透，避免遮挡其他应用内容 */
+        private const val REST_ALPHA = 0.55f
 
         /** 悬浮窗权限轮询间隔：权限被系统/用户收回后立即隐藏悬浮球 */
         private const val PERMISSION_POLL_MS = 3_000L
