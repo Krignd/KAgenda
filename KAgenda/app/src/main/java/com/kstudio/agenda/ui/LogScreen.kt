@@ -37,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -81,36 +82,38 @@ fun LogScreen(onClose: () -> Unit) {
         else -> content
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(t.logTitle) },
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t.back)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showShareOptions = true }) {
-                        Icon(Icons.Filled.Share, contentDescription = t.share)
-                    }
-                    IconButton(onClick = {
-                        AppLog.clear()
-                        refreshKey++
-                    }) {
-                        Icon(Icons.Filled.Delete, contentDescription = t.clearLogBtn)
-                    }
-                    IconButton(onClick = { refreshKey++ }) {
-                        Icon(Icons.Filled.Refresh, contentDescription = t.refresh)
-                    }
-                },
+    Column(Modifier.fillMaxSize()) {
+        // 标题行紧贴「K日程」标题下方（不再用独立 Scaffold/AppBar，避免标题间距过大）
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t.back)
+            }
+            Text(
+                text = t.logTitle,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
             )
-        },
-    ) { padding ->
+            IconButton(onClick = { showShareOptions = true }) {
+                Icon(Icons.Filled.Share, contentDescription = t.share)
+            }
+            IconButton(onClick = {
+                AppLog.clear()
+                refreshKey++
+            }) {
+                Icon(Icons.Filled.Delete, contentDescription = t.clearLogBtn)
+            }
+            IconButton(onClick = { refreshKey++ }) {
+                Icon(Icons.Filled.Refresh, contentDescription = t.refresh)
+            }
+        }
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .horizontalScroll(rememberScrollState())
                 .padding(12.dp),

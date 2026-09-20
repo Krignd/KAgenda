@@ -5,14 +5,11 @@ package com.kstudio.agenda.ui
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build
 import android.provider.Settings
 import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -65,7 +62,6 @@ import com.kstudio.agenda.R
 import com.kstudio.agenda.data.SyncUi
 import com.kstudio.agenda.data.WebScheduleEngine
 import com.kstudio.agenda.i18n.LocalStrings
-import com.kstudio.agenda.notif.Notifier
 import java.time.LocalDate
 
 /**
@@ -97,24 +93,20 @@ fun MainScreen(
     val syncActive = sync is SyncUi.Running || sync is SyncUi.NeedLogin
     val settings by vm.settings.collectAsState()
     val aiSurface by AiSurface.state.collectAsState()
+    val exportNeedsPermission by vm.exportNeedsPermission.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val t = LocalStrings.current
 
-    // 通知权限（Android 13+）；存储权限（Android 8.0–9 导出图片到相册需要）
-    val permissionLauncher = rememberLauncherForActivityResult(
+    // 启动时不申请任何权限（安装后开箱即用）：
+    // · 通知权限：默认关闭的「课前提醒」或「常驻通知」由用户在设置里开启时才申请；
+    // · 存储权限：仅 Android 8.0–9 导出图片到相册需要，改为点击保存时再申请（见 vm.withExportPermission）。
+    val exportPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { }
-    LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT < 29 &&
-            ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            permissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-        } else if (!Notifier.hasPermission(context)) {
-            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+    ) { granted -> vm.onExportPermissionResult(granted) }
+    LaunchedEffect(exportNeedsPermission) {
+        if (exportNeedsPermission) {
+            exportPermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
         }
     }
 

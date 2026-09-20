@@ -128,29 +128,32 @@ fun DeveloperToolsScreen(vm: AppViewModel, onClose: () -> Unit) {
         notifStatus = t.testReminderScheduled
     }
 
+    // 滚动状态提升到「运行日志」早退之前：从日志页返回后不会跳回顶部
+    val contentScroll = rememberScrollState()
+
     if (showLog) {
         LogScreen(onClose = { showLog = false })
         return
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(t.secDev) },
-                navigationIcon = {
-                    IconButton(onClick = onClose) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t.back)
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Column(Modifier.fillMaxSize()) {
+        // 标题行紧贴「K日程」标题下方（不再用独立 Scaffold/AppBar，避免上下两个标题间距过大）
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 4.dp, end = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onClose) {
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t.back)
+            }
+            Text(t.secDev, style = MaterialTheme.typography.titleLarge)
+        }
         Column(
             Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .verticalScroll(contentScroll)
+                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             // ---------------- 通知测试 ----------------

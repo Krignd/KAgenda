@@ -1,6 +1,10 @@
 package com.kstudio.agenda.ui
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kstudio.agenda.data.AgendaStore
@@ -461,6 +465,39 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     // ------------------------------------------------------------ 图片导出
 
+    /**
+     * Android 8.0–9 保存到公共相册需要存储权限：不在启动时申请，
+     * 而是点「保存」的当下才申请（已授权 / Android 10+ 直接执行）。
+     */
+    private var pendingExport: (() -> Unit)? = null
+    private val _exportNeedsPermission = MutableStateFlow(false)
+
+    /** true 时 MainScreen 发起存储权限申请（Android 8.0–9 且尚未授权） */
+    val exportNeedsPermission: StateFlow<Boolean> = _exportNeedsPermission.asStateFlow()
+
+    private fun withExportPermission(action: () -> Unit) {
+        val ctx = getApplication<Application>()
+        val granted = Build.VERSION.SDK_INT >= 29 ||
+            ContextCompat.checkSelfPermission(
+                ctx,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            action()
+        } else {
+            pendingExport = action
+            _exportNeedsPermission.value = true
+        }
+    }
+
+    /** 存储权限申请结果：授权则继续本次导出，否则如实提示 */
+    fun onExportPermissionResult(granted: Boolean) {
+        val action = pendingExport
+        pendingExport = null
+        _exportNeedsPermission.value = false
+        if (granted) action?.invoke() else message(t.msgStorageNeedPerm)
+    }
+
     /** 日程表导出只包含“日程”（不含“计划”页的个人计划） */
     fun saveDayImage(date: LocalDate) {
         val week = weekSchedule.value
@@ -472,22 +509,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val events = agenda.value
             .filter { !it.isPlan && it.coversDate(date) }
             .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
-        if (!exportBusy.compareAndSet(false, true)) {
-            message(t.msgExporting)
-            return
-        }
         val context = getApplication<Application>()
-        viewModelScope.launch {
-            try {
-                val uri = withContext(Dispatchers.Default) {
-                    val bitmap = ScheduleImageRenderer.renderDay(week, date, events)
-                    withContext(Dispatchers.IO) {
-                        ImageExporter.saveToGallery(context, bitmap, "日课表_$date.png")
+        withExportPermission {
+            if (!exportBusy.compareAndSet(false, true)) {
+                message(t.msgExporting)
+                return@withExportPermission
+            }
+            viewModelScope.launch {
+                try {
+                    val uri = withContext(Dispatchers.Default) {
+                        val bitmap = ScheduleImageRenderer.renderDay(week, date, events)
+                        withContext(Dispatchers.IO) {
+                            ImageExporter.saveToGallery(context, bitmap, "日课表_$date.png")
+                        }
                     }
+                    message(if (uri != null) AppText.current.msgSavedDayImage else t.msgSaveFailed)
+                } finally {
+                    exportBusy.set(false)
                 }
-                message(if (uri != null) AppText.current.msgSavedDayImage else t.msgSaveFailed)
-            } finally {
-                exportBusy.set(false)
             }
         }
     }
@@ -503,22 +542,24 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val events = agenda.value
             .filter { ev -> !ev.isPlan && (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
             .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
-        if (!exportBusy.compareAndSet(false, true)) {
-            message(t.msgExporting)
-            return
-        }
         val context = getApplication<Application>()
-        viewModelScope.launch {
-            try {
-                val uri = withContext(Dispatchers.Default) {
-                    val bitmap = ScheduleImageRenderer.renderWeek(week, events)
-                    withContext(Dispatchers.IO) {
-                        ImageExporter.saveToGallery(context, bitmap, "周课表_第${week.weekNo}周.png")
+        withExportPermission {
+            if (!exportBusy.compareAndSet(false, true)) {
+                message(t.msgExporting)
+                return@withExportPermission
+            }
+            viewModelScope.launch {
+                try {
+                    val uri = withContext(Dispatchers.Default) {
+                        val bitmap = ScheduleImageRenderer.renderWeek(week, events)
+                        withContext(Dispatchers.IO) {
+                            ImageExporter.saveToGallery(context, bitmap, "周课表_第${week.weekNo}周.png")
+                        }
                     }
+                    message(if (uri != null) AppText.current.msgSavedWeekImage else t.msgSaveFailed)
+                } finally {
+                    exportBusy.set(false)
                 }
-                message(if (uri != null) AppText.current.msgSavedWeekImage else t.msgSaveFailed)
-            } finally {
-                exportBusy.set(false)
             }
         }
     }
@@ -529,30 +570,32 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val events = agenda.value.filter { ev ->
             !ev.isPlan && !(ev.endDate.isBefore(monthStart) || ev.date.isAfter(monthEnd))
         }
-        if (!exportBusy.compareAndSet(false, true)) {
-            message(t.msgExporting)
-            return
-        }
         val context = getApplication<Application>()
-        viewModelScope.launch {
-            try {
-                val uri = withContext(Dispatchers.Default) {
-                    val bitmap = ScheduleImageRenderer.renderMonth(
-                        monthStart = monthStart,
-                        semester = semester.value,
-                        events = events,
-                    )
-                    withContext(Dispatchers.IO) {
-                        ImageExporter.saveToGallery(
-                            context,
-                            bitmap,
-                            "月课表_${monthStart.year}-%02d.png".format(monthStart.monthValue),
+        withExportPermission {
+            if (!exportBusy.compareAndSet(false, true)) {
+                message(t.msgExporting)
+                return@withExportPermission
+            }
+            viewModelScope.launch {
+                try {
+                    val uri = withContext(Dispatchers.Default) {
+                        val bitmap = ScheduleImageRenderer.renderMonth(
+                            monthStart = monthStart,
+                            semester = semester.value,
+                            events = events,
                         )
+                        withContext(Dispatchers.IO) {
+                            ImageExporter.saveToGallery(
+                                context,
+                                bitmap,
+                                "月课表_${monthStart.year}-%02d.png".format(monthStart.monthValue),
+                            )
+                        }
                     }
+                    message(if (uri != null) AppText.current.msgSavedMonthImage else t.msgSaveFailed)
+                } finally {
+                    exportBusy.set(false)
                 }
-                message(if (uri != null) AppText.current.msgSavedMonthImage else t.msgSaveFailed)
-            } finally {
-                exportBusy.set(false)
             }
         }
     }

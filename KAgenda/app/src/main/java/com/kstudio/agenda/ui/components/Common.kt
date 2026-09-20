@@ -1,5 +1,12 @@
 package com.kstudio.agenda.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -12,13 +19,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,6 +105,100 @@ fun SectionCard(
             content()
         }
     }
+}
+
+/**
+ * 分组卡片（可折叠）：标题行本身可点击展开/收起，右侧箭头提示「可打开」；
+ * [trailing] 用于折叠状态下在右侧显示摘要（如学号、版本号）。
+ */
+@Composable
+fun CollapsibleSectionCard(
+    title: String,
+    subtitle: String? = null,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    trailing: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 1.dp,
+    ) {
+        Column(Modifier.padding(18.dp)) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable { onToggle() },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    // 折叠时收起说明文字，行更紧凑（摘要显示在右侧）
+                    if (expanded && !subtitle.isNullOrBlank()) {
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                if (!expanded && !trailing.isNullOrBlank()) {
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = trailing,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(Modifier.width(4.dp))
+                ExpandArrow(expanded)
+            }
+            // 展开/折叠动画：高度伸缩 + 淡入淡出，避免内容突然出现或消失
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(animationSpec = tween(220)) + fadeIn(tween(180)),
+                exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(tween(140)),
+            ) {
+                Column(Modifier.padding(top = 14.dp)) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+/** 右侧「可打开」箭头：展开时向下、折叠时向右（>），带过渡动画 */
+@Composable
+fun ExpandArrow(expanded: Boolean, modifier: Modifier = Modifier) {
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 0f else -90f,
+        label = "expandArrow",
+    )
+    Icon(
+        imageVector = Icons.Filled.KeyboardArrowDown,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier.rotate(rotation),
+    )
+}
+
+/** 行尾「进入/打开」箭头（>），用于跳转页面或弹出选择器的行 */
+@Composable
+fun TrailingChevron(modifier: Modifier = Modifier) {
+    Icon(
+        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+        contentDescription = null,
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier,
+    )
 }
 
 /** 提示横幅 */

@@ -5,7 +5,9 @@ package com.kstudio.agenda.ui
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,23 +21,31 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,14 +61,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
@@ -70,7 +83,9 @@ import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.notif.Notifier
 import com.kstudio.agenda.notif.ReminderScheduler
 import com.kstudio.agenda.ui.components.ChoiceChip
+import com.kstudio.agenda.ui.components.CollapsibleSectionCard
 import com.kstudio.agenda.ui.components.SectionCard
+import com.kstudio.agenda.ui.components.TrailingChevron
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -119,6 +134,42 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
         if (studentId.isBlank()) studentId = settings.studentId
     }
 
+    // ---------------- 选项卡与卡片展开状态 ----------------
+    // 0 学校&账号 / 1 功能&权限 / 2 用户自定义 / 3 数据&图片 / 4 语言 / 5 关于
+    var settingsTab by rememberSaveable { mutableStateOf(0) }
+    var expPermissions by rememberSaveable { mutableStateOf(false) }
+    var expReminder by rememberSaveable { mutableStateOf(true) }
+    var expAi by rememberSaveable { mutableStateOf(true) }
+    var expOverlay by rememberSaveable { mutableStateOf(true) }
+    var expStatus by rememberSaveable { mutableStateOf(true) }
+    var expWidget by rememberSaveable { mutableStateOf(true) }
+    var expTimeline by rememberSaveable { mutableStateOf(true) }
+    var expData by rememberSaveable { mutableStateOf(true) }
+    var expLang by rememberSaveable { mutableStateOf(true) }
+    var expSchool by rememberSaveable { mutableStateOf(true) }
+    // 关于：默认折叠（折叠时右侧显示 K日程 + 版本号）
+    var expAbout by rememberSaveable { mutableStateOf(false) }
+    // 账号：未登录默认展开、已登录默认折叠；用户手动切过之后不再跟随登录状态
+    val loggedIn = settings.hasPassword || syncState is SyncUi.Success
+    var expAccount by rememberSaveable { mutableStateOf(false) }
+    var accountToggled by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(loggedIn) { if (!accountToggled) expAccount = !loggedIn }
+    // 滚动状态提升到「开发者工具」早退之前：进出开发者工具 / 日志页后不会跳回顶部
+    val listState = rememberLazyListState()
+    LaunchedEffect(settingsTab) { listState.scrollToItem(0) }
+
+    // 存储权限（仅 Android 8.0–9 导出图片需要）当前是否已授予
+    val storageNeeded = Build.VERSION.SDK_INT < 29
+    var storageAllowed by remember {
+        mutableStateOf(
+            !storageNeeded || ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    // 未授予的权限数量在下方全部权限状态声明之后计算（折叠时显示在权限卡片右侧）
+
     val notifLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted -> notifAllowed = granted }
@@ -149,35 +200,86 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
         Unit
     }
 
+    // 精确闹钟 / 忽略电池优化：跳系统页后回来刷新状态（用启动器才能在返回时回调）
+    val exactLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { exactAllowed = ReminderScheduler.canScheduleExact(context) }
+    val batteryLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { batteryExempt = ReminderScheduler.isIgnoringBatteryOptimizations(context) }
+    // 存储权限：申请按钮（权限状态与统计见上方）
+    val storageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { storageAllowed = it }
+
+    // 未授予的权限数量（折叠时显示在权限卡片右侧）
+    val missingPermCount = listOf(!notifAllowed, !overlayAllowed, !exactAllowed, !batteryExempt)
+        .count { it } + if (storageNeeded && !storageAllowed) 1 else 0
+
     if (showDevTools) {
         DeveloperToolsScreen(vm, onClose = { showDevTools = false })
         return
     }
 
-    LazyColumn(
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        // ---------------------------------------------------------- 学校（可切换；北航已完整适配）
-        item {
-            SectionCard(t.secSchool, t.secSchoolSub) {
+    Column(Modifier.fillMaxSize()) {
+        // 选项卡：学校&账号 / 功能&权限 / 用户自定义 / 数据&图片 / 语言 / 关于
+        // （自绘可滚动选项卡行：一次显示不下时左/右侧出现可点的尖角符）
+        SettingsTabRow(
+            labels = listOf(
+                t.settingsTabAccount,
+                t.settingsTabFeature,
+                t.settingsTabCustom,
+                t.secData,
+                t.secLang,
+                t.secAbout,
+            ),
+            selected = settingsTab,
+            onSelect = { settingsTab = it },
+        )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+        // ---------------------------------------------------------- 【选项卡 0】学校&账号：学校（可切换）
+        if (settingsTab == 0) item {
+            CollapsibleSectionCard(
+                t.secSchool,
+                t.secSchoolSub,
+                expanded = expSchool,
+                onToggle = { expSchool = !expSchool },
+            ) {
                 val school = Schools.of(settings.schoolId)
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showSchoolPicker = true },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     SchoolLogo(school, 44.dp)
                     Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(school.name, style = MaterialTheme.typography.titleSmall)
-                    }
-                    OutlinedButton(onClick = { showSchoolPicker = true }) { Text(t.schoolChange) }
+                    Text(
+                        text = school.name,
+                        style = MaterialTheme.typography.titleSmall,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TrailingChevron()
                 }
             }
         }
-
-        // ---------------------------------------------------------- 账号
-        item {
-            SectionCard(
+        // ---------------------------------------------------------- 【选项卡 0】学校&账号：账号
+        // 未登录时默认展开（直接看到登录表单），已登录默认折叠（右侧显示学号）
+        if (settingsTab == 0) item {
+            CollapsibleSectionCard(
                 t.secAccount,
                 t.secAccountSubOf(settings.schoolId, Schools.of(settings.schoolId).name),
+                expanded = expAccount,
+                onToggle = {
+                    accountToggled = true
+                    expAccount = !expAccount
+                },
+                trailing = settings.studentId.takeIf { it.isNotBlank() },
             ) {
                 OutlinedTextField(
                     value = studentId,
@@ -263,82 +365,162 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 提醒
-        item {
-            SectionCard(t.secReminder, t.secReminderSub) {
+        // ---------------------------------------------------------- 【选项卡 1】功能&权限：权限设置（默认折叠）
+        if (settingsTab == 1) item {
+            CollapsibleSectionCard(
+                t.secPermissions,
+                t.secPermissionsSub,
+                expanded = expPermissions,
+                onToggle = { expPermissions = !expPermissions },
+                trailing = if (missingPermCount == 0) t.permGranted
+                else t.permMissingCount(missingPermCount),
+            ) {
+                PermissionRow(t.permNetworkName, t.permNetworkWhy, granted = true)
+                PermissionRow(
+                    name = t.permNotifName,
+                    why = t.permNotifWhy,
+                    granted = notifAllowed,
+                    actionLabel = t.permRequest,
+                    onAction = { notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS) },
+                )
+                PermissionRow(
+                    name = t.permOverlayName,
+                    why = t.permOverlayWhy,
+                    granted = overlayAllowed,
+                    actionLabel = t.gotoGrant,
+                    onAction = launchOverlayPermission,
+                )
+                PermissionRow(
+                    name = t.permExactName,
+                    why = t.permExactWhy,
+                    granted = exactAllowed,
+                    actionLabel = t.gotoGrant,
+                    onAction = { exactLauncher.launch(exactAlarmIntent(context)) },
+                )
+                PermissionRow(
+                    name = t.permBatteryName,
+                    why = t.permBatteryWhy,
+                    granted = batteryExempt,
+                    actionLabel = t.gotoExempt,
+                    onAction = {
+                        batteryLauncher.launch(ReminderScheduler.batteryExemptionIntent(context))
+                    },
+                )
+                if (storageNeeded) {
+                    PermissionRow(
+                        name = t.permStorageName,
+                        why = t.permStorageWhy,
+                        granted = storageAllowed,
+                        actionLabel = t.permRequest,
+                        onAction = {
+                            storageLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        },
+                    )
+                }
+            }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 1】功能&权限：课前提醒
+        if (settingsTab == 1) item {
+            CollapsibleSectionCard(
+                t.secReminder,
+                t.secReminderSub,
+                expanded = expReminder,
+                onToggle = { expReminder = !expReminder },
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t.reminderEnable, modifier = Modifier.weight(1f))
                     Switch(
                         checked = settings.reminderEnabled,
-                        onCheckedChange = { vm.setReminderEnabled(it) },
+                        onCheckedChange = { want ->
+                            vm.setReminderEnabled(want)
+                            // 开启提醒时才申请通知权限（安装后不主动要权限）
+                            if (want && !Notifier.hasPermission(context)) {
+                                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        },
                     )
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = t.leadLabel,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    listOf(5, 10, 15, 20, 30, 45, 60).forEach { minutes ->
-                        ChoiceChip(
-                            label = t.minutes(minutes),
-                            selected = settings.leadMinutes == minutes,
-                            onClick = { vm.setLeadMinutes(minutes) },
+                // 提醒关闭时（默认状态）不再展示提前时间与授权状态细节，
+                // 避免“功能本来没开，却在提示未授权/未解除”的困扰
+                if (settings.reminderEnabled) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = t.leadLabel,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        listOf(5, 10, 15, 20, 30, 45, 60).forEach { minutes ->
+                            ChoiceChip(
+                                label = t.minutes(minutes),
+                                selected = settings.leadMinutes == minutes,
+                                onClick = { vm.setLeadMinutes(minutes) },
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (exactAllowed) t.exactOk else t.exactNo,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
                         )
+                        if (!exactAllowed) {
+                            TextButton(onClick = {
+                                exactLauncher.launch(exactAlarmIntent(context))
+                            }) { Text(t.gotoGrant) }
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (batteryExempt) t.batteryOk else t.batteryNo,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (!batteryExempt) {
+                            TextButton(onClick = {
+                                batteryLauncher.launch(
+                                    ReminderScheduler.batteryExemptionIntent(context)
+                                )
+                            }) { Text(t.gotoExempt) }
+                        }
                     }
                 }
-                Spacer(Modifier.height(12.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = if (exactAllowed) t.exactOk else t.exactNo,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (!exactAllowed) {
-                        TextButton(onClick = {
-                            openExactAlarmSettings(context)
-                            exactAllowed = ReminderScheduler.canScheduleExact(context)
-                        }) { Text(t.gotoGrant) }
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = if (batteryExempt) t.batteryOk else t.batteryNo,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (!batteryExempt) {
-                        TextButton(onClick = {
-                            ReminderScheduler.requestIgnoreBatteryOptimizations(context)
-                        }) { Text(t.gotoExempt) }
-                    }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = if (notifAllowed) t.notifOk else t.notifNo,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    if (!notifAllowed) {
-                        TextButton(onClick = {
-                            notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        }) { Text(t.enableNotif) }
+                // 通知权限：课前提醒或常驻通知任一开启时才提示（默认全关时保持安静）
+                if (settings.reminderEnabled || settings.statusNotifEnabled) {
+                    Spacer(Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = if (notifAllowed) t.notifOk else t.notifNo,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        if (!notifAllowed) {
+                            TextButton(onClick = {
+                                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }) { Text(t.enableNotif) }
+                        }
                     }
                 }
             }
         }
 
-        // ---------------------------------------------------------- 时间线显示范围（非课程表模式）
-        item {
-            SectionCard(t.secTimelineRange, t.secTimelineRangeSub) {
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：时间线显示范围
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secTimelineRange,
+                t.secTimelineRangeSub,
+                expanded = expTimeline,
+                onToggle = { expTimeline = !expTimeline },
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t.fieldStartTime, modifier = Modifier.weight(1f))
                     TextButton(onClick = { timelinePick = "start" }) {
@@ -359,9 +541,14 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- AI 识别（DeepSeek）
-        item {
-            SectionCard(t.secAi, t.secAiSub) {
+        // ---------------------------------------------------------- 【选项卡 1】功能&权限：AI 识别（DeepSeek）
+        if (settingsTab == 1) item {
+            CollapsibleSectionCard(
+                t.secAi,
+                t.secAiSub,
+                expanded = expAi,
+                onToggle = { expAi = !expAi },
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Checkbox(
                         checked = settings.useDevAiKey,
@@ -425,9 +612,14 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 悬浮球（在其他应用上层显示，无需打开 App）
-        item {
-            SectionCard(t.secOverlay, t.secOverlaySub) {
+        // ---------------------------------------------------------- 【选项卡 1】功能&权限：悬浮球
+        if (settingsTab == 1) item {
+            CollapsibleSectionCard(
+                t.secOverlay,
+                t.secOverlaySub,
+                expanded = expOverlay,
+                onToggle = { expOverlay = !expOverlay },
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t.overlayEnable, modifier = Modifier.weight(1f))
                     Switch(
@@ -470,14 +662,25 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 常驻通知（锁屏可见、内容可选）
-        item {
-            SectionCard(t.secStatus, t.secStatusSub) {
+        // ---------------------------------------------------------- 【选项卡 1】功能&权限：常驻通知
+        if (settingsTab == 1) item {
+            CollapsibleSectionCard(
+                t.secStatus,
+                t.secStatusSub,
+                expanded = expStatus,
+                onToggle = { expStatus = !expStatus },
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t.statusEnable, modifier = Modifier.weight(1f))
                     Switch(
                         checked = settings.statusNotifEnabled,
-                        onCheckedChange = { vm.setStatusNotifConfig(it, settings.statusNotifSources) },
+                        onCheckedChange = { want ->
+                            vm.setStatusNotifConfig(want, settings.statusNotifSources)
+                            // 开启常驻通知时才申请通知权限
+                            if (want && !Notifier.hasPermission(context)) {
+                                notifLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        },
                     )
                 }
                 Spacer(Modifier.height(6.dp))
@@ -509,9 +712,14 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 小组件
-        item {
-            SectionCard(t.secWidget, t.secWidgetSub) {
+        // ---------------------------------------------------------- 【选项卡 1】功能&权限：小组件
+        if (settingsTab == 1) item {
+            CollapsibleSectionCard(
+                t.secWidget,
+                t.secWidgetSub,
+                expanded = expWidget,
+                onToggle = { expWidget = !expWidget },
+            ) {
                 Text(
                     text = t.widgetPinHint,
                     style = MaterialTheme.typography.bodySmall,
@@ -542,9 +750,14 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 数据
-        item {
-            SectionCard(t.secData, t.secDataSub) {
+        // ---------------------------------------------------------- 【选项卡 3】数据与图片
+        if (settingsTab == 3) item {
+            CollapsibleSectionCard(
+                t.secData,
+                t.secDataSub,
+                expanded = expData,
+                onToggle = { expData = !expData },
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(t.autoRefresh, modifier = Modifier.weight(1f))
                     Switch(
@@ -567,6 +780,12 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                     }
                 }
                 Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { vm.saveMonthImage(selectedDate.withDayOfMonth(1)) }) {
+                        Text(t.btnSaveMonthImg)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = t.imgDirNote,
                     style = MaterialTheme.typography.bodySmall,
@@ -575,9 +794,14 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 语言（中/法/英，默认跟随系统）
-        item {
-            SectionCard(t.secLang, null) {
+        // ---------------------------------------------------------- 【选项卡 4】语言（中/法/英，默认跟随系统）
+        if (settingsTab == 4) item {
+            CollapsibleSectionCard(
+                t.secLang,
+                null,
+                expanded = expLang,
+                onToggle = { expLang = !expLang },
+            ) {
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -606,18 +830,15 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
-        // ---------------------------------------------------------- 开发者工具（独立页面）
-        item {
-            SectionCard(t.secDev, t.secDevSub) {
-                OutlinedButton(onClick = { showDevTools = true }) {
-                    Text(t.openDevTools)
-                }
-            }
-        }
-
-        // ---------------------------------------------------------- 关于
-        item {
-            SectionCard(t.secAbout, t.aboutSub) {
+        // ---------------------------------------------------------- 【选项卡 5】关于（默认折叠，右侧显示 K日程 + 版本号）
+        if (settingsTab == 5) item {
+            CollapsibleSectionCard(
+                t.secAbout,
+                t.aboutSub,
+                expanded = expAbout,
+                onToggle = { expAbout = !expAbout },
+                trailing = t.aboutSub,
+            ) {
                 Text(
                     text = t.aboutBody,
                     style = MaterialTheme.typography.bodyMedium,
@@ -636,6 +857,40 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        // ---------------------------------------------------------- 【选项卡 5】关于：开发者工具入口（整行可点，行尾尖角符）
+        if (settingsTab == 5) item {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable { showDevTools = true },
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = t.secDev,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = t.secDevSub,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TrailingChevron()
+                }
+            }
+        }
         }
     }
 
@@ -908,13 +1163,152 @@ private fun formatTime(millis: Long): String {
     return SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date(millis))
 }
 
-/** 打开系统的“闹钟和提醒”授权页（精确闹钟权限） */
-private fun openExactAlarmSettings(context: Context) {
-    runCatching {
-        val intent = Intent(
-            Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
-            Uri.parse("package:${context.packageName}"),
+/** 打开系统的“闹钟和提醒”授权页（精确闹钟权限）用的 Intent */
+private fun exactAlarmIntent(context: Context): Intent =
+    Intent(
+        Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM,
+        Uri.parse("package:${context.packageName}"),
+    )
+
+/**
+ * 设置页选项卡行（自绘，可横向滑动）：
+ * - 选中项高亮 + 下方指示条；
+ * - 一次显示不下时，左/右侧出现可点的尖角符（chevron），点击滚动到该端。
+ */
+@Composable
+private fun SettingsTabRow(
+    labels: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+) {
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    Box(Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(scroll),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            labels.forEachIndexed { index, label ->
+                val isSelected = index == selected
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clickable { onSelect(index) }
+                        .padding(start = 14.dp, end = 14.dp, top = 10.dp),
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Box(
+                        Modifier
+                            .width(28.dp)
+                            .height(3.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(
+                                if (isSelected) MaterialTheme.colorScheme.primary
+                                else Color.Transparent
+                            )
+                    )
+                }
+            }
+        }
+        if (scroll.value > 0) {
+            TabScrollChevron(
+                toRight = false,
+                onClick = { scope.launch { scroll.animateScrollTo(0) } },
+                modifier = Modifier.align(Alignment.CenterStart),
+            )
+        }
+        if (scroll.value < scroll.maxValue) {
+            TabScrollChevron(
+                toRight = true,
+                onClick = { scope.launch { scroll.animateScrollTo(scroll.maxValue) } },
+                modifier = Modifier.align(Alignment.CenterEnd),
+            )
+        }
+    }
+}
+
+/**
+ * 选项卡行的左/右尖角符（chevron）：提示该方向还有未显示的选项卡，点击可滚动一屏。
+ */
+@Composable
+private fun TabScrollChevron(
+    toRight: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .padding(horizontal = 2.dp)
+            .size(26.dp)
+            .clip(CircleShape)
+            .clickable { onClick() },
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 2.dp,
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = if (toRight) {
+                    Icons.AutoMirrored.Filled.KeyboardArrowRight
+                } else {
+                    Icons.AutoMirrored.Filled.KeyboardArrowLeft
+                },
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+    }
+}
+
+/** 权限行：权限名 + 当前状态 + 用途说明 +（未授予时）申请/授权按钮 */
+@Composable
+private fun PermissionRow(
+    name: String,
+    why: String,
+    granted: Boolean,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    val t = LocalStrings.current
+    Column(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = if (granted) t.permGranted else t.permNotGranted,
+                style = MaterialTheme.typography.labelMedium,
+                color = if (granted) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.error
+                },
+            )
+        }
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = why,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        context.startActivity(intent)
+        if (!granted && actionLabel != null && onAction != null) {
+            Spacer(Modifier.height(6.dp))
+            OutlinedButton(onClick = onAction) { Text(actionLabel) }
+        }
     }
 }

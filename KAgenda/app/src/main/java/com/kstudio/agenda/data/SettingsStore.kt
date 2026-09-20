@@ -17,7 +17,8 @@ private val Context.settingsDataStore by preferencesDataStore(name = "settings")
 data class AppSettings(
     val studentId: String = "",
     val hasPassword: Boolean = false,
-    val reminderEnabled: Boolean = true,
+    /** 课前提醒：默认关闭（开关由用户主动开启；开启时才申请通知权限） */
+    val reminderEnabled: Boolean = false,
     val leadMinutes: Int = 30,
     val autoRefresh: Boolean = true,
     val lastSyncAtMillis: Long = 0L,
@@ -84,7 +85,7 @@ object SettingsStore {
         AppSettings(
             studentId = p[KEY_STUDENT_ID] ?: "",
             hasPassword = !p[KEY_PASSWORD_ENC].isNullOrEmpty(),
-            reminderEnabled = p[KEY_REMINDER_ENABLED] ?: true,
+            reminderEnabled = p[KEY_REMINDER_ENABLED] ?: false,
             leadMinutes = p[KEY_LEAD_MINUTES] ?: 30,
             autoRefresh = p[KEY_AUTO_REFRESH] ?: true,
             lastSyncAtMillis = p[KEY_LAST_SYNC] ?: 0L,

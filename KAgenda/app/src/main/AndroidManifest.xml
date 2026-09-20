@@ -2,9 +2,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 访问教务系统 -->
+    <!-- 访问教务系统（仅联网权限，安装/首次启动时不会弹窗） -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 安装后不主动申请任何权限：
+         · 通知（课前提醒 / 常驻通知）：两者默认关闭，用户在设置里开启时才申请
+         · 存储（仅 Android 8.0–9 导出图片到相册）：点击「保存」时再申请
+         · 悬浮窗 / 精确闹钟 / 忽略电池优化：均需用户在设置中主动点击对应按钮才跳转授权 -->
 
     <!-- Android 8.0–9 导出课表图片到相册需要存储权限（Android 10+ 走 MediaStore 无需权限） -->
     <uses-permission

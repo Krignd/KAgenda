@@ -162,12 +162,16 @@ object ReminderScheduler {
         return pm.isIgnoringBatteryOptimizations(context.packageName)
     }
 
+    /** 系统“电池优化”白名单授权页的 Intent（供设置页用启动器打开并在返回时刷新状态） */
+    @android.annotation.SuppressLint("BatteryLife")
+    fun batteryExemptionIntent(context: Context): Intent =
+        Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            .setData(android.net.Uri.parse("package:" + context.packageName))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+
     /** 跳转系统“电池优化”白名单授权页（请求忽略电池优化） */
     @android.annotation.SuppressLint("BatteryLife")
     fun requestIgnoreBatteryOptimizations(context: Context) {
-        val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-            .setData(android.net.Uri.parse("package:" + context.packageName))
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        runCatching { context.startActivity(intent) }
+        runCatching { context.startActivity(batteryExemptionIntent(context)) }
     }
 }

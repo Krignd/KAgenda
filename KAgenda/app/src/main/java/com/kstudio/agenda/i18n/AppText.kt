@@ -325,6 +325,30 @@ interface AppStrings {
     val btnClearCache: String
     val btnSaveDayImg: String
     val btnSaveWeekImg: String
+    val btnSaveMonthImg: String
+    // 设置页选项卡
+    val settingsTabFeature: String
+    val settingsTabCustom: String
+    val settingsTabAccount: String
+    // 权限设置卡片
+    val secPermissions: String
+    val secPermissionsSub: String
+    val permGranted: String
+    val permNotGranted: String
+    val permRequest: String
+    val permNetworkName: String
+    val permNetworkWhy: String
+    val permNotifName: String
+    val permNotifWhy: String
+    val permOverlayName: String
+    val permOverlayWhy: String
+    val permExactName: String
+    val permExactWhy: String
+    val permBatteryName: String
+    val permBatteryWhy: String
+    val permStorageName: String
+    val permStorageWhy: String
+    fun permMissingCount(n: Int): String
     val imgDirNote: String
 
     val secLang: String
@@ -404,6 +428,7 @@ interface AppStrings {
     val msgReminderOff: String
     val msgNoScheduleData: String
     val msgSaveFailed: String
+    val msgStorageNeedPerm: String
     val msgSavedDayImage: String
     val msgSavedWeekImage: String
     val msgSavedMonthImage: String
@@ -735,13 +760,35 @@ object ZhStrings : AppStrings {
     override val notifNo = "通知权限：未开启"
     override val enableNotif = "开启通知"
 
-    override val secData = "数据与图片"
+    override val secData = "数据&图片"
     override val secDataSub = "课表从教务系统同步后缓存在本机"
     override val autoRefresh = "打开应用时自动刷新"
     override val btnSyncNow = "立即同步"
     override val btnClearCache = "清除缓存"
     override val btnSaveDayImg = "保存日课表图片"
     override val btnSaveWeekImg = "保存周课表图片"
+    override val btnSaveMonthImg = "保存月课表图片"
+    override val settingsTabFeature = "功能&权限"
+    override val settingsTabCustom = "用户自定义"
+    override val settingsTabAccount = "学校&账号"
+    override val secPermissions = "权限设置"
+    override val secPermissionsSub = "按需开启；未授予时对应功能不可用（可随时在此查看状态）"
+    override val permGranted = "已授予"
+    override val permNotGranted = "未授予"
+    override val permRequest = "去申请"
+    override val permNetworkName = "网络访问"
+    override val permNetworkWhy = "从教务系统同步课表（安装时即已具备，无需授权）"
+    override val permNotifName = "通知权限"
+    override val permNotifWhy = "课前提醒、常驻通知、测试通知"
+    override val permOverlayName = "悬浮窗权限（显示在其他应用上层）"
+    override val permOverlayWhy = "AI 悬浮球在其他应用上方显示"
+    override val permExactName = "精确闹钟"
+    override val permExactWhy = "提醒准点触发；未授予时会延迟最多 10 分钟"
+    override val permBatteryName = "忽略电池优化"
+    override val permBatteryWhy = "后台提醒更可靠"
+    override val permStorageName = "存储权限（Android 8.0–9）"
+    override val permStorageWhy = "导出课表图片到系统相册"
+    override fun permMissingCount(n: Int) = "未授予 $n 项"
     override val imgDirNote = "图片会保存到系统相册的 Pictures/K日程 目录。"
 
     override val secLang = "语言"
@@ -823,6 +870,7 @@ object ZhStrings : AppStrings {
     override val msgReminderOff = "已关闭课前提醒"
     override val msgNoScheduleData = "还没有课表数据，请先同步"
     override val msgSaveFailed = "保存失败，请重试"
+    override val msgStorageNeedPerm = "未授予存储权限，无法保存到相册（Android 8.0–9 需要）"
     override val msgSavedDayImage = "日课表已保存到相册（Pictures/K日程）"
     override val msgSavedWeekImage = "周课表已保存到相册（Pictures/K日程）"
     override val msgSavedMonthImage = "月课表已保存到相册（Pictures/K日程）"
@@ -1162,6 +1210,30 @@ object EnStrings : AppStrings {
     override val btnClearCache = "Clear cache"
     override val btnSaveDayImg = "Save day image"
     override val btnSaveWeekImg = "Save week image"
+    override val btnSaveMonthImg = "Save month image"
+    override val settingsTabFeature = "Features & permissions"
+    override val settingsTabCustom = "Custom"
+    override val settingsTabAccount = "School & account"
+    override val secPermissions = "Permissions"
+    override val secPermissionsSub =
+        "Grant on demand; the related feature stays unavailable without it (status is shown here)"
+    override val permGranted = "Granted"
+    override val permNotGranted = "Not granted"
+    override val permRequest = "Request"
+    override val permNetworkName = "Network access"
+    override val permNetworkWhy = "Sync the timetable from the school system (granted at install)"
+    override val permNotifName = "Notifications"
+    override val permNotifWhy = "Class reminders, persistent notification, test notification"
+    override val permOverlayName = "Overlay (display over other apps)"
+    override val permOverlayWhy = "Show the AI floating ball over other apps"
+    override val permExactName = "Exact alarms"
+    override val permExactWhy =
+        "Reminders fire on time; without it they can be delayed up to 10 minutes"
+    override val permBatteryName = "Ignore battery optimizations"
+    override val permBatteryWhy = "More reliable background reminders"
+    override val permStorageName = "Storage (Android 8.0–9)"
+    override val permStorageWhy = "Save schedule images to the system gallery"
+    override fun permMissingCount(n: Int) = "$n not granted"
     override val imgDirNote = "Images are saved to Pictures/K日程 in your gallery."
 
     override val secLang = "Language"
@@ -1243,6 +1315,9 @@ object EnStrings : AppStrings {
     override val msgReminderOff = "Class reminders disabled"
     override val msgNoScheduleData = "No schedule data yet — please sync first"
     override val msgSaveFailed = "Save failed, please retry"
+    override val msgStorageNeedPerm =
+        "Storage permission was not granted — the image could not be saved to the gallery " +
+            "(needed on Android 8.0–9)"
     override val msgSavedDayImage = "Day schedule saved to gallery (Pictures/K日程)"
     override val msgSavedWeekImage = "Week schedule saved to gallery (Pictures/K日程)"
     override val msgSavedMonthImage = "Month schedule saved to gallery (Pictures/K日程)"
@@ -1583,6 +1658,31 @@ object FrStrings : AppStrings {
     override val btnClearCache = "Vider le cache"
     override val btnSaveDayImg = "Image du jour"
     override val btnSaveWeekImg = "Image de la semaine"
+    override val btnSaveMonthImg = "Image du mois"
+    override val settingsTabFeature = "Fonctions et autorisations"
+    override val settingsTabCustom = "Personnalisation"
+    override val settingsTabAccount = "École et compte"
+    override val secPermissions = "Autorisations"
+    override val secPermissionsSub =
+        "À accorder à la demande ; la fonction associée reste indisponible sinon"
+    override val permGranted = "Accordé"
+    override val permNotGranted = "Non accordé"
+    override val permRequest = "Demander"
+    override val permNetworkName = "Accès réseau"
+    override val permNetworkWhy =
+        "Synchroniser l'emploi du temps depuis le système scolaire (accordé à l'installation)"
+    override val permNotifName = "Notifications"
+    override val permNotifWhy = "Rappels de cours, notification permanente, notification de test"
+    override val permOverlayName = "Superposition (par-dessus les autres applis)"
+    override val permOverlayWhy = "Afficher la bulle IA par-dessus les autres applis"
+    override val permExactName = "Alarmes exactes"
+    override val permExactWhy =
+        "Rappels à l'heure ; sinon ils peuvent être retardés de 10 minutes"
+    override val permBatteryName = "Ignorer l'optimisation de batterie"
+    override val permBatteryWhy = "Rappels en arrière-plan plus fiables"
+    override val permStorageName = "Stockage (Android 8.0–9)"
+    override val permStorageWhy = "Enregistrer les images dans la galerie système"
+    override fun permMissingCount(n: Int) = "$n non accordées"
     override val imgDirNote = "Les images sont enregistrées dans Pictures/K日程."
 
     override val secLang = "Langue / Language"
@@ -1664,6 +1764,9 @@ object FrStrings : AppStrings {
     override val msgReminderOff = "Rappels de cours désactivés"
     override val msgNoScheduleData = "Aucune donnée — synchronisez d'abord"
     override val msgSaveFailed = "Échec de l'enregistrement, réessayez"
+    override val msgStorageNeedPerm =
+        "Permission de stockage refusée : l'image n'a pas pu être enregistrée dans la galerie " +
+            "(nécessaire sous Android 8.0–9)"
     override val msgSavedDayImage = "Jour enregistré dans la galerie (Pictures/K日程)"
     override val msgSavedWeekImage = "Semaine enregistrée dans la galerie (Pictures/K日程)"
     override val msgSavedMonthImage = "Mois enregistré dans la galerie (Pictures/K日程)"
