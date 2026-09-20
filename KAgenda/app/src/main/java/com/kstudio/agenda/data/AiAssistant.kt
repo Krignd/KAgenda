@@ -46,7 +46,8 @@ object AiAssistant {
         note = item.note,
         type = item.type.takeIf { key -> key in AgendaTypes.ORDER } ?: "",
         isPlan = item.isPlan,
-        repeatRule = if (item.isPlan) item.repeat else "",
+        // 重复规则：日程与计划同样支持（“每周二四六”这类周期性描述不能丢）
+        repeatRule = item.repeat,
     )
 
     /** 应用一批操作；返回统计（unmatched=未匹配到目标的修改/删除） */
@@ -121,8 +122,7 @@ object AiAssistant {
         endTime = s.endTime ?: e.endTime,
         location = s.location ?: e.location,
         note = s.note ?: e.note,
-        // 重复规则仅对“计划”生效（与编辑器口径一致）：非计划条目即使 AI 传了 repeat 也不落库，
-        // 避免“设置了重复却不显示”的困惑
-        repeatRule = if (e.isPlan) (s.repeat ?: e.repeatRule) else e.repeatRule,
+        // 重复规则：短日程/短计划都生效（长日程本身是时间段，不叠加重复）
+        repeatRule = if (e.isLong) e.repeatRule else (s.repeat ?: e.repeatRule),
     )
 }

@@ -156,6 +156,8 @@ interface AppStrings {
     val repeatBiweeklyMode: String
     val repeatMonthlyMode: String
     val repeatFieldHint: String
+    val errRepeatNoDay: String
+    val repeatNeedDayHint: String
     fun repeatEveryNDays(n: Int): String
     fun repeatLabel(rule: String): String     // 规则 → 展示文案（空规则返回空串）
     fun deleteBody(name: String): String
@@ -376,6 +378,13 @@ interface AppStrings {
     val readingLog: String
     val emptyLog: String
     val logShareSubject: String
+    val shareChooseFormat: String
+    val shareFormatHint: String
+    val shareAsTxt: String
+    val shareAsMd: String
+    val logMdTime: String
+    val logMdVersion: String
+    val logMdDevice: String
     val diagTitle: String
     val diagVersion: String
     val diagSync: String
@@ -532,6 +541,8 @@ object ZhStrings : AppStrings {
     override val repeatBiweeklyMode = "隔周"
     override val repeatMonthlyMode = "每月"
     override val repeatFieldHint = "例如：每周二/四/六、隔周周二、每3天（留空保持不变）"
+    override val errRepeatNoDay = "未选择星期：请至少选择一个重复的星期后再保存"
+    override val repeatNeedDayHint = "请至少选择一个星期（未选择无法保存）"
     override fun repeatEveryNDays(n: Int) = if (n <= 1) "每天" else "每${n}天"
     override fun repeatLabel(rule: String) = when {
         rule.isBlank() -> ""
@@ -675,7 +686,7 @@ object ZhStrings : AppStrings {
     override val timeFuzzyHint = "选择大致时段（凌晨 / 早晨 / 上午 / 下午 / 晚上 / 午夜）；此日程只按天提示倒计时"
 
     override val secOverlay = "悬浮球"
-    override val secOverlaySub = "在任意应用上方显示 DeepSeek 悬浮球，点按即可输入并添加日程"
+    override val secOverlaySub = "在任意应用上方显示AI助手悬浮球"
     override val overlayEnable = "开启悬浮球"
     override val overlayHint = "拖动悬浮球松开后会自动吸附到最近的屏幕侧边"
     override val overlayNeedPerm = "需要「显示在其他应用上层」权限"
@@ -787,6 +798,13 @@ object ZhStrings : AppStrings {
     override val readingLog = "正在读取日志…"
     override val emptyLog = "（暂无日志）"
     override val logShareSubject = "K日程运行日志"
+    override val shareChooseFormat = "分享日志"
+    override val shareFormatHint = "将生成一个日志文件（英文文件名 + 时间点）后分享，请选择文件格式："
+    override val shareAsTxt = "TXT 文本"
+    override val shareAsMd = "Markdown"
+    override val logMdTime = "生成时间"
+    override val logMdVersion = "应用版本"
+    override val logMdDevice = "设备"
     override val diagTitle = "诊断信息"
     override val diagVersion = "应用版本"
     override val diagSync = "同步状态"
@@ -944,6 +962,8 @@ object EnStrings : AppStrings {
     override val repeatBiweeklyMode = "Every other week"
     override val repeatMonthlyMode = "Monthly"
     override val repeatFieldHint = "e.g. Tue/Thu/Sat weekly, every other Tue, every 3 days (blank = unchanged)"
+    override val errRepeatNoDay = "No weekday selected: pick at least one weekday to repeat"
+    override val repeatNeedDayHint = "Pick at least one weekday (cannot save otherwise)"
     override fun repeatEveryNDays(n: Int) = if (n <= 1) "Daily" else "Every $n days"
     override fun repeatLabel(rule: String) = when {
         rule.isBlank() -> ""
@@ -1086,7 +1106,7 @@ object EnStrings : AppStrings {
     override val timeFuzzyHint = "Pick a rough period (凌晨 / 早晨 / 上午 / 下午 / 晚上 / 午夜); countdown is day-based"
 
     override val secOverlay = "Floating ball"
-    override val secOverlaySub = "Show a DeepSeek ball over other apps; tap to type and add schedules"
+    override val secOverlaySub = "Show the AI assistant floating ball over any app"
     override val overlayEnable = "Enable floating ball"
     override val overlayHint = "Release the ball to snap it to the nearest screen edge"
     override val overlayNeedPerm = "Requires the \"Display over other apps\" permission"
@@ -1198,6 +1218,13 @@ object EnStrings : AppStrings {
     override val readingLog = "Reading logs…"
     override val emptyLog = "(No logs)"
     override val logShareSubject = "K Agenda logs"
+    override val shareChooseFormat = "Share logs"
+    override val shareFormatHint = "A log file (English name + timestamp) will be generated and shared. Choose the format:"
+    override val shareAsTxt = "TXT text"
+    override val shareAsMd = "Markdown"
+    override val logMdTime = "Generated"
+    override val logMdVersion = "App version"
+    override val logMdDevice = "Device"
     override val diagTitle = "Diagnostics"
     override val diagVersion = "App version"
     override val diagSync = "Sync status"
@@ -1356,6 +1383,8 @@ object FrStrings : AppStrings {
     override val repeatBiweeklyMode = "Une semaine sur deux"
     override val repeatMonthlyMode = "Chaque mois"
     override val repeatFieldHint = "ex. mar./jeu./sam. chaque semaine, un mardi sur deux, tous les 3 jours (vide = inchangé)"
+    override val errRepeatNoDay = "Aucun jour sélectionné : choisissez au moins un jour de la semaine"
+    override val repeatNeedDayHint = "Choisissez au moins un jour (sinon impossible d'enregistrer)"
     override fun repeatEveryNDays(n: Int) = if (n <= 1) "Tous les jours" else "Tous les $n jours"
     override fun repeatLabel(rule: String) = when {
         rule.isBlank() -> ""
@@ -1498,7 +1527,7 @@ object FrStrings : AppStrings {
     override val timeFuzzyHint = "Choisissez une période (凌晨 / 早晨 / 上午 / 下午 / 晚上 / 午夜) ; compte à rebours par jour"
 
     override val secOverlay = "Bulle flottante"
-    override val secOverlaySub = "Afficher la bulle DeepSeek par-dessus les autres applis ; appuyez pour saisir et ajouter"
+    override val secOverlaySub = "Afficher la bulle de l'assistant IA par-dessus n'importe quelle appli"
     override val overlayEnable = "Activer la bulle"
     override val overlayHint = "Relâchez la bulle pour la coller au bord de l'écran le plus proche"
     override val overlayNeedPerm = "Nécessite l'autorisation « Afficher par-dessus les autres applis »"
@@ -1610,6 +1639,13 @@ object FrStrings : AppStrings {
     override val readingLog = "Lecture des journaux…"
     override val emptyLog = "(Aucun journal)"
     override val logShareSubject = "Journaux K Agenda"
+    override val shareChooseFormat = "Partager les journaux"
+    override val shareFormatHint = "Un fichier de journal (nom anglais + horodatage) sera généré puis partagé. Choisissez le format :"
+    override val shareAsTxt = "Texte TXT"
+    override val shareAsMd = "Markdown"
+    override val logMdTime = "Généré le"
+    override val logMdVersion = "Version de l'appli"
+    override val logMdDevice = "Appareil"
     override val diagTitle = "Diagnostics"
     override val diagVersion = "Version de l'application"
     override val diagSync = "État de synchro"

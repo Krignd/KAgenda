@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- K日程 应用图标（悬浮球主体）：品牌蓝渐变圆角底 + 台历 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="11dp" />
+            <gradient
+                android:angle="270"
+                android:endColor="#1B44C0"
+                android:startColor="#2E5FE6"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item android:drawable="@drawable/ic_ball_app_foreground" />
+</layer-list>

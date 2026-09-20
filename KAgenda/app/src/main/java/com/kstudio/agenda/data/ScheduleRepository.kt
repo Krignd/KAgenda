@@ -23,7 +23,7 @@ sealed interface SyncUi {
     data object Idle : SyncUi
     data object Running : SyncUi
     data class NeedLogin(val message: String = "") : SyncUi
-    data class Success(val atMillis: Long) : SyncUi
+    data class Success(val atMillis: Long, val notice: String = "") : SyncUi
     data class Error(val message: String) : SyncUi
 }
 
@@ -87,8 +87,14 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     /**
      * 执行一次同步。
      * @param silent true 时不把失败暴露为错误状态（用于打开 App 时的后台自动刷新）
+     * @param verifyCredentials 用户在设置页手动登录时为 true：清掉旧认证会话、用新密码真实登录一次，
+     *   密码错误时给出明确失败提示（避免“乱输密码也显示已同步”）
      */
-    fun syncNow(credentials: Credentials? = null, silent: Boolean = false) {
+    fun syncNow(
+        credentials: Credentials? = null,
+        silent: Boolean = false,
+        verifyCredentials: Boolean = false,
+    ) {
         // 防误操作/并发：互斥判定在进入协程之前完成（原实现两次快速调用可能同时通过检查，
         // 导致两个同步流程并发运行、状态互相覆盖）
         synchronized(this) {
@@ -119,7 +125,11 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             }
             AppLog.i(TAG, "开始同步（silent=$silent）")
             val result = withTimeoutOrNull(SYNC_HARD_TIMEOUT_MS) {
-                engine.fetchWeek(creds, incrementalAgainstSemester = incrementalAgainst)
+                engine.fetchWeek(
+                    creds,
+                    incrementalAgainstSemester = incrementalAgainst,
+                    verifyCredentials = verifyCredentials,
+                )
             } ?: SyncResult.Failure("同步超时（超过 4 分钟），请重试")
             // 重置/退出登录会提升世代号：过期的同步结果一律丢弃，
             // 防止“刚清空/登出，又被旧结果写回”的错乱状态
@@ -157,7 +167,7 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                         semester.anchorEpochDay,
                     )
                     _semester.value = semester
-                    _sync.value = SyncUi.Success(semester.fetchedAtMillis)
+                    _sync.value = SyncUi.Success(semester.fetchedAtMillis, result.notice)
                     runCatching { ReminderScheduler.reschedule(appContext) }
                     runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
                     runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }

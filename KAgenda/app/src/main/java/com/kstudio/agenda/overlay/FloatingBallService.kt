@@ -28,7 +28,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
-import androidx.core.content.ContextCompat
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.AiClient
@@ -36,14 +35,20 @@ import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.notif.StatusNotification
+import com.kstudio.agenda.ui.AiSurface
 import com.kstudio.agenda.ui.MainActivity
+import com.kstudio.agenda.ui.aiOpBadgeLabel
+import com.kstudio.agenda.ui.aiOpSummary
 import com.kstudio.agenda.data.AiAssistant
+import com.kstudio.agenda.util.AppPresence
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
@@ -66,7 +71,12 @@ class FloatingBallService : Service() {
         private const val PREFS = "floating_ball_pos"
         private const val KEY_X = "x"
         private const val KEY_Y = "y"
+        private const val KEY_PANEL_X = "panel_x"
+        private const val KEY_PANEL_Y = "panel_y"
         private const val REST_ALPHA = 0.78f
+
+        /** 悬浮窗权限轮询间隔：权限被系统/用户收回后立即隐藏悬浮球 */
+        private const val PERMISSION_POLL_MS = 3_000L
 
         /** 开启悬浮球（未授予悬浮窗权限时不动作） */
         fun start(context: Context) {
@@ -97,8 +107,21 @@ class FloatingBallService : Service() {
     private var parsedOps: List<AiSkills.AiOp> = emptyList()
     private var busy = false
 
+    /** 面板中的输入框与反馈文本（收起时用于保存本次输入） */
+    private var panelInput: EditText? = null
+    private var panelMsgText: String = ""
+
+    /** 上次未提交的输入（收起面板后保留，重新打开可直接继续编辑/添加） */
+    private var draftText: String = ""
+    private var draftOps: List<AiSkills.AiOp> = emptyList()
+    private var draftMsg: String = ""
+
     /** 在飞识别请求：收起面板时取消，避免下次打开面板时被 busy 拦住长时间无响应 */
     private var requestJob: Job? = null
+
+    /** 悬浮窗权限守护 / AI 界面互斥监听 */
+    private var permissionJob: Job? = null
+    private var surfaceJob: Job? = null
 
     private val ballSizePx: Int get() = dp(54)
 
@@ -108,6 +131,24 @@ class FloatingBallService : Service() {
         super.onCreate()
         windowManager = getSystemService(WindowManager::class.java)
         running = true
+        // 权限在运行中被收回（系统重置 / 卸载重装 / 用户手动关闭）时立即隐藏悬浮球，
+        // 避免“没有权限却还显示着悬浮球”的假象
+        permissionJob = scope.launch {
+            while (true) {
+                delay(PERMISSION_POLL_MS)
+                if (!Settings.canDrawOverlays(this@FloatingBallService)) {
+                    hidePanel(keepDraft = true)
+                    stopSelf()
+                    break
+                }
+            }
+        }
+        // AI 助手界面互斥：应用内对话框打开时收起悬浮球面板（同一时刻只保留后者）
+        surfaceJob = scope.launch {
+            AiSurface.state.collect { kind ->
+                if (kind != AiSurface.Kind.Overlay && panel != null) hidePanel(keepDraft = true)
+            }
+        }
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -117,21 +158,21 @@ class FloatingBallService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+        // 未授予「显示在其他应用上层」权限时：不显示悬浮球
         if (!Settings.canDrawOverlays(this)) {
             stopSelf()
             return START_NOT_STICKY
         }
         startForegroundNow()
-        if (ball == null) {
-            runCatching { addBall() }.onFailure { stopSelf() }
-        }
-        // 设置里已关闭时自动退出（含系统重启服务后的兜底）
+        // 设置里已关闭时：不创建悬浮球并退出（含系统重启服务后的兜底）
         scope.launch {
             val enabled = runCatching { SettingsStore.read(this@FloatingBallService).floatingBall }
                 .getOrDefault(false)
             if (!enabled) {
-                hidePanel()
+                hidePanel(keepDraft = true)
                 stopSelf()
+            } else if (ball == null) {
+                runCatching { addBall() }.onFailure { stopSelf() }
             }
         }
         return START_STICKY
@@ -140,7 +181,10 @@ class FloatingBallService : Service() {
     override fun onDestroy() {
         running = false
         snapAnimator?.cancel()
-        hidePanel()
+        permissionJob?.cancel()
+        surfaceJob?.cancel()
+        hidePanel(keepDraft = true)
+        AiSurface.close(AiSurface.Kind.Overlay)
         ball?.let { runCatching { windowManager.removeView(it) } }
         ball = null
         scope.cancel()
@@ -150,7 +194,7 @@ class FloatingBallService : Service() {
     /** 屏幕旋转/尺寸变化：把悬浮球重新夹回屏内（否则横竖屏切换后可能停在屏外不可触达） */
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        hidePanel()
+        hidePanel(keepDraft = true)
         val v = ball ?: return
         val lp = ballParams ?: return
         val m = resources.displayMetrics
@@ -203,12 +247,12 @@ class FloatingBallService : Service() {
     private fun addBall() {
         val frame = FrameLayout(this)
         val icon = ImageView(this)
-        icon.setImageResource(R.drawable.ic_deepseek)
+        // 图标 = K日程应用图标（圆角蓝渐变底 + 日历）+ 右下角 DeepSeek 小角标（角标绘制在图标之上）
+        icon.setImageResource(R.drawable.ic_overlay_ball_icon)
         frame.addView(
             icon,
-            FrameLayout.LayoutParams(dp(30), dp(30), Gravity.CENTER),
+            FrameLayout.LayoutParams(ballSizePx, ballSizePx, Gravity.CENTER),
         )
-        frame.background = ContextCompat.getDrawable(this, R.drawable.bg_overlay_ball)
         frame.elevation = dp(6).toFloat()
         frame.alpha = REST_ALPHA
 
@@ -255,8 +299,8 @@ class FloatingBallService : Service() {
                     val dy = e.rawY - downRawY
                     if (!dragging && (abs(dx) > slop || abs(dy) > slop)) {
                         dragging = true
-                        // 开始拖动悬浮球时收起面板，避免面板停留在旧位置造成困惑
-                        hidePanel()
+                        // 开始拖动悬浮球时收起面板（输入内容会保留），避免面板停留在旧位置造成困惑
+                        hidePanel(keepDraft = true)
                     }
                     if (dragging) {
                         lp.x = (startX + dx).toInt()
@@ -271,9 +315,16 @@ class FloatingBallService : Service() {
                     if (dragging) {
                         snapToEdge()
                     } else if (e.eventTime - downTime > 600L) {
+                        hidePanel(keepDraft = true)
+                        openApp()
+                    } else if (panel != null) {
+                        // 面板已打开 → 收起
+                        hidePanel(keepDraft = true)
+                    } else if (AppPresence.visible) {
+                        // 应用就在前台：改为打开应用内的 AI 助手界面（不同时显示两个界面）
                         openApp()
                     } else {
-                        togglePanel()
+                        showPanel()
                     }
                     true
                 }
@@ -316,10 +367,6 @@ class FloatingBallService : Service() {
 
     // ------------------------------------------------------------ 快速输入面板
 
-    private fun togglePanel() {
-        if (panel != null) hidePanel() else showPanel()
-    }
-
     private fun showPanel() {
         if (panel != null) return
         val t = AppText.current
@@ -352,10 +399,25 @@ class FloatingBallService : Service() {
         msg.setTextColor(subColor)
         msg.visibility = View.GONE
         parsedOps = emptyList()
+        panelInput = input
+        panelMsgText = ""
 
         fun setMsg(text: String) {
+            panelMsgText = text
             msg.visibility = if (text.isBlank()) View.GONE else View.VISIBLE
             msg.text = text
+        }
+
+        // 恢复上次未提交的输入：误关面板后不必重新输入（再点一下悬浮球即可继续）
+        val savedText = draftText
+        val savedOps = draftOps
+        val savedMsg = draftMsg
+        if (savedText.isNotBlank()) {
+            input.setText(savedText)
+            input.setSelection(savedText.length)
+            parsedOps = savedOps
+            addBtn.isEnabled = parsedOps.isNotEmpty()
+            if (savedMsg.isNotBlank()) setMsg(savedMsg)
         }
 
         // 修改输入内容后，之前的识别结果作废（防止“改了文字却把旧结果加进去”的误操作）
@@ -363,6 +425,10 @@ class FloatingBallService : Service() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
             override fun afterTextChanged(s: Editable?) {
+                // 草稿跟随输入框：面板收起后仍保留本次输入
+                draftText = s?.toString().orEmpty()
+                draftOps = emptyList()
+                draftMsg = ""
                 if (parsedOps.isNotEmpty()) {
                     parsedOps = emptyList()
                     addBtn.isEnabled = false
@@ -371,10 +437,10 @@ class FloatingBallService : Service() {
             }
         })
 
-        close.setOnClickListener { hidePanel() }
+        close.setOnClickListener { hidePanel(keepDraft = true) }
         open.setOnClickListener {
             openApp()
-            hidePanel()
+            hidePanel(keepDraft = true)
         }
         parseBtn.setOnClickListener {
             val text = input.text?.toString().orEmpty()
@@ -412,23 +478,11 @@ class FloatingBallService : Service() {
                         setMsg(t.qaNothing)
                     } else {
                         parsedOps = list
+                        // 反馈中标注每条是「日程」还是「计划」，避免用户分不清去向
+                        val existing = AgendaStore.events.value
                         setMsg(
                             list.joinToString("\n") { op ->
-                                val badge = when (op) {
-                                    is AiSkills.AiOp.Add -> t.opAdd
-                                    is AiSkills.AiOp.Update -> t.opUpdate
-                                    is AiSkills.AiOp.Delete -> t.opDelete
-                                }
-                                "[$badge] " + when (op) {
-                                    is AiSkills.AiOp.Add -> buildString {
-                                        append(op.item.title)
-                                        op.item.date?.let { d -> append(" · ${d.monthValue}/${d.dayOfMonth}") }
-                                        if (op.item.startTime.isNotBlank()) append(" ").append(op.item.startTime)
-                                        if (op.item.endTime.isNotBlank()) append("-").append(op.item.endTime)
-                                    }
-                                    is AiSkills.AiOp.Update -> op.matchTitle
-                                    is AiSkills.AiOp.Delete -> op.matchTitle
-                                }
+                                "[" + aiOpBadgeLabel(op, t) + "] " + aiOpSummary(op, t, existing)
                             }
                         )
                     }
@@ -462,14 +516,17 @@ class FloatingBallService : Service() {
                         Toast.LENGTH_SHORT,
                     ).show()
                     parsedOps = emptyList()
-                    hidePanel()
+                    // 已提交：清空草稿，下次打开面板是全新的输入
+                    hidePanel(keepDraft = false)
                 } finally {
                     busy = false
                 }
             }
         }
 
+        val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val screenW = resources.displayMetrics.widthPixels
+        val screenH = resources.displayMetrics.heightPixels
         val width = min(screenW - dp(28), dp(360)).coerceAtLeast(dp(240))
         val lp = WindowManager.LayoutParams(
             width,
@@ -481,14 +538,21 @@ class FloatingBallService : Service() {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = (screenW - width) / 2
-            y = dp(72)
+            x = prefs.getInt(KEY_PANEL_X, (screenW - width) / 2)
+                .coerceIn(dp(4), (screenW - width - dp(4)).coerceAtLeast(dp(4)))
+            y = prefs.getInt(KEY_PANEL_Y, dp(72))
+                .coerceIn(0, (screenH - dp(120)).coerceAtLeast(0))
             softInputMode = WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
         }
+
+        // 面板可拖动：按住空白处/标题区可移动整个面板（输入框与按钮仍正常响应）
+        attachPanelDrag(v, lp)
 
         panel = v
         panelParams = lp
         runCatching { windowManager.addView(v, lp) }
+        // 与「应用内 AI 助手对话框」互斥：面板成为当前界面，对方收到后自动收起
+        AiSurface.openOverlay()
         input.requestFocus()
         input.post {
             val imm = getSystemService(InputMethodManager::class.java)
@@ -496,16 +560,80 @@ class FloatingBallService : Service() {
         }
     }
 
-    private fun hidePanel() {
+    /** 面板拖动：把面板拖到不遮挡内容的位置（位置会记住，下次打开沿用） */
+    private fun attachPanelDrag(root: View, lp: WindowManager.LayoutParams) {
+        var downRawX = 0f
+        var downRawY = 0f
+        var startX = 0
+        var startY = 0
+        var dragging = false
+        val slop = ViewConfiguration.get(this).scaledTouchSlop
+        root.setOnTouchListener { _, e ->
+            when (e.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    downRawX = e.rawX
+                    downRawY = e.rawY
+                    startX = lp.x
+                    startY = lp.y
+                    dragging = false
+                    true
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    if (!dragging &&
+                        (abs(e.rawX - downRawX) > slop || abs(e.rawY - downRawY) > slop)
+                    ) {
+                        dragging = true
+                    }
+                    if (dragging) {
+                        val m = resources.displayMetrics
+                        lp.x = (startX + (e.rawX - downRawX)).toInt()
+                            .coerceIn(dp(4), (m.widthPixels - lp.width - dp(4)).coerceAtLeast(dp(4)))
+                        lp.y = (startY + (e.rawY - downRawY)).toInt()
+                            .coerceIn(0, (m.heightPixels - dp(120)).coerceAtLeast(0))
+                        runCatching { windowManager.updateViewLayout(root, lp) }
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    if (dragging) {
+                        getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                            .putInt(KEY_PANEL_X, lp.x)
+                            .putInt(KEY_PANEL_Y, lp.y)
+                            .apply()
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    /**
+     * 收起面板。
+     * @param keepDraft true=保留本次输入（下次打开面板继续编辑）；false=已提交，清空草稿
+     */
+    private fun hidePanel(keepDraft: Boolean) {
         val v = panel ?: return
+        if (keepDraft) {
+            panelInput?.text?.toString()?.let { draftText = it }
+            draftOps = parsedOps
+            draftMsg = panelMsgText
+        } else {
+            draftText = ""
+            draftOps = emptyList()
+            draftMsg = ""
+        }
         panel = null
         panelParams = null
+        panelInput = null
+        panelMsgText = ""
         parsedOps = emptyList()
         // 收起面板时取消在飞识别请求：否则重开面板后 busy 期间点“识别”会毫无反应
         requestJob?.cancel()
         requestJob = null
         busy = false
         runCatching { windowManager.removeView(v) }
+        AiSurface.close(AiSurface.Kind.Overlay)
     }
 
     private fun openApp() {

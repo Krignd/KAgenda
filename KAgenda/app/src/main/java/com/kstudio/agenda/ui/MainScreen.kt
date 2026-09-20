@@ -89,6 +89,7 @@ fun MainScreen(
     val sync by vm.syncState.collectAsState()
     val syncActive = sync is SyncUi.Running || sync is SyncUi.NeedLogin
     val settings by vm.settings.collectAsState()
+    val aiSurface by AiSurface.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
     val t = LocalStrings.current
@@ -141,6 +142,19 @@ fun MainScreen(
         onLaunchHandled()
     }
 
+    // AI 助手界面互斥（同一时刻只保留一个）：悬浮球面板打开 → 收起应用内对话框；
+    // 应用内对话框打开 → 通知悬浮球收起面板；两者几乎同时打开时优先悬浮球
+    LaunchedEffect(aiSurface) {
+        if (aiSurface == AiSurface.Kind.Overlay) showQuickAdd = false
+    }
+    LaunchedEffect(showQuickAdd) {
+        if (showQuickAdd) {
+            if (!AiSurface.openInApp()) showQuickAdd = false
+        } else {
+            AiSurface.close(AiSurface.Kind.InApp)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -148,11 +162,21 @@ fun MainScreen(
                     Column {
                         Text(t.appTitle, style = MaterialTheme.typography.titleLarge)
                         when (val s = sync) {
-                            is SyncUi.Success -> Text(
-                                t.syncSyncedAt + android.text.format.DateUtils.getRelativeTimeSpanString(s.atMillis),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            is SyncUi.Success -> Column {
+                                Text(
+                                    t.syncSyncedAt + android.text.format.DateUtils.getRelativeTimeSpanString(s.atMillis),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                // 需要用户留意的提示（如：手动登录的新密码未能校验）
+                                if (s.notice.isNotBlank()) {
+                                    Text(
+                                        text = s.notice,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
                             is SyncUi.Error -> Text(
                                 s.message,
                                 style = MaterialTheme.typography.labelSmall,

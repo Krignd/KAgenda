@@ -502,8 +502,8 @@ fun AgendaEditorDialog(
                     }
                 }
 
-                if (!isLong && isPlanContext) {
-                    // 重复规则：仅计划（短日程）可用，如“每周二/四/六”“隔周周二”“每 3 天”
+                if (!isLong) {
+                    // 重复规则：日程与计划一致（每周/隔周/按天/每月）
                     RepeatRulePicker(
                         rule = repeatRule,
                         onChange = { repeatRule = it },
@@ -540,6 +540,11 @@ fun AgendaEditorDialog(
                 val titleText = title.trim()
                 if (titleText.isBlank()) {
                     error = t.errTitle
+                    return@TextButton
+                }
+                // 选了「每周/隔周」却没选任何星期：不能保存（否则规则无效、条目不会出现）
+                if (!isLong && isWeekdayRuleEmpty(repeatRule)) {
+                    error = t.errRepeatNoDay
                     return@TextButton
                 }
                 if (isLong) {
@@ -664,6 +669,11 @@ fun AgendaEditorDialog(
 }
 
 // ---------------------------------------------------------------- 小组件
+
+/** 「每周/隔周」但一个星期都没选：规则无效（token 形如 "weekly:"/"biweekly:"），需要提醒用户 */
+internal fun isWeekdayRuleEmpty(rule: String): Boolean =
+    (rule.startsWith("weekly:") || rule.startsWith("biweekly:")) &&
+        rule.substringAfter(':').isBlank()
 
 /** 只读“字段”样式，点击弹出选择器；可选清除按钮 */
 @Composable

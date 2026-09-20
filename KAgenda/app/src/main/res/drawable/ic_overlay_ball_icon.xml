@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 悬浮球图标：K日程 应用图标 + 右下角较小的 DeepSeek 角标（角标绘制在 K日程 图标之上） -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@drawable/bg_overlay_ball" />
+    <item
+        android:drawable="@drawable/ic_ball_app_icon"
+        android:gravity="center"
+        android:width="42dp"
+        android:height="42dp" />
+    <item
+        android:bottom="2dp"
+        android:drawable="@drawable/ic_ball_deepseek_badge"
+        android:gravity="bottom|right"
+        android:left="2dp"
+        android:right="2dp"
+        android:top="2dp"
+        android:width="18dp"
+        android:height="18dp" />
+</layer-list>

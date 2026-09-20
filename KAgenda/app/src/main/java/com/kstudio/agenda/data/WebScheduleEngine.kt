@@ -32,7 +32,13 @@ import kotlin.coroutines.resume
 
 /** 同步结果 */
 sealed interface SyncResult {
-    data class Success(val semester: SemesterSchedule, val rawCaptureCount: Int) : SyncResult
+    data class Success(
+        val semester: SemesterSchedule,
+        val rawCaptureCount: Int,
+        /** 非空时提示需要用户留意的信息（如：新密码未能验证） */
+        val notice: String = "",
+    ) : SyncResult
+
     data class LoginRequired(val message: String) : SyncResult
     data class Failure(val message: String, val cause: Throwable? = null) : SyncResult
 }
@@ -106,6 +112,15 @@ class WebScheduleEngine(private val appContext: Context) {
         /** 账密被明确拒绝时的统一提示（此时重试同一份凭据无意义，立即终止登录流程） */
         private const val MSG_CREDENTIAL_ERROR =
             "登录失败：账号或密码错误，请核对「设置」中的学号与密码后重试"
+
+        /** 用户手动登录时，若旧会话仍有效导致新密码无法验证，给出的中性提示 */
+        private const val MSG_CREDENTIAL_UNVERIFIED =
+            "已同步（未能校验新密码：当前登录会话仍然有效，可在设置中「退出登录」后再登录）"
+
+        /** 统一认证常见的会话 Cookie 名（手动登录前清除，以强制出现登录表单） */
+        private val CAS_COOKIE_NAMES = listOf(
+            "CASTGC", "TGC", "CASTGC_JSESSIONID", "JSESSIONID", "SESSION", "SESSIONID", "CASPRIVACY",
+        )
     }
 
     private var webView: WebView? = null
@@ -312,16 +327,42 @@ class WebScheduleEngine(private val appContext: Context) {
             text.contains("invalid", ignoreCase = true) || text.contains("incorrect", ignoreCase = true)
 
     /**
+     * 清除统一身份认证的会话 Cookie（仅认证主机），使登录页重新出现表单。
+     * 用于「用户手动登录」场景：否则已有 CAS 会话会让错误密码“看起来登录成功”。
+     * 教务系统的会话 Cookie 不动：万一新密码有误，已缓存的课表仍可离线查看。
+     */
+    private fun clearCasSession() {
+        val host = hostOf(school.ssoUrl)
+        if (host.isBlank()) return
+        val cm = CookieManager.getInstance()
+        val url = "https://$host"
+        CAS_COOKIE_NAMES.forEach { name ->
+            listOf("/", "/cas", "/login").forEach { path ->
+                runCatching { cm.setCookie(url, "$name=; Path=$path; Max-Age=0") }
+            }
+        }
+        runCatching { cm.flush() }
+        AppLog.i(TAG, "已清除统一认证会话 Cookie（强制重新登录以校验新密码）")
+    }
+
+    /** Success 附加提示（其他结果原样返回） */
+    private fun SyncResult.withNotice(notice: String): SyncResult =
+        if (this is SyncResult.Success && notice.isNotBlank()) copy(notice = notice) else this
+
+    /**
      * 执行一次同步（阶段化流程，全程带日志与超时保护）。
      * 必须在主线程调用（内部会自行切换）。
      * @param incrementalAgainstSemester 非空时启用增量模式：若页面解析出的学期与该值（缓存的学期标签）
      *   一致，则跳过整学期按周重放，仅抓当前周 DOM（保存时由仓库与旧缓存合并）。用于静默自动刷新，
      *   可省去十几次接口请求；学期不一致时会自动降级为完整抓取。
+     * @param verifyCredentials 用户在设置页手动登录时为 true：先清除统一认证会话，强制走一次真实
+     *   登录校验新密码（否则已有会话会让错误密码“看起来登录成功”）。
      */
     suspend fun fetchWeek(
         credentials: Credentials?,
         timeoutMillis: Long = 210_000L,
         incrementalAgainstSemester: String? = null,
+        verifyCredentials: Boolean = false,
     ): SyncResult = withContext(Dispatchers.Main) {
         val startAt = SystemClock.uptimeMillis()
         val hardDeadline = startAt + timeoutMillis
@@ -338,7 +379,9 @@ class WebScheduleEngine(private val appContext: Context) {
                 )
             }
             val view = ensureWebView()
-            AppLog.i(TAG, "===== 开始同步（凭据：${if (credentials != null) "已保存" else "未保存"}）=====")
+            AppLog.i(TAG, "===== 开始同步（凭据：${if (credentials != null) "已保存" else "未保存"}${if (verifyCredentials) "，校验新密码" else ""}）=====")
+            // 用户在设置页手动登录：先清掉统一认证会话，保证下面的登录流程确实用了新密码
+            if (verifyCredentials && credentials != null) clearCasSession()
 
             // ---------- 阶段 1：直接打开教务系统首页（已有会话时最快） ----------
             // 若 WebView 已停留在首页，loadUrl 同一地址可能不会真正刷新（沿用上一轮残留的 DOM），
@@ -367,7 +410,11 @@ class WebScheduleEngine(private val appContext: Context) {
                 AppLog.w(TAG, "首页显示网络异常但残留旧课表内容，判定会话已失效，转入登录流程")
             }
             if (looksReady(probe)) {
-                return@withContext extract(view, "首页直出", incrementalAgainstSemester)
+                if (!verifyCredentials) {
+                    return@withContext extract(view, "首页直出", incrementalAgainstSemester)
+                }
+                // 手动登录：即使首页已有会话也继续走登录流程，确保新密码被真正提交校验
+                AppLog.i(TAG, "手动登录：首页已有会话，仍继续走登录流程校验新密码")
             }
 
             // ---------- 阶段 2：走统一身份认证 ----------
@@ -382,7 +429,11 @@ class WebScheduleEngine(private val appContext: Context) {
             }
 
             if (looksReady(loginProbe)) {
+                // 手动登录却直接回到了课表（旧会话仍未失效）→ 无法校验新密码，如实告知用户
+                val notice = if (verifyCredentials) MSG_CREDENTIAL_UNVERIFIED else ""
+                if (notice.isNotBlank()) AppLog.w(TAG, "未能校验新密码：统一认证仍处于登录态")
                 return@withContext extract(view, "登录页直达课表", incrementalAgainstSemester)
+                    .withNotice(notice)
             }
             if (loginProbe == null || !loginProbe.hasLoginForm) {
                 val p = loginProbe

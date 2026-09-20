@@ -58,6 +58,17 @@
             android:exported="false"
             android:label="@string/web_login_title" />
 
+        <!-- 分享运行日志：把生成的日志文件（txt/md）以附件形式分享给其他应用 -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- 上课提醒 -->
         <receiver
             android:name=".notif.ReminderReceiver"

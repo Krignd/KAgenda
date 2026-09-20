@@ -26,3 +26,4 @@ KAgenda/app/release/
 
 # ---- 临时日志文件（分析用，不入库）----
 /log.md
+/日志/

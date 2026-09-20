@@ -243,15 +243,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             message(t.msgNeedStudentId)
             return
         }
+        val newPassword = password?.takeIf { it.isNotBlank() }
         viewModelScope.launch {
-            val saved = SettingsStore.setAccount(getApplication(), id, password?.takeIf { it.isNotBlank() })
+            val saved = SettingsStore.setAccount(getApplication(), id, newPassword)
             if (!saved) {
                 // 加密失败（極少见）：如实提示，不假装保存成功
                 message(t.msgSaveFailed)
                 return@launch
             }
             message(t.msgAccountSaved)
-            repo.syncNow()
+            // 输入了密码 = 用户在“登录”：强制用新密码真实登录一次，
+            // 密码错误时明确报错（而不是沿用旧会话显示“已同步”）
+            repo.syncNow(verifyCredentials = newPassword != null)
         }
     }
 

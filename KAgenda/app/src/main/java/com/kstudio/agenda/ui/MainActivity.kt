@@ -17,6 +17,7 @@ import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.overlay.FloatingBallService
 import com.kstudio.agenda.ui.theme.KAgendaTheme
+import com.kstudio.agenda.util.AppPresence
 import kotlinx.coroutines.launch
 
 /**
@@ -54,11 +55,14 @@ class MainActivity : ComponentActivity() {
             }
         }
         handleIntent(intent)
-        // 悬浮球：设置已开启且获得「显示在其他应用上层」权限时，确保前台服务在运行
+        // 悬浮球：设置已开启且获得「显示在其他应用上层」权限时，确保前台服务在运行；
+        // 未开启或权限缺失时确保没有残留（“没有悬浮球权限就不显示悬浮球”）
         lifecycleScope.launch {
             val s = runCatching { SettingsStore.read(this@MainActivity) }.getOrNull()
             if (s?.floatingBall == true && Settings.canDrawOverlays(this@MainActivity)) {
                 FloatingBallService.start(this@MainActivity)
+            } else {
+                FloatingBallService.stop(this@MainActivity)
             }
         }
     }
@@ -67,6 +71,19 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // 悬浮球据此判断：点按时应用是否在前台（前台 → 打开应用内 AI 助手界面）
+        AppPresence.visible = true
+        // 应用回到前台时收起悬浮球面板：同一时刻只保留一个 AI 助手界面
+        if (AiSurface.state.value == AiSurface.Kind.Overlay) AiSurface.close(AiSurface.Kind.Overlay)
+    }
+
+    override fun onPause() {
+        AppPresence.visible = false
+        super.onPause()
     }
 
     private fun handleIntent(intent: Intent?) {

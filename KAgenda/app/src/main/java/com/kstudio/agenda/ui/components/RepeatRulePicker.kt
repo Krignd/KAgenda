@@ -103,14 +103,19 @@ fun RepeatRulePicker(
                         selected = d in days,
                         onClick = {
                             val next = if (d in days) days - d else days + d
-                            // 至少保留一天，避免出现空规则
-                            if (next.isNotEmpty()) {
-                                onChange(if (kind == 3) RepeatRules.biweekly(next) else RepeatRules.weekly(next))
-                            }
+                            // 允许一个都不选：由编辑器在保存时提醒（选了“每周/隔周”却无星期无法保存）
+                            onChange(if (kind == 3) RepeatRules.biweekly(next) else RepeatRules.weekly(next))
                         },
                         label = { Text(t.weekdayShort(d)) },
                     )
                 }
+            }
+            if (days.isEmpty()) {
+                Text(
+                    text = t.repeatNeedDayHint,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
             }
         }
     }

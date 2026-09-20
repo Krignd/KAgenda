@@ -131,6 +131,7 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                         ops.forEachIndexed { index, op ->
                             AiOpRow(
                                 op = op,
+                                existing = vm.agenda.value,
                                 onClick = { editIndex = index },
                                 onRemove = { ops = ops.filterIndexed { i, _ -> i != index } },
                             )
@@ -202,7 +203,12 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
 
 /** 操作预览行：动作徽标（添加/修改/删除）+ 内容 + 移除按钮；点击行可修改 */
 @Composable
-private fun AiOpRow(op: AiSkills.AiOp, onClick: () -> Unit, onRemove: () -> Unit) {
+private fun AiOpRow(
+    op: AiSkills.AiOp,
+    existing: List<com.kstudio.agenda.model.AgendaEvent>,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,
+) {
     val t = LocalStrings.current
     val (badge, color) = when (op) {
         is AiSkills.AiOp.Add -> t.opAdd to MaterialTheme.colorScheme.primary
@@ -224,7 +230,7 @@ private fun AiOpRow(op: AiSkills.AiOp, onClick: () -> Unit, onRemove: () -> Unit
         )
         Spacer(Modifier.width(6.dp))
         Text(
-            text = opSummary(op, t),
+            text = aiOpSummary(op, t, existing),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.weight(1f),
@@ -240,27 +246,52 @@ private fun AiOpRow(op: AiSkills.AiOp, onClick: () -> Unit, onRemove: () -> Unit
     }
 }
 
-/** 预览行摘要文案（本地拼接，字段已是用户可读文本） */
-private fun opSummary(op: AiSkills.AiOp, t: com.kstudio.agenda.i18n.AppStrings): String = when (op) {
-    is AiSkills.AiOp.Add -> buildString {
-        append(op.item.title)
-        op.item.date?.let { append(" · ${it.monthValue}/${it.dayOfMonth}") }
-        if (op.item.startTime.isNotBlank()) append(" ").append(op.item.startTime)
-        if (op.item.endTime.isNotBlank()) append("-").append(op.item.endTime)
-        if (op.item.location.isNotBlank()) append(" · ").append(op.item.location)
-        t.repeatLabel(op.item.repeat).takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
-        append(if (op.item.isPlan) "（计划）" else "（日程）")
+/** 操作徽标文案（添加/修改/删除），供应用内列表与悬浮面板共用 */
+fun aiOpBadgeLabel(op: AiSkills.AiOp, t: com.kstudio.agenda.i18n.AppStrings): String = when (op) {
+    is AiSkills.AiOp.Add -> t.opAdd
+    is AiSkills.AiOp.Update -> t.opUpdate
+    is AiSkills.AiOp.Delete -> t.opDelete
+}
+
+/**
+ * 预览行摘要文案（本地拼接，字段已是用户可读文本）。
+ * 末尾标注该条内容是「日程」还是「计划」；修改/删除按 [existing] 匹配到的条目判断归属。
+ */
+fun aiOpSummary(
+    op: AiSkills.AiOp,
+    t: com.kstudio.agenda.i18n.AppStrings,
+    existing: List<com.kstudio.agenda.model.AgendaEvent> = emptyList(),
+): String {
+    val matched = when (op) {
+        is AiSkills.AiOp.Update -> AiAssistant.findMatch(existing, op.matchTitle, op.matchDate)
+        is AiSkills.AiOp.Delete -> AiAssistant.findMatch(existing, op.matchTitle, op.matchDate)
+        is AiSkills.AiOp.Add -> null
     }
-    is AiSkills.AiOp.Update -> buildString {
-        append("「").append(op.matchTitle).append("」")
-        op.set.title?.let { append(" → ").append(it) }
-        op.set.date?.let { append(" · ").append(it.monthValue).append("/").append(it.dayOfMonth) }
-        op.set.startTime?.let { append(" ").append(it) }
-        op.set.endTime?.let { append("-").append(it) }
-        op.set.location?.let { append(" · ").append(it) }
-        op.set.repeat?.let { r -> append(" · ").append(t.repeatLabel(r).ifBlank { t.repeatNone }) }
+    return when (op) {
+        is AiSkills.AiOp.Add -> buildString {
+            append(op.item.title)
+            op.item.date?.let { append(" · ${it.monthValue}/${it.dayOfMonth}") }
+            if (op.item.startTime.isNotBlank()) append(" ").append(op.item.startTime)
+            if (op.item.endTime.isNotBlank()) append("-").append(op.item.endTime)
+            if (op.item.location.isNotBlank()) append(" · ").append(op.item.location)
+            t.repeatLabel(op.item.repeat).takeIf { it.isNotBlank() }?.let { append(" · ").append(it) }
+            append(" · ").append(if (op.item.isPlan) t.qaPlanTag else t.qaAgendaTag)
+        }
+        is AiSkills.AiOp.Update -> buildString {
+            append("「").append(op.matchTitle).append("」")
+            op.set.title?.let { append(" → ").append(it) }
+            op.set.date?.let { append(" · ").append(it.monthValue).append("/").append(it.dayOfMonth) }
+            op.set.startTime?.let { append(" ").append(it) }
+            op.set.endTime?.let { append("-").append(it) }
+            op.set.location?.let { append(" · ").append(it) }
+            op.set.repeat?.let { r -> append(" · ").append(t.repeatLabel(r).ifBlank { t.repeatNone }) }
+            matched?.let { append(" · ").append(if (it.isPlan) t.qaPlanTag else t.qaAgendaTag) }
+        }
+        is AiSkills.AiOp.Delete -> buildString {
+            append("「").append(op.matchTitle).append("」")
+            matched?.let { append(" · ").append(if (it.isPlan) t.qaPlanTag else t.qaAgendaTag) }
+        }
     }
-    is AiSkills.AiOp.Delete -> "「${op.matchTitle}」"
 }
 
 /** 单条操作的修改对话框：可编辑“目标/内容”，确认后写回预览列表 */
@@ -318,10 +349,8 @@ private fun AiOpEditDialog(
                         OutlinedTextField(value = end, onValueChange = { end = it }, label = { Text(t.fieldEndTime) }, singleLine = true, modifier = Modifier.weight(1f))
                     }
                     OutlinedTextField(value = loc, onValueChange = { loc = it }, label = { Text(t.fieldLocation) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    if (isPlan) {
-                        // 重复规则仅对「计划」生效（与编辑器/执行器口径一致）
-                        OutlinedTextField(value = rp, onValueChange = { rp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    }
+                    // 重复规则：日程与短计划都支持（与编辑器保存口径一致）
+                    OutlinedTextField(value = rp, onValueChange = { rp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     TextButton(onClick = { isPlan = !isPlan }) { Text(if (isPlan) t.qaPlanTag else t.qaAgendaTag) }
                 } else {
                     OutlinedTextField(value = matchTitle, onValueChange = { matchTitle = it }, label = { Text(t.opMatchTitle) }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -369,8 +398,8 @@ private fun AiOpEditDialog(
                                 startTime = start.trim(),
                                 endTime = end.trim(),
                                 location = loc.trim(),
-                                // 重复规则仅对「计划」生效（与编辑器/执行器口径一致）
-                                repeat = if (isPlan && rp.isNotBlank()) {
+                                // 重复规则：日程与短计划都支持（与编辑器口径一致）
+                                repeat = if (rp.isNotBlank()) {
                                     RepeatRules.parse(rp) ?: op.item.repeat
                                 } else {
                                     ""
