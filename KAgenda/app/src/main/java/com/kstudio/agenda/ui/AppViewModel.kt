@@ -97,10 +97,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun requestFocus(date: LocalDate, title: String) {
         selectDate(date)
         focusSeq++
+        // 闪烁会话起点：界面上所有闪烁元素共用同一相位，总时长固定（切换视图不会“续期”）
+        com.kstudio.agenda.ui.components.FlashSession.start()
         _focusRequest.value = FocusRequest(date.toEpochDay(), title.trim(), focusSeq)
     }
 
     fun clearFocus() {
+        com.kstudio.agenda.ui.components.FlashSession.clear()
         _focusRequest.value = null
     }
 
@@ -417,6 +420,31 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             SettingsStore.setStatusNotif(getApplication(), enabled, sourcesCsv)
             // 刷新常驻通知会读缓存，放到 IO 线程执行
             withContext(Dispatchers.IO) { StatusNotification.refresh(getApplication()) }
+        }
+    }
+
+    /** 常驻通知里的「AI 快速添加」文本框入口开关（关闭后该条目不再常驻） */
+    fun setStatusAiEntry(enabled: Boolean) {
+        viewModelScope.launch {
+            SettingsStore.setStatusAiEntry(getApplication(), enabled)
+            withContext(Dispatchers.IO) { StatusNotification.refresh(getApplication()) }
+        }
+    }
+
+    /** 小组件刷新频率：是否自定义 */
+    fun setWidgetRefreshCustom(enabled: Boolean) {
+        viewModelScope.launch {
+            SettingsStore.setWidgetRefreshCustom(getApplication(), enabled)
+            // 立即按新策略重排下一次刷新闹钟
+            withContext(Dispatchers.IO) { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+        }
+    }
+
+    /** 小组件刷新间隔（分钟）：tier 0=临近(≤1h) 1=较近(≤3h) 2=较远(>3h 或无日程) */
+    fun setWidgetRefreshMinutes(tier: Int, minutes: Int) {
+        viewModelScope.launch {
+            SettingsStore.setWidgetRefreshMinutes(getApplication(), tier, minutes)
+            withContext(Dispatchers.IO) { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
         }
     }
 

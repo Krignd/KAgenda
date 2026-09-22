@@ -91,5 +91,15 @@
                 android:textSize="10sp"
                 android:visibility="gone" />
         </LinearLayout>
+
+        <!-- 地点单独一行（空间最小的 2×1 不显示时留空，自动零高度） -->
+        <TextView
+            android:id="@+id/widget_room"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#64748B"
+            android:textSize="10sp" />
     </LinearLayout>
 </LinearLayout>

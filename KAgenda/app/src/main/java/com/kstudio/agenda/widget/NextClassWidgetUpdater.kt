@@ -12,12 +12,16 @@ import android.widget.RemoteViews
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.ScheduleCache
+import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.CoursePalette
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.ui.MainActivity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -98,13 +102,21 @@ object NextClassWidgetUpdater {
 
     /**
      * 安排下一次刷新（刷新链，保证“时间文案”及时）：
-     * - 正在上课：每分钟（倒计时到下课）；
-     * - 距上课 ≤1 小时：每分钟；≤3 小时：每 5 分钟；≤24 小时：每 30 分钟；更远：每 6 小时；
-     * - 无课程：每 6 小时兜底。
+     * - 正在上课 / 有进行中的日程：每分钟（倒计时到结束）；
+     * - 其余按“距离下一项的时间”取三档间隔（见 AppSettings.widgetRefreshTiers）：
+     *   ≤1 小时 / ≤3 小时 / 更远或无项目，默认 1 / 5 / 60 分钟，可在「设置 → 用户自定义」里自定义；
      * 已授权精确闹钟时用精确闹钟（更准时）；否则降级 setAndAllowWhileIdle。
      * 无小组件时自动停止刷新链。
      */
     fun scheduleNext(context: Context) {
+        val appContext = context.applicationContext
+        // 刷新间隔来自设置（DataStore 读取需要协程），因此调度异步执行，不阻塞调用方
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching { scheduleNextInternal(appContext) }
+        }
+    }
+
+    private suspend fun scheduleNextInternal(context: Context) {
         val am = context.getSystemService(AlarmManager::class.java) ?: return
         val pi = refreshPendingIntent(context)
         am.cancel(pi)
@@ -125,16 +137,24 @@ object NextClassWidgetUpdater {
             upcoming.firstOrNull()?.start,
             agendaNext?.anchorDateTime(),
         )
+        // 三档刷新间隔（分钟）：临近 / 较近 / 较远（默认更快，用户可自定义）
+        val (nearMin, soonMin, farMin) = runCatching { SettingsStore.read(context).widgetRefreshTiers }
+            .getOrElse {
+                Triple(
+                    SettingsStore.WIDGET_REFRESH_NEAR_DEFAULT,
+                    SettingsStore.WIDGET_REFRESH_SOON_DEFAULT,
+                    SettingsStore.WIDGET_REFRESH_FAR_DEFAULT,
+                )
+            }
         val delayMs = when {
             current != null || agendaOngoing != null -> 60_000L
-            nextStarts.isEmpty() -> 6 * 60 * 60_000L
+            nextStarts.isEmpty() -> farMin.toLong() * 60_000L
             else -> {
                 val delta = Duration.between(now, nextStarts.minOrNull()!!).toMillis()
                 when {
-                    delta <= 60 * 60_000L -> 60_000L
-                    delta <= 3 * 60 * 60_000L -> 5 * 60_000L
-                    delta <= 24 * 60 * 60_000L -> 30 * 60_000L
-                    else -> 6 * 60 * 60_000L
+                    delta <= 60 * 60_000L -> nearMin.toLong() * 60_000L
+                    delta <= 3 * 60 * 60_000L -> soonMin.toLong() * 60_000L
+                    else -> farMin.toLong() * 60_000L
                 }
             }
         }
@@ -169,6 +189,10 @@ object NextClassWidgetUpdater {
         widgetId: Int,
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, spec.layoutRes)
+
+        // 地点单独成行：老师名过长时只会截断老师，不会把地点挤出显示范围
+        // （2×1 高度最小，仍保持只显示一行时间+老师）
+        val showRoom = !spec.compactInfo
 
         // 自建日程：进行中 / 下一项（均不含计划；“进行中”仅限起止时间都精确的条目，
         // 模糊或无时间的条目只显示“距离还有多久”，不会显示“正在进行”）
@@ -237,11 +261,10 @@ object NextClassWidgetUpdater {
                 )
             }
             val info = if (spec.showNext2) {
-                // 大尺寸：信息行放“结束时间 + 老师 + 地点”，下一节单独一行
+                // 大尺寸：信息行放“结束时间 + 老师”，下一节单独一行（地点见 widget_room）
                 listOfNotNull(
                     endLabel,
                     current.course.teacher.ifBlank { null },
-                    current.course.room.ifBlank { null },
                 ).joinToString(" · ")
             } else if (spec.compactInfo) {
                 // 2×1 极小尺寸：至 + 老师
@@ -255,6 +278,11 @@ object NextClassWidgetUpdater {
                 ).joinToString(" · ")
             }
             rv.setTextViewText(R.id.widget_info, info)
+            // 地点单独一行（2×1 不显示）
+            rv.setTextViewText(
+                R.id.widget_room,
+                if (showRoom) current.course.room.ifBlank { "" } else "",
+            )
             val remainMinutes = Duration.between(now, current.end()).toMinutes().coerceAtLeast(1)
             rv.setTextViewText(
                 R.id.widget_remaining,
@@ -272,9 +300,12 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_name, agendaOngoing.title)
             val info = listOfNotNull(
                 agendaOngoing.rangeLabel.ifBlank { null },
-                agendaOngoing.location.ifBlank { null },
             ).joinToString(" · ")
             rv.setTextViewText(R.id.widget_info, info)
+            rv.setTextViewText(
+                R.id.widget_room,
+                if (showRoom) agendaOngoing.location.ifBlank { "" } else "",
+            )
             val left = Duration.between(now, agendaOngoing.endDateTime()).toMinutes()
             rv.setTextViewText(
                 R.id.widget_remaining,
@@ -308,7 +339,11 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_name, ev.title)
             rv.setTextViewText(
                 R.id.widget_info,
-                listOfNotNull(agendaTimeLabel(context, ev), ev.location.ifBlank { null }).joinToString(" · "),
+                agendaTimeLabel(context, ev),
+            )
+            rv.setTextViewText(
+                R.id.widget_room,
+                if (showRoom) ev.location.ifBlank { "" } else "",
             )
             // 有精确开始时间 → 倒计时到开始；模糊/无时间 → 只提示“距离还有多久”（今天/明天/后天/日期）
             val remainLabel = if (ev.hasPreciseStart) {
@@ -330,21 +365,18 @@ object NextClassWidgetUpdater {
         rv.setTextViewText(R.id.widget_title, context.getString(R.string.widget_next_class))
         val first = nextCourse!!
         rv.setTextViewText(R.id.widget_name, first.course.title)
-        val info = if (spec.compactInfo) {
-            // 2×1：时间 + 老师
+        // 信息行：时间 + 老师（地点单独一行，见 widget_room）
+        rv.setTextViewText(
+            R.id.widget_info,
             listOfNotNull(
                 timeLabel(context, first),
                 first.course.teacher.ifBlank { null },
-            ).joinToString(" · ")
-        } else {
-            // 其他尺寸：时间 + 老师 + 地点
-            listOfNotNull(
-                timeLabel(context, first),
-                first.course.teacher.ifBlank { null },
-                first.course.room.ifBlank { null },
-            ).joinToString(" · ")
-        }
-        rv.setTextViewText(R.id.widget_info, info)
+            ).joinToString(" · "),
+        )
+        rv.setTextViewText(
+            R.id.widget_room,
+            if (showRoom) first.course.room.ifBlank { "" } else "",
+        )
         val minutes = Duration.between(now, first.start).toMinutes().coerceAtLeast(0)
         rv.setTextViewText(R.id.widget_remaining, remainingText(context, minutes))
         rv.setTextColor(R.id.widget_remaining, CoursePalette.colorFor(first.course))

@@ -42,6 +42,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -61,7 +62,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -134,9 +134,10 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
         if (studentId.isBlank()) studentId = settings.studentId
     }
 
-    // ---------------- 选项卡与卡片展开状态 ----------------
-    // 0 学校&账号 / 1 功能&权限 / 2 用户自定义 / 3 数据&图片 / 4 语言 / 5 关于
-    var settingsTab by rememberSaveable { mutableStateOf(0) }
+    // ---------------- 分类与卡片展开状态 ----------------
+    // -1 = 分类菜单（设置页首屏）；0 学校&账号 / 1 功能&权限 / 2 用户自定义 / 3 数据&图片 / 4 语言 / 5 关于
+    // 首屏只列分类入口，点进某一类后才显示该类目的具体选项（二级页可返回）
+    var settingsTab by rememberSaveable { mutableStateOf(-1) }
     var expPermissions by rememberSaveable { mutableStateOf(false) }
     var expReminder by rememberSaveable { mutableStateOf(true) }
     var expAi by rememberSaveable { mutableStateOf(true) }
@@ -144,6 +145,7 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
     var expStatus by rememberSaveable { mutableStateOf(true) }
     var expWidget by rememberSaveable { mutableStateOf(true) }
     var expTimeline by rememberSaveable { mutableStateOf(true) }
+    var expWidgetRefresh by rememberSaveable { mutableStateOf(true) }
     var expData by rememberSaveable { mutableStateOf(true) }
     var expLang by rememberSaveable { mutableStateOf(true) }
     var expSchool by rememberSaveable { mutableStateOf(true) }
@@ -156,7 +158,27 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
     LaunchedEffect(loggedIn) { if (!accountToggled) expAccount = !loggedIn }
     // 滚动状态提升到「开发者工具」早退之前：进出开发者工具 / 日志页后不会跳回顶部
     val listState = rememberLazyListState()
-    LaunchedEffect(settingsTab) { listState.scrollToItem(0) }
+    LaunchedEffect(settingsTab) {
+        runCatching { listState.scrollToItem(0) }
+    }
+
+    // 分类标题/说明（分类菜单与二级页顶栏共用）
+    val categoryTitles = listOf(
+        t.settingsTabAccount,
+        t.settingsTabFeature,
+        t.settingsTabCustom,
+        t.secData,
+        t.secLang,
+        t.secAbout,
+    )
+    val categorySubs = listOf(
+        t.settingsTabAccountSub,
+        t.settingsTabFeatureSub,
+        t.settingsTabCustomSub,
+        t.secDataSub,
+        t.secLangSub,
+        t.aboutSub,
+    )
 
     // 存储权限（仅 Android 8.0–9 导出图片需要）当前是否已授予
     val storageNeeded = Build.VERSION.SDK_INT < 29
@@ -222,26 +244,27 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
     }
 
     Column(Modifier.fillMaxSize()) {
-        // 选项卡：学校&账号 / 功能&权限 / 用户自定义 / 数据&图片 / 语言 / 关于
-        // （自绘可滚动选项卡行：一次显示不下时左/右侧出现可点的尖角符）
-        SettingsTabRow(
-            labels = listOf(
-                t.settingsTabAccount,
-                t.settingsTabFeature,
-                t.settingsTabCustom,
-                t.secData,
-                t.secLang,
-                t.secAbout,
-            ),
-            selected = settingsTab,
-            onSelect = { settingsTab = it },
-        )
+        // 首屏只显示分类入口；进入某个分类后顶部显示「返回 + 分类名」
+        if (settingsTab >= 0) {
+            SettingsSubHeader(
+                title = categoryTitles.getOrElse(settingsTab) { "" },
+                onBack = { settingsTab = -1 },
+            )
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+        // ---------------------------------------------------------- 设置首屏：分类菜单
+        if (settingsTab < 0) item {
+            SettingsCategoryMenu(
+                titles = categoryTitles,
+                subs = categorySubs,
+                onOpen = { settingsTab = it },
+            )
+        }
         // ---------------------------------------------------------- 【选项卡 0】学校&账号：学校（可切换）
         if (settingsTab == 0) item {
             CollapsibleSectionCard(
@@ -541,6 +564,56 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：小组件刷新频率
+        // 默认（不自定义）已比旧版更快：临近 1 分钟 / 3 小时内 5 分钟 / 更远或无日程 60 分钟
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secWidgetRefresh,
+                t.secWidgetRefreshSub,
+                expanded = expWidgetRefresh,
+                onToggle = { expWidgetRefresh = !expWidgetRefresh },
+                trailing = if (settings.widgetRefreshCustom) t.widgetRefreshCustomOn else t.widgetRefreshDefaultTag,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(t.widgetRefreshCustom, modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = settings.widgetRefreshCustom,
+                        onCheckedChange = { vm.setWidgetRefreshCustom(it) },
+                    )
+                }
+                if (settings.widgetRefreshCustom) {
+                    WidgetRefreshTierRow(
+                        label = t.widgetRefreshNear,
+                        tier = 0,
+                        current = settings.widgetRefreshNearMinutes,
+                        options = listOf(1, 2, 5, 10),
+                        onPick = vm::setWidgetRefreshMinutes,
+                    )
+                    WidgetRefreshTierRow(
+                        label = t.widgetRefreshSoon,
+                        tier = 1,
+                        current = settings.widgetRefreshSoonMinutes,
+                        options = listOf(2, 5, 10, 15),
+                        onPick = vm::setWidgetRefreshMinutes,
+                    )
+                    WidgetRefreshTierRow(
+                        label = t.widgetRefreshFar,
+                        tier = 2,
+                        current = settings.widgetRefreshFarMinutes,
+                        options = listOf(15, 30, 60, 120),
+                        onPick = vm::setWidgetRefreshMinutes,
+                    )
+                } else {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = t.widgetRefreshDefaultNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+
         // ---------------------------------------------------------- 【选项卡 1】功能&权限：AI 识别（DeepSeek）
         if (settingsTab == 1) item {
             CollapsibleSectionCard(
@@ -703,6 +776,14 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                         )
                         Text(label, modifier = Modifier.weight(1f))
                     }
+                }
+                // AI 快速添加入口（文本框样式）：可单独关闭，关闭后该常驻条目会被移除
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = settings.statusAiEntry,
+                        onCheckedChange = { vm.setStatusAiEntry(it) },
+                    )
+                    Text(t.statusSrcAi, modifier = Modifier.weight(1f))
                 }
                 Text(
                     text = t.statusHint,
@@ -1171,103 +1252,103 @@ private fun exactAlarmIntent(context: Context): Intent =
     )
 
 /**
- * 设置页选项卡行（自绘，可横向滑动）：
- * - 选中项高亮 + 下方指示条；
- * - 一次显示不下时，左/右侧出现可点的尖角符（chevron），点击滚动到该端。
+ * 设置首屏：分类入口（点进某一类后才显示该类目的具体选项）。
+ * 把原来一排横向选项卡改成纵向列表，首屏不再一次堆满具体开关。
  */
 @Composable
-private fun SettingsTabRow(
-    labels: List<String>,
-    selected: Int,
-    onSelect: (Int) -> Unit,
+private fun SettingsCategoryMenu(
+    titles: List<String>,
+    subs: List<String>,
+    onOpen: (Int) -> Unit,
 ) {
-    val scroll = rememberScrollState()
-    val scope = rememberCoroutineScope()
-    Box(Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(scroll),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            labels.forEachIndexed { index, label ->
-                val isSelected = index == selected
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier
-                        .clickable { onSelect(index) }
-                        .padding(start = 14.dp, end = 14.dp, top = 10.dp),
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        titles.forEachIndexed { index, title ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .clickable { onOpen(index) },
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 1.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Box(
-                        Modifier
-                            .width(28.dp)
-                            .height(3.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(
-                                if (isSelected) MaterialTheme.colorScheme.primary
-                                else Color.Transparent
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = title,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        val sub = subs.getOrNull(index).orEmpty()
+                        if (sub.isNotBlank()) {
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                text = sub,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                    )
+                        }
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    TrailingChevron()
                 }
             }
-        }
-        if (scroll.value > 0) {
-            TabScrollChevron(
-                toRight = false,
-                onClick = { scope.launch { scroll.animateScrollTo(0) } },
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
-        }
-        if (scroll.value < scroll.maxValue) {
-            TabScrollChevron(
-                toRight = true,
-                onClick = { scope.launch { scroll.animateScrollTo(scroll.maxValue) } },
-                modifier = Modifier.align(Alignment.CenterEnd),
-            )
         }
     }
 }
 
-/**
- * 选项卡行的左/右尖角符（chevron）：提示该方向还有未显示的选项卡，点击可滚动一屏。
- */
+/** 二级页顶栏：返回箭头 + 分类名（返回分类菜单） */
 @Composable
-private fun TabScrollChevron(
-    toRight: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Surface(
-        modifier = modifier
-            .padding(horizontal = 2.dp)
-            .size(26.dp)
-            .clip(CircleShape)
-            .clickable { onClick() },
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 2.dp,
+private fun SettingsSubHeader(title: String, onBack: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(contentAlignment = Alignment.Center) {
+        IconButton(onClick = onBack) {
             Icon(
-                imageVector = if (toRight) {
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight
-                } else {
-                    Icons.AutoMirrored.Filled.KeyboardArrowLeft
-                },
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
+            )
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+/** 小组件刷新频率的一档：标题 + 可选分钟数（[onPick] 传入 tier 与分钟数） */
+@Composable
+private fun WidgetRefreshTierRow(
+    label: String,
+    tier: Int,
+    current: Int,
+    options: List<Int>,
+    onPick: (Int, Int) -> Unit,
+) {
+    val t = LocalStrings.current
+    Spacer(Modifier.height(10.dp))
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(Modifier.height(6.dp))
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        options.forEach { minutes ->
+            ChoiceChip(
+                label = t.minutes(minutes),
+                selected = current == minutes,
+                onClick = { onPick(tier, minutes) },
             )
         }
     }

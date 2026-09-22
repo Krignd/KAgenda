@@ -65,6 +65,16 @@
             android:textColor="#64748B"
             android:textSize="11sp" />
 
+        <!-- 地点单独一行：老师名字过长时也不会把地点挤出显示范围 -->
+        <TextView
+            android:id="@+id/widget_room"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#64748B"
+            android:textSize="11sp" />
+
         <TextView
             android:id="@+id/widget_remaining"
             android:layout_width="wrap_content"

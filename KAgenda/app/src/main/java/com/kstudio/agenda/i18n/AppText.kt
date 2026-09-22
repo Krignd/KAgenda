@@ -134,6 +134,16 @@ interface AppStrings {
     val labelNextDay: String
     val secWidget: String
     val secWidgetSub: String
+    // 小组件刷新频率（用户自定义）
+    val secWidgetRefresh: String
+    val secWidgetRefreshSub: String
+    val widgetRefreshCustom: String
+    val widgetRefreshCustomOn: String
+    val widgetRefreshDefaultTag: String
+    val widgetRefreshDefaultNote: String
+    val widgetRefreshNear: String
+    val widgetRefreshSoon: String
+    val widgetRefreshFar: String
     val widgetPinHint: String
     val widgetPinUnsupported: String
     val fieldDate: String
@@ -305,12 +315,15 @@ interface AppStrings {
     val statusSrcCourse: String
     val statusSrcPlan: String
     val statusSrcAgenda: String
+    /** 常驻通知里的「AI 快速添加」文本框入口开关 */
+    val statusSrcAi: String
     val statusHint: String
     val statusChannelName: String
     val statusChannelDesc: String
     fun statusInClassFmt(name: String, end: String): String
     fun statusNextClassFmt(name: String, time: String, left: String): String
     fun statusOngoingPlanFmt(name: String): String
+    fun statusNextPlanFmt(name: String, time: String): String
     fun statusNextAgendaFmt(name: String, time: String): String
     val statusAiEntryTitle: String
     val statusAiEntryHint: String
@@ -330,6 +343,11 @@ interface AppStrings {
     val settingsTabFeature: String
     val settingsTabCustom: String
     val settingsTabAccount: String
+    // 分类菜单里的分类说明（设置首屏）
+    val settingsTabAccountSub: String
+    val settingsTabFeatureSub: String
+    val settingsTabCustomSub: String
+    val secLangSub: String
     // 权限设置卡片
     val secPermissions: String
     val secPermissionsSub: String
@@ -544,6 +562,16 @@ object ZhStrings : AppStrings {
     override val labelNextDay = "次日"
     override val secWidget = "小组件"
     override val secWidgetSub = "一键把课表小组件添加到桌面"
+    override val secWidgetRefresh = "小组件刷新频率"
+    override val secWidgetRefreshSub = "越接近下个日程刷新越勤；默认 1 / 5 / 60 分钟"
+    override val widgetRefreshCustom = "自定义刷新频率"
+    override val widgetRefreshCustomOn = "自定义"
+    override val widgetRefreshDefaultTag = "默认"
+    override val widgetRefreshDefaultNote =
+        "默认频率：距下个日程 ≤1 小时每分钟；≤3 小时每 5 分钟；更远或无日程每 60 分钟。打开上方开关即可自定义。"
+    override val widgetRefreshNear = "距下个日程 ≤ 1 小时"
+    override val widgetRefreshSoon = "≤ 3 小时"
+    override val widgetRefreshFar = "更远 / 暂无日程"
     override val widgetPinHint = "点选尺寸即可添加到桌面；若桌面不支持应用内添加，可长按桌面空白处从小组件列表中选择「K日程」"
     override val widgetPinUnsupported = "当前桌面不支持应用内快捷添加：请长按桌面空白处，从小组件列表中添加 K日程"
     override val fieldDate = "日期"
@@ -745,14 +773,16 @@ object ZhStrings : AppStrings {
     override val secStatusSub = "在锁屏与通知栏常驻显示（静默、内容可选）"
     override val statusEnable = "开启常驻通知"
     override val statusSrcCourse = "下一节课与当前课程"
-    override val statusSrcPlan = "当前计划"
+    override val statusSrcPlan = "当前 / 下一计划"
     override val statusSrcAgenda = "下一日程"
+    override val statusSrcAi = "AI 快速添加入口"
     override val statusHint = "可多选；选中项会常驻显示在锁屏与通知栏"
     override val statusChannelName = "状态常驻"
     override val statusChannelDesc = "锁屏与通知栏常驻显示课表/日程状态"
     override fun statusInClassFmt(name: String, end: String) = "正在上课：$name · 至 $end"
     override fun statusNextClassFmt(name: String, time: String, left: String) = "下一节课：$name · $time · $left"
     override fun statusOngoingPlanFmt(name: String) = "进行中计划：$name"
+    override fun statusNextPlanFmt(name: String, time: String) = "下一计划：$name · $time"
     override fun statusNextAgendaFmt(name: String, time: String) = "下一日程：$name · $time"
     override val statusAiEntryTitle = "AI 助手"
     override val statusAiEntryHint = "点按输入文字 · 可添加 / 修改 / 删除日程"
@@ -771,6 +801,9 @@ object ZhStrings : AppStrings {
     override val settingsTabFeature = "功能&权限"
     override val settingsTabCustom = "用户自定义"
     override val settingsTabAccount = "学校&账号"
+    override val settingsTabAccountSub = "选择学校、保存登录账号"
+    override val settingsTabFeatureSub = "权限、课前提醒、AI、悬浮球、常驻通知、小组件"
+    override val settingsTabCustomSub = "时间线显示范围、小组件刷新频率"
     override val secPermissions = "权限设置"
     override val secPermissionsSub = "按需开启；未授予时对应功能不可用（可随时在此查看状态）"
     override val permGranted = "已授予"
@@ -792,6 +825,7 @@ object ZhStrings : AppStrings {
     override val imgDirNote = "图片会保存到系统相册的 Pictures/K日程 目录。"
 
     override val secLang = "语言"
+    override val secLangSub = "简体中文 / English / Français（默认跟随系统）"
     override val langSystem = "跟随系统"
 
     override val secDev = "开发者工具"
@@ -988,6 +1022,16 @@ object EnStrings : AppStrings {
     override val labelNextDay = "next day"
     override val secWidget = "Widget"
     override val secWidgetSub = "Pin a timetable widget to the home screen"
+    override val secWidgetRefresh = "Widget refresh rate"
+    override val secWidgetRefreshSub = "Refreshes more often as the next item approaches; defaults to 1 / 5 / 60 min"
+    override val widgetRefreshCustom = "Custom refresh rate"
+    override val widgetRefreshCustomOn = "Custom"
+    override val widgetRefreshDefaultTag = "Default"
+    override val widgetRefreshDefaultNote =
+        "Default rate: every 1 min within 1 h of the next item; every 5 min within 3 h; every 60 min otherwise. Turn on the switch above to customize."
+    override val widgetRefreshNear = "Within 1 h of the next item"
+    override val widgetRefreshSoon = "Within 3 h"
+    override val widgetRefreshFar = "Further / nothing scheduled"
     override val widgetPinHint = "Tap a size to pin it; if your launcher doesn't support in-app pinning, long-press the home screen and add K Agenda from the widget list"
     override val widgetPinUnsupported = "In-app pinning isn't supported by your launcher — long-press the home screen and add K Agenda from the widget list"
     override val fieldDate = "Date"
@@ -1188,14 +1232,16 @@ object EnStrings : AppStrings {
     override val secStatusSub = "Always shown on lock screen & shade (silent, selectable)"
     override val statusEnable = "Enable persistent notification"
     override val statusSrcCourse = "Next/current class"
-    override val statusSrcPlan = "Ongoing plan"
+    override val statusSrcPlan = "Ongoing / next plan"
     override val statusSrcAgenda = "Next event"
+    override val statusSrcAi = "AI quick-add entry"
     override val statusHint = "Multi-select; shown silently on lock screen"
     override val statusChannelName = "Status"
     override val statusChannelDesc = "Always-on status of classes & events"
     override fun statusInClassFmt(name: String, end: String) = "In class: $name · until $end"
     override fun statusNextClassFmt(name: String, time: String, left: String) = "Next class: $name · $time · $left"
     override fun statusOngoingPlanFmt(name: String) = "Ongoing plan: $name"
+    override fun statusNextPlanFmt(name: String, time: String) = "Next plan: $name · $time"
     override fun statusNextAgendaFmt(name: String, time: String) = "Next event: $name · $time"
     override val statusAiEntryTitle = "AI Assistant"
     override val statusAiEntryHint = "Tap to type · add / update / delete events"
@@ -1214,6 +1260,10 @@ object EnStrings : AppStrings {
     override val settingsTabFeature = "Features & permissions"
     override val settingsTabCustom = "Custom"
     override val settingsTabAccount = "School & account"
+    override val settingsTabAccountSub = "Pick a school and save your sign-in"
+    override val settingsTabFeatureSub =
+        "Permissions, reminders, AI, floating ball, persistent notification, widgets"
+    override val settingsTabCustomSub = "Timeline range and widget refresh rate"
     override val secPermissions = "Permissions"
     override val secPermissionsSub =
         "Grant on demand; the related feature stays unavailable without it (status is shown here)"
@@ -1237,6 +1287,7 @@ object EnStrings : AppStrings {
     override val imgDirNote = "Images are saved to Pictures/K日程 in your gallery."
 
     override val secLang = "Language"
+    override val secLangSub = "简体中文 / English / Français (system default)"
     override val langSystem = "System default"
 
     override val secDev = "Developer tools"
@@ -1436,6 +1487,17 @@ object FrStrings : AppStrings {
     override val labelNextDay = "lendemain"
     override val secWidget = "Widget"
     override val secWidgetSub = "Épingler un widget d'emploi du temps à l'accueil"
+    override val secWidgetRefresh = "Fréquence de rafraîchissement"
+    override val secWidgetRefreshSub =
+        "Plus le prochain élément approche, plus l'actualisation est fréquente (1 / 5 / 60 min par défaut)"
+    override val widgetRefreshCustom = "Fréquence personnalisée"
+    override val widgetRefreshCustomOn = "Perso."
+    override val widgetRefreshDefaultTag = "Défaut"
+    override val widgetRefreshDefaultNote =
+        "Fréquence par défaut : toutes les 1 min à moins d'une heure, toutes les 5 min à moins de 3 h, toutes les 60 min sinon. Activez l'interrupteur ci-dessus pour personnaliser."
+    override val widgetRefreshNear = "À moins d'une heure"
+    override val widgetRefreshSoon = "À moins de 3 h"
+    override val widgetRefreshFar = "Plus loin / rien de prévu"
     override val widgetPinHint = "Touchez une taille pour l'épingler ; si votre lanceur ne le permet pas, appuyez longuement sur l'écran d'accueil et ajoutez K Agenda depuis la liste des widgets"
     override val widgetPinUnsupported = "L'épinglage depuis l'appli n'est pas pris en charge — appuyez longuement sur l'accueil et ajoutez K Agenda depuis la liste des widgets"
     override val fieldDate = "Date"
@@ -1636,14 +1698,16 @@ object FrStrings : AppStrings {
     override val secStatusSub = "Toujours affichée (écran verrouillé inclus)"
     override val statusEnable = "Activer"
     override val statusSrcCourse = "Cours suivant/en cours"
-    override val statusSrcPlan = "Plan en cours"
+    override val statusSrcPlan = "Plan en cours / suivant"
     override val statusSrcAgenda = "Prochain événement"
+    override val statusSrcAi = "Entrée rapide IA"
     override val statusHint = "Multi-sélection ; silencieuse"
     override val statusChannelName = "Statut"
     override val statusChannelDesc = "Statut permanent des cours et événements"
     override fun statusInClassFmt(name: String, end: String) = "En cours : $name · jusqu'à $end"
     override fun statusNextClassFmt(name: String, time: String, left: String) = "Cours suivant : $name · $time · $left"
     override fun statusOngoingPlanFmt(name: String) = "Plan en cours : $name"
+    override fun statusNextPlanFmt(name: String, time: String) = "Prochain plan : $name · $time"
     override fun statusNextAgendaFmt(name: String, time: String) = "Prochain événement : $name · $time"
     override val statusAiEntryTitle = "Assistant IA"
     override val statusAiEntryHint = "Appuyez pour saisir · ajouter / modifier / supprimer"
@@ -1662,6 +1726,10 @@ object FrStrings : AppStrings {
     override val settingsTabFeature = "Fonctions et autorisations"
     override val settingsTabCustom = "Personnalisation"
     override val settingsTabAccount = "École et compte"
+    override val settingsTabAccountSub = "Choisir l'école et enregistrer le compte"
+    override val settingsTabFeatureSub =
+        "Autorisations, rappels, IA, bulle, notification permanente, widgets"
+    override val settingsTabCustomSub = "Plage de la frise et fréquence des widgets"
     override val secPermissions = "Autorisations"
     override val secPermissionsSub =
         "À accorder à la demande ; la fonction associée reste indisponible sinon"
@@ -1686,6 +1754,7 @@ object FrStrings : AppStrings {
     override val imgDirNote = "Les images sont enregistrées dans Pictures/K日程."
 
     override val secLang = "Langue / Language"
+    override val secLangSub = "简体中文 / English / Français (langue du système par défaut)"
     override val langSystem = "Langue du système"
 
     override val secDev = "Outils développeur"

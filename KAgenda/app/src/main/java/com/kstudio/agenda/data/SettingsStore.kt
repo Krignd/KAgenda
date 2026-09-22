@@ -38,11 +38,18 @@ data class AppSettings(
     /** 常驻通知：开关 + 内容源（course/plan/agenda 逗号分隔） */
     val statusNotifEnabled: Boolean = false,
     val statusNotifSources: String = "course,plan,agenda",
+    /** 常驻通知里的「AI 快速添加」文本框入口（可单独关闭，关闭后该条目不再常驻） */
+    val statusAiEntry: Boolean = true,
     /** 系统悬浮球（需「显示在其他应用上层」权限） */
     val floatingBall: Boolean = false,
     /** 时间线模式（非课程表）显示范围：起止分钟数（0~1439；结束 ≤ 开始表示跨到次日，如 06:00–次日 02:00） */
     val timelineStartMinutes: Int = 6 * 60,
     val timelineEndMinutes: Int = 2 * 60,
+    /** 小组件刷新频率：自定义开关 + 三档间隔（分钟，见 [widgetRefreshTiers]） */
+    val widgetRefreshCustom: Boolean = false,
+    val widgetRefreshNearMinutes: Int = SettingsStore.WIDGET_REFRESH_NEAR_DEFAULT,
+    val widgetRefreshSoonMinutes: Int = SettingsStore.WIDGET_REFRESH_SOON_DEFAULT,
+    val widgetRefreshFarMinutes: Int = SettingsStore.WIDGET_REFRESH_FAR_DEFAULT,
 ) {
     /** 时间线实际显示窗口（分钟）：结束时间 ≤ 开始时间时视为跨到次日（end 可 > 1440） */
     val timelineWindow: Pair<Int, Int>
@@ -50,6 +57,22 @@ data class AppSettings(
             val s = timelineStartMinutes
             val e = if (timelineEndMinutes <= s) timelineEndMinutes + 24 * 60 else timelineEndMinutes
             return s to e
+        }
+
+    /**
+     * 小组件刷新间隔（分钟）：第一/二/三个值依次对应
+     * 「距下个日程 ≤ 1 小时」/「≤ 3 小时」/「更远或无日程」。
+     * 未自定义时用内置默认值（比旧版更快：1 / 5 / 60 分钟）。
+     */
+    val widgetRefreshTiers: Triple<Int, Int, Int>
+        get() = if (widgetRefreshCustom) {
+            Triple(widgetRefreshNearMinutes, widgetRefreshSoonMinutes, widgetRefreshFarMinutes)
+        } else {
+            Triple(
+                SettingsStore.WIDGET_REFRESH_NEAR_DEFAULT,
+                SettingsStore.WIDGET_REFRESH_SOON_DEFAULT,
+                SettingsStore.WIDGET_REFRESH_FAR_DEFAULT,
+            )
         }
 }
 
@@ -60,6 +83,11 @@ object SettingsStore {
 
     /** 内置（开发者）Key 固定使用的模型：不可修改 */
     const val DEV_AI_MODEL = "deepseek-flash"
+
+    /** 小组件刷新间隔默认值（分钟）：临近(≤1h) / 较近(≤3h) / 较远(>3h 或无日程) */
+    const val WIDGET_REFRESH_NEAR_DEFAULT = 1
+    const val WIDGET_REFRESH_SOON_DEFAULT = 5
+    const val WIDGET_REFRESH_FAR_DEFAULT = 60
 
     private val KEY_STUDENT_ID = stringPreferencesKey("student_id")
     private val KEY_PASSWORD_ENC = stringPreferencesKey("password_enc")
@@ -77,9 +105,14 @@ object SettingsStore {
     private val KEY_USE_DEV_AI_KEY = booleanPreferencesKey("use_dev_ai_key")
     private val KEY_STATUS_ENABLED = booleanPreferencesKey("status_notif_enabled")
     private val KEY_STATUS_SOURCES = stringPreferencesKey("status_notif_sources")
+    private val KEY_STATUS_AI_ENTRY = booleanPreferencesKey("status_ai_entry")
     private val KEY_FLOATING_BALL = booleanPreferencesKey("floating_ball")
     private val KEY_TIMELINE_START = intPreferencesKey("timeline_start_minutes")
     private val KEY_TIMELINE_END = intPreferencesKey("timeline_end_minutes")
+    private val KEY_WIDGET_REFRESH_CUSTOM = booleanPreferencesKey("widget_refresh_custom")
+    private val KEY_WIDGET_REFRESH_NEAR = intPreferencesKey("widget_refresh_near_minutes")
+    private val KEY_WIDGET_REFRESH_SOON = intPreferencesKey("widget_refresh_soon_minutes")
+    private val KEY_WIDGET_REFRESH_FAR = intPreferencesKey("widget_refresh_far_minutes")
 
     fun settingsFlow(context: Context): Flow<AppSettings> = context.settingsDataStore.data.map { p ->
         AppSettings(
@@ -99,9 +132,17 @@ object SettingsStore {
             useDevAiKey = p[KEY_USE_DEV_AI_KEY] ?: true,
             statusNotifEnabled = p[KEY_STATUS_ENABLED] ?: false,
             statusNotifSources = p[KEY_STATUS_SOURCES] ?: "course,plan,agenda",
+            statusAiEntry = p[KEY_STATUS_AI_ENTRY] ?: true,
             floatingBall = p[KEY_FLOATING_BALL] ?: false,
             timelineStartMinutes = (p[KEY_TIMELINE_START] ?: 6 * 60).coerceIn(0, 1439),
             timelineEndMinutes = (p[KEY_TIMELINE_END] ?: 2 * 60).coerceIn(0, 1439),
+            widgetRefreshCustom = p[KEY_WIDGET_REFRESH_CUSTOM] ?: false,
+            widgetRefreshNearMinutes = (p[KEY_WIDGET_REFRESH_NEAR] ?: WIDGET_REFRESH_NEAR_DEFAULT)
+                .coerceIn(1, 60),
+            widgetRefreshSoonMinutes = (p[KEY_WIDGET_REFRESH_SOON] ?: WIDGET_REFRESH_SOON_DEFAULT)
+                .coerceIn(1, 120),
+            widgetRefreshFarMinutes = (p[KEY_WIDGET_REFRESH_FAR] ?: WIDGET_REFRESH_FAR_DEFAULT)
+                .coerceIn(1, 720),
         )
     }
 
@@ -243,6 +284,27 @@ object SettingsStore {
         context.settingsDataStore.edit { p ->
             p[KEY_STATUS_ENABLED] = enabled
             p[KEY_STATUS_SOURCES] = sourcesCsv
+        }
+    }
+
+    /** 常驻通知里的「AI 快速添加」入口开关 */
+    suspend fun setStatusAiEntry(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_STATUS_AI_ENTRY] = enabled }
+    }
+
+    /** 小组件刷新频率：自定义开关 */
+    suspend fun setWidgetRefreshCustom(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_WIDGET_REFRESH_CUSTOM] = enabled }
+    }
+
+    /** 小组件刷新间隔（分钟）：[tier] 0=临近(≤1h) 1=较近(≤3h) 2=较远(>3h) */
+    suspend fun setWidgetRefreshMinutes(context: Context, tier: Int, minutes: Int) {
+        context.settingsDataStore.edit { p ->
+            when (tier) {
+                0 -> p[KEY_WIDGET_REFRESH_NEAR] = minutes.coerceIn(1, 60)
+                1 -> p[KEY_WIDGET_REFRESH_SOON] = minutes.coerceIn(1, 120)
+                else -> p[KEY_WIDGET_REFRESH_FAR] = minutes.coerceIn(1, 720)
+            }
         }
     }
 

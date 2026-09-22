@@ -51,11 +51,12 @@ fun ScheduleScreen(vm: AppViewModel) {
     val weekGridScroll = rememberScrollState()
     val weekContentScroll = rememberScrollState()
 
-    // 外部定位请求（通知/小组件点击）：定位后短暂闪烁反馈，然后自动清除
+    // 外部定位请求（通知/小组件点击）：定位后闪烁反馈（闪烁本身约 1.2 秒内自然结束，
+    // 这里只负责清掉定位状态）；清除时机固定，切换日/周视图不会延长闪烁
     val focus by vm.focusRequest.collectAsState()
     LaunchedEffect(focus?.seq) {
         if (focus != null) {
-            delay(2800)
+            delay(2000)
             vm.clearFocus()
         }
     }

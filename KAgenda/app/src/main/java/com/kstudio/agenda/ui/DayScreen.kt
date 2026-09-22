@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
@@ -30,11 +32,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +63,7 @@ import com.kstudio.agenda.ui.components.rememberFlashPulse
 import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 
 /** 判断课程此刻是否正在进行 */
 internal fun isOngoing(course: Course, date: LocalDate): Boolean {
@@ -107,9 +112,10 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         flashDate == selected && flashTitle.isNotBlank() && title.trim() == flashTitle
     }
 
-    // 外层不加滑动手势：在日期条 / 周导航上滑动不应切换日期（手势只作用于下方内容列表）
+    // 外层不加滑动手势：在周导航按钮上滑动不应切换日期；
+    // 日期条自身支持左右连贯滑动切周（见 DayStripPager），内容区手势只作用于下方列表
     Column(Modifier.fillMaxSize()) {
-        DayStrip(currentWeek.monday, selected, vm::selectDate, flashDate = flashDate)
+        DayStripPager(vm, currentWeek.monday, selected, flashDate = flashDate)
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp),
@@ -292,6 +298,60 @@ private fun mergeDayItems(courses: List<Course>, events: List<AgendaEvent>): Lis
             { if (it is DayItem.CourseItem) 0 else 1 },
         )
     )
+}
+
+/** 日期所在周的周一（ISO 周：周一为起点） */
+private fun mondayOfDate(date: LocalDate): LocalDate = date.with(java.time.DayOfWeek.MONDAY)
+
+/** 周 → 日期条页索引 */
+private fun pageIndexOf(minMonday: LocalDate, monday: LocalDate, totalPages: Int): Int =
+    ChronoUnit.WEEKS.between(minMonday, monday).toInt().coerceIn(0, totalPages - 1)
+
+/**
+ * 日视图顶部日期条（可连贯滑动）：
+ * - 每页 = 一周，页面之间左右滑动即可切周，不再固定于当前这一周；
+ * - 滑到相邻周后保持同一星期几（周一→周一…），与内容区按天滑动的手感一致；
+ * - 外部改变周次（上一周/下一周按钮、内容区滑动跨周、通知/小组件定位）时日期条自动滑到对应页。
+ */
+@Composable
+private fun DayStripPager(
+    vm: AppViewModel,
+    monday: LocalDate,
+    selected: LocalDate,
+    flashDate: LocalDate? = null,
+) {
+    // 页范围覆盖应用允许的导航区间（与 vm.navMinDate/navMaxDate 一致）
+    val minMonday = remember { mondayOfDate(vm.navMinDate) }
+    val totalPages = remember(minMonday) {
+        (ChronoUnit.WEEKS.between(minMonday, mondayOfDate(vm.navMaxDate)) + 1).toInt()
+            .coerceAtLeast(1)
+    }
+    val pagerState = rememberPagerState(
+        initialPage = pageIndexOf(minMonday, monday, totalPages),
+    ) { totalPages }
+
+    LaunchedEffect(monday, totalPages) {
+        val target = pageIndexOf(minMonday, monday, totalPages)
+        if (pagerState.currentPage != target) pagerState.animateScrollToPage(target)
+    }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.settledPage }.collect { page ->
+            val pageMonday = minMonday.plusWeeks(page.toLong())
+            if (pageMonday != monday) {
+                // 换周时保持同一星期几
+                vm.selectDate(pageMonday.plusDays((selected.dayOfWeek.value - 1).toLong()))
+            }
+        }
+    }
+
+    HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
+        DayStrip(
+            monday = minMonday.plusWeeks(page.toLong()),
+            selected = selected,
+            onSelect = vm::selectDate,
+            flashDate = flashDate,
+        )
+    }
 }
 
 /** 一周 7 个日期框（等宽），供日视图与「计划」页共用；[flashDate] 命中时边框闪烁 */

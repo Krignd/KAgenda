@@ -188,7 +188,7 @@ fun WeekScreen(
                         flashTitle = flashTitle,
                     ) { selected = it }
                 } else {
-                    // 时间线显示范围可在「设置 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
+                    // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
                     val (timelineStartMin, timelineEndMin) = settings.timelineWindow
                     WeekTimelineGrid(
                         week = currentWeek,
@@ -551,6 +551,15 @@ private const val MINUTE_SCALE = 0.85f            // 每 1 分钟 ≈ 0.85dp，�
 private data class MinuteRange(val start: Int, val end: Int)
 
 /**
+ * 时间线刻度/时段文案：分钟数按 24 小时制回绕（跨零点之后显示 22:00–02:00，
+ * 不再出现 26:00 这类不存在的时刻）。
+ */
+private fun timelineClock(minutes: Int): String {
+    val m = ((minutes % 1440) + 1440) % 1440
+    return "%02d:%02d".format(m / 60, m % 60)
+}
+
+/**
  * 非课程表模式：按真实时间比例绘制。
  * - 课程块高度与持续时长成正比；
  * - 上课以外的“休息时段”（含午休/晚休）也以浅色块展示；
@@ -592,7 +601,7 @@ private fun WeekTimelineGrid(
                     while (h * 60 <= endMin) {
                         val y = ((h * 60 - startMin) * MINUTE_SCALE).dp
                         Text(
-                            text = "%02d:00".format(h),
+                            text = timelineClock(h * 60),
                             modifier = Modifier.offset(x = 4.dp, y = y - 6.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
@@ -721,9 +730,7 @@ private fun TimelineDayColumn(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = "%02d:%02d-%02d:%02d".format(
-                            r.start / 60, r.start % 60, r.end / 60, r.end % 60
-                        ),
+                        text = timelineClock(r.start) + "-" + timelineClock(r.end),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     )

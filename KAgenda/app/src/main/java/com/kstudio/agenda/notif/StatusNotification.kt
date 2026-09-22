@@ -15,6 +15,7 @@ import com.kstudio.agenda.data.AppSettings
 import com.kstudio.agenda.data.ScheduleCache
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
+import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
@@ -34,24 +35,38 @@ import java.time.LocalDateTime
  */
 object StatusNotification {
 
-    const val CHANNEL_ID = "status_persistent"
+    /**
+     * 通知通道 id。
+     * v2：重要级别由 LOW 提到 DEFAULT（仍然无声、无振动），
+     * 否则系统会把常驻通知归到「静默通知」，锁屏上往往不显示。
+     */
+    const val CHANNEL_ID = "status_persistent_v2"
+
+    /** 旧通道（IMPORTANCE_LOW，锁屏容易被系统隐藏），启用新通道后删除 */
+    private const val LEGACY_CHANNEL_ID = "status_persistent"
 
     private const val NOTIF_ID = 925200
     private const val REQUEST_CODE = 925201
 
-    /** 「AI 快速添加」文本框入口（与状态行同频道、独立通知） */
+    /** 「AI 快速添加」文本框入口（与状态行同频道、独立通知；可在设置里关闭） */
     private const val AI_NOTIF_ID = 925210
     private const val AI_REQUEST_CODE = 925211
 
     private fun ensureChannel(context: Context) {
         val nm = context.getSystemService(android.app.NotificationManager::class.java) ?: return
+        // 旧通道不再使用（避免通知设置里残留一份无用的低频通道）
+        runCatching { nm.deleteNotificationChannel(LEGACY_CHANNEL_ID) }
         val channel = android.app.NotificationChannel(
             CHANNEL_ID,
             AppText.current.statusChannelName,
-            android.app.NotificationManager.IMPORTANCE_LOW,
+            android.app.NotificationManager.IMPORTANCE_DEFAULT,
         ).apply {
             description = AppText.current.statusChannelDesc
             setShowBadge(false)
+            // 静默：无提示音、无振动（只有常驻显示）
+            setSound(null, null)
+            enableVibration(false)
+            // 锁屏可见（内容本身不含隐私信息）
             lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
         }
         nm.createNotificationChannel(channel)
@@ -77,8 +92,12 @@ object StatusNotification {
             return
         }
         ensureChannel(context)
-        // 「AI 快速添加」入口：文本框样式，点按直达 App 的 AI 添加界面（无状态行时也常驻）
-        notifyAiEntry(context, nm)
+        // 「AI 快速添加」入口：文本框样式，点按直达 App 的 AI 添加界面（可在设置→常驻通知里单独关闭）
+        if (settings.statusAiEntry) {
+            notifyAiEntry(context, nm)
+        } else {
+            nm.cancel(AI_NOTIF_ID)
+        }
         val sources = settings.statusNotifSources.split(',').map { it.trim() }
         val lines = buildLines(context, sources)
         if (lines.isEmpty()) {
@@ -102,7 +121,8 @@ object StatusNotification {
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pi)
             .build()
         try {
@@ -134,11 +154,26 @@ object StatusNotification {
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())
             .setCustomContentView(rv)
             .setCustomBigContentView(rv)
+            // 锁屏/系统不支持自定义视图时，用标准版式显示（否则锁屏上可能是一片空白）
+            .setPublicVersion(
+                NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.drawable.ic_notification)
+                    .setContentTitle(t.statusAiEntryTitle)
+                    .setContentText(t.statusAiEntryHint)
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .setShowWhen(false)
+                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setCategory(NotificationCompat.CATEGORY_STATUS)
+                    .setContentIntent(pi)
+                    .build()
+            )
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pi)
             .build()
         try {
@@ -211,26 +246,39 @@ object StatusNotification {
         AgendaStore.ensureLoaded(context)
         val events = AgendaStore.events.value
         if ("plan" in sources) {
-            events.firstOrNull { it.isPlan && it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now) }?.let {
-                lines.add(t.statusOngoingPlanFmt(it.title))
+            // 进行中的计划优先；没有进行中的计划时退化为「下一项计划」，
+            // 否则勾选「当前计划」后在没有进行中计划时看不到任何变化，容易被认为开关失效
+            val ongoingPlan = events.firstOrNull {
+                it.isPlan && it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now)
+            }
+            if (ongoingPlan != null) {
+                lines.add(t.statusOngoingPlanFmt(ongoingPlan.title))
+            } else {
+                events.asSequence()
+                    .filter { it.isPlan && it.startDateTime().isAfter(now) }
+                    .minByOrNull { it.startDateTime() }
+                    ?.let { plan ->
+                        lines.add(t.statusNextPlanFmt(plan.title, agendaTimeText(plan, now)))
+                    }
             }
         }
         if ("agenda" in sources) {
             events.asSequence()
                 .filter { !it.isPlan && it.startDateTime().isAfter(now) }
                 .minByOrNull { it.startDateTime() }
-                ?.let { ev ->
-                    val d = ev.startDateTime()
-                    val timeText = if (d.toLocalDate() == now.toLocalDate()) {
-                        ev.startTime.ifBlank { ev.timeLabel }
-                    } else {
-                        "${d.monthValue}/${d.dayOfMonth}" +
-                            (if (ev.startTime.isNotBlank()) " ${ev.startTime}" else "")
-                    }
-                    lines.add(t.statusNextAgendaFmt(ev.title, timeText))
-                }
+                ?.let { ev -> lines.add(t.statusNextAgendaFmt(ev.title, agendaTimeText(ev, now))) }
         }
         return lines
+    }
+
+    /** 日程/计划的时间文案：今天用具体时刻，其他日期带 M/d（无时刻时只显示日期） */
+    private fun agendaTimeText(ev: AgendaEvent, now: LocalDateTime): String {
+        val d = ev.startDateTime()
+        return if (d.toLocalDate() == now.toLocalDate()) {
+            ev.startTime.ifBlank { ev.timeLabel }
+        } else {
+            "${d.monthValue}/${d.dayOfMonth}" + (if (ev.startTime.isNotBlank()) " ${ev.startTime}" else "")
+        }
     }
 
     /** "25分钟后" / "1小时30分钟后"（复用小组件资源） */
