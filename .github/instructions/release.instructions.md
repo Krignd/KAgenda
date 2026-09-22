@@ -7,6 +7,7 @@ applyTo: "**/app/build.gradle.kts"
 
 - **未获明确指令（发版 / 更新版本 / 打 tag / 归档）时，不要改 `versionCode`/`versionName`，不要打 tag**；普通改动只改代码 + 构建 + 提交
 - 命名逻辑：`versionName = 年份.月份 v序号[.补丁]`（如 `2026.9 v2.0.5`）；`versionCode = 年×10000 + 月×100 + 序号`（如 `20260907`；带补丁号时在原序号上 +1）
+- **tag 命名：`<年份>.<月份>-v<序号>`，不加 `v` 前缀**（如 `2026.9-v2.0.6`；2026-09-22 用户明确要求去掉前缀）。历史 tag（`v1.x`、`v2026.9-v2`、`v2026.9-v2.0.1` ~ `v2026.9-v2.0.5`）保持不变，不要重命名
 - 发版顺序：`:app:lintDebug` 0 错误 → `:app:assembleRelease` → 真机 `adb install -r` 冒烟 → 提交（此时仍不打 tag）→ 用户确认后才打 tag / 发 Release
 - 公开仓库（GitHub `Krignd/KAgenda`）更新通道：本地 `main` 保留完整历史（含旧提交与 tags，不推）；公开侧走 `public` 分支。
   **不要用 `git merge --squash main`**（两分支无关历史，即使加 `--allow-unrelated-histories` 也会每个改动文件 add/add 冲突；`git merge --abort` 还会因无 MERGE_HEAD 报错）。
