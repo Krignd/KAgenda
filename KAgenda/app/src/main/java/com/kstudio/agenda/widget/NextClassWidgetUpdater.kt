@@ -190,9 +190,11 @@ object NextClassWidgetUpdater {
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, spec.layoutRes)
 
-        // 地点单独成行：老师名过长时只会截断老师，不会把地点挤出显示范围
-        // （2×1 高度最小，仍保持只显示一行时间+老师）
-        val showRoom = !spec.compactInfo
+        // 2×1（compactInfo）：用户要求自上而下为 课程 / 课程时间 / 地点 / 距离时间，
+        // 因此该尺寸只显示时间（不拼老师，避免行内拥挤）；其他尺寸信息行仍为「时间 · 老师」。
+        val showTeacher = !spec.compactInfo
+        // 地点单独成行：四种尺寸都显示
+        val showRoom = true
 
         // 自建日程：进行中 / 下一项（均不含计划；“进行中”仅限起止时间都精确的条目，
         // 模糊或无时间的条目只显示“距离还有多久”，不会显示“正在进行”）
@@ -267,8 +269,8 @@ object NextClassWidgetUpdater {
                     current.course.teacher.ifBlank { null },
                 ).joinToString(" · ")
             } else if (spec.compactInfo) {
-                // 2×1 极小尺寸：至 + 老师
-                listOfNotNull(endLabel, current.course.teacher.ifBlank { null }).joinToString(" · ")
+                // 2×1：只要结束时间（行序为 课程/时间/地点/距离）
+                endLabel
             } else {
                 // 中等尺寸：至 + 老师 + 下节
                 listOfNotNull(
@@ -365,12 +367,12 @@ object NextClassWidgetUpdater {
         rv.setTextViewText(R.id.widget_title, context.getString(R.string.widget_next_class))
         val first = nextCourse!!
         rv.setTextViewText(R.id.widget_name, first.course.title)
-        // 信息行：时间 + 老师（地点单独一行，见 widget_room）
+        // 信息行：时间（+ 老师；2×1 只显示时间）
         rv.setTextViewText(
             R.id.widget_info,
             listOfNotNull(
                 timeLabel(context, first),
-                first.course.teacher.ifBlank { null },
+                if (showTeacher) first.course.teacher.ifBlank { null } else null,
             ).joinToString(" · "),
         )
         rv.setTextViewText(

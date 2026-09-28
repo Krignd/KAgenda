@@ -33,6 +33,7 @@
             android:textSize="10sp"
             android:visibility="gone" />
 
+        <!-- ① 课程（图标 + 课程名，占满整行，避免被其他信息挤断） -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -41,12 +42,11 @@
 
             <ImageView
                 android:id="@+id/widget_icon"
-                android:layout_width="16dp"
-                android:layout_height="16dp"
+                android:layout_width="15dp"
+                android:layout_height="15dp"
                 android:layout_marginEnd="5dp"
                 android:src="@drawable/ic_type_course" />
 
-            <!-- 课程名单独占一行（占满整行宽度），避免与倒计时争夺横向空间导致名称被截断 -->
             <TextView
                 android:id="@+id/widget_name"
                 android:layout_width="0dp"
@@ -59,46 +59,17 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- 第二行：信息（时间 · 老师）+ 右侧倒计时 -->
-        <LinearLayout
+        <!-- ② 课程时间 -->
+        <TextView
+            android:id="@+id/widget_info"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#64748B"
+            android:textSize="10sp" />
 
-            <TextView
-                android:id="@+id/widget_info"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="#64748B"
-                android:textSize="10sp" />
-
-            <TextView
-                android:id="@+id/widget_next2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:ellipsize="end"
-                android:maxLines="1"
-                android:textColor="#64748B"
-                android:textSize="10sp"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/widget_remaining"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="6dp"
-                android:maxLines="1"
-                android:textColor="#1D4ED8"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- 地点单独一行（空间最小的 2×1 不显示时留空，自动零高度） -->
+        <!-- ③ 地点 -->
         <TextView
             android:id="@+id/widget_room"
             android:layout_width="match_parent"
@@ -107,5 +78,24 @@
             android:maxLines="1"
             android:textColor="#64748B"
             android:textSize="10sp" />
+
+        <!-- ④ 距离时间（倒计时） -->
+        <TextView
+            android:id="@+id/widget_remaining"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:textColor="#1D4ED8"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <!-- 2×1 不展示「下一节课」行，仅保留 id 供远端视图统一控制显隐 -->
+        <TextView
+            android:id="@+id/widget_next2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="#64748B"
+            android:textSize="10sp"
+            android:visibility="gone" />
     </LinearLayout>
 </LinearLayout>
