@@ -436,6 +436,7 @@ interface AppStrings {
     // ---------------- 提示消息（ViewModel） ----------------
     val msgNeedStudentId: String
     val msgAccountSaved: String
+    val msgAccountSavedKeepPwd: String
     val msgLoggedOut: String
     val msgCredDeleted: String
     val msgResetDone: String
@@ -470,6 +471,10 @@ interface AppStrings {
     val periodTimesHint: String
     val periodTimesRestoreDefault: String
     val periodTimesRowFmt: String          // “第1节”
+    fun periodTimesCount(n: Int): String
+    fun periodTimesCountWarning(maxUsed: Int, configured: Int): String
+    val periodTimesAddOne: String
+    val periodTimesRemoveOne: String
     val msgPeriodTimesSaved: String
     val msgPeriodTimesInvalid: String
     val periodTimesDefaultTag: String
@@ -934,7 +939,7 @@ object ZhStrings : AppStrings {
             "内置 DeepSeek AI 助手（可添加/修改/删除日程，入口：顶栏按钮或悬浮球）。" +
             "除用户自行配置的 AI 接口外，不上传任何个人信息。"
     override val aboutTip = "提示：若同步失败而网页可正常访问，多为学校页面改版——北航可到「开发者工具」分享运行日志；其他学校可在「设置 → 学校 → 添加学校」更新适配代码。"
-    override val aboutPeriods = "课程时间表：上午 4 节 + 下午 5 节 + 晚上 5 节（共 14 节），与教务处作息一致。"
+    override val aboutPeriods = "课程节数与时間均可自定义：默认 14 节（上午 4 + 下午 5 + 晚上 5），可在「设置 → 用户自定义 → 课程时间」中增删节次并修改起止时间。"
 
     override val logTitle = "运行日志"
     override val logDesc = "日志记录每次同步的阶段、页面状态与错误信息（不包含密码），可直接分享给开发者排查。"
@@ -961,6 +966,7 @@ object ZhStrings : AppStrings {
 
     override val msgNeedStudentId = "请输入学号"
     override val msgAccountSaved = "账号已保存，正在同步…"
+    override val msgAccountSavedKeepPwd = "已保存学号（未输入新密码：使用已保存的密码同步，不校验密码）"
     override val msgLoggedOut = "已退出登录：账号与网页会话已清除"
     override val msgCredDeleted = "已删除本地保存的学号密码（网页会话与课表缓存保留）"
     override val msgResetDone = "已恢复初始状态：请重新登录"
@@ -989,9 +995,14 @@ object ZhStrings : AppStrings {
     override val secPeriodTimesSub = "自定义每一节课的起止时间（默认与学校作息一致，共 14 节）"
     override val btnEditPeriodTimes = "自定义课程时间"
     override val periodTimesTitle = "课程时间"
-    override val periodTimesHint = "按 24 小时制填写 HH:mm。修改后日/周视图、小组件与常驻通知的时间立即更新。"
+    override val periodTimesHint = "节数可增删（1–24 节）；时间按 24 小时制填写 HH:mm（也支持 800 / 0800 / 8.00）。修改后日/周视图、小组件与常驻通知立即更新。"
     override val periodTimesRestoreDefault = "恢复默认"
     override val periodTimesRowFmt = "第%d节"
+    override fun periodTimesCount(n: Int) = "当前共 $n 节"
+    override fun periodTimesCountWarning(maxUsed: Int, configured: Int) =
+        "注意：当前课表最晚到第 $maxUsed 节，而这里只配置了 $configured 节——超出的课程不会显示在周视图中。"
+    override val periodTimesAddOne = "＋ 添加一节"
+    override val periodTimesRemoveOne = "删除该节"
     override val msgPeriodTimesSaved = "课程时间已更新"
     override val msgPeriodTimesInvalid = "时间格式不正确，请按 HH:mm 填写全部节次"
     override val periodTimesDefaultTag = "默认作息"
@@ -1457,7 +1468,7 @@ object EnStrings : AppStrings {
             "persistent status notification, and a DeepSeek AI assistant (add/update/delete events; toolbar button or floating ball over other apps). " +
             "No personal data is uploaded except to the AI endpoint you configure."
     override val aboutTip = "Note: if syncing fails while the website works, the school pages may have changed. BUAA users can share the runtime log from Developer tools; other schools can update the adapter code in Settings → School → Add school."
-    override val aboutPeriods = "Periods: 4 morning + 5 afternoon + 5 evening (14 total), matching the academic affairs office."
+    override val aboutPeriods = "Period count and times are fully customizable: 14 by default (4 morning + 5 afternoon + 5 evening). Add or remove periods and edit their times in Settings → Custom → Class times."
 
     override val logTitle = "Runtime logs"
     override val logDesc = "Logs record each sync stage, page state and errors (never passwords). Share them with the developer for diagnosis."
@@ -1484,6 +1495,7 @@ object EnStrings : AppStrings {
 
     override val msgNeedStudentId = "Enter your student ID"
     override val msgAccountSaved = "Account saved, syncing…"
+    override val msgAccountSavedKeepPwd = "Student ID saved (no new password entered: syncing with the saved password, not verified)"
     override val msgLoggedOut = "Signed out: account and web session cleared"
     override val msgCredDeleted = "Saved credentials deleted (web session and cache kept)"
     override val msgResetDone = "App reset: please sign in again"
@@ -1514,9 +1526,14 @@ object EnStrings : AppStrings {
     override val secPeriodTimesSub = "Customize the start/end time of every period (14 periods by default)"
     override val btnEditPeriodTimes = "Customize class times"
     override val periodTimesTitle = "Class times"
-    override val periodTimesHint = "Use 24-hour HH:mm. Day/week views, widgets and the persistent notification update immediately."
+    override val periodTimesHint = "Add or remove periods (1–24); enter times as 24-hour HH:mm (also 800 / 0800 / 8.00). Day/week views, widgets and the persistent notification update immediately."
     override val periodTimesRestoreDefault = "Restore defaults"
     override val periodTimesRowFmt = "Period %d"
+    override fun periodTimesCount(n: Int) = "$n period(s) now"
+    override fun periodTimesCountWarning(maxUsed: Int, configured: Int) =
+        "Note: the timetable uses periods up to $maxUsed, but only $configured are configured here — extra courses will not be shown in the week view."
+    override val periodTimesAddOne = "+ Add a period"
+    override val periodTimesRemoveOne = "Remove this period"
     override val msgPeriodTimesSaved = "Class times updated"
     override val msgPeriodTimesInvalid = "Invalid time format — please fill every period as HH:mm"
     override val periodTimesDefaultTag = "Default schedule"
@@ -1985,7 +2002,7 @@ object FrStrings : AppStrings {
             "notification permanente et ajout rapide par IA DeepSeek (bouton ou bulle flottante au-dessus des autres applis). " +
             "Aucune donnée personnelle n'est envoyée, hormis vers l'API IA que vous configurez."
     override val aboutTip = "Remarque : si la synchro échoue alors que le site fonctionne, les pages de l'école ont peut-être changé. Les utilisateurs BUAA peuvent partager le journal via Outils développeur ; pour les autres écoles, mettez à jour le code d'adaptation dans Réglages → École → Ajouter une école."
-    override val aboutPeriods = "Périodes : 4 le matin + 5 l'après-midi + 5 le soir (14 au total), conformes au calendrier universitaire."
+    override val aboutPeriods = "Le nombre de périodes et leurs horaires sont entièrement personnalisables : 14 par défaut (4 le matin + 5 l'après-midi + 5 le soir). Ajoutez/supprimez des périodes dans Réglages → Personnalisation → Horaires des cours."
 
     override val logTitle = "Journaux d'exécution"
     override val logDesc = "Les journaux enregistrent chaque étape de synchro, l'état des pages et les erreurs (jamais les mots de passe)."
@@ -2012,6 +2029,7 @@ object FrStrings : AppStrings {
 
     override val msgNeedStudentId = "Saisissez votre identifiant"
     override val msgAccountSaved = "Compte enregistré, synchronisation…"
+    override val msgAccountSavedKeepPwd = "Identifiant enregistré (aucun nouveau mot de passe : synchro avec le mot de passe enregistré, non vérifié)"
     override val msgLoggedOut = "Déconnecté : compte et session web effacés"
     override val msgCredDeleted = "Identifiants supprimés (session web et cache conservés)"
     override val msgResetDone = "Application réinitialisée : reconnectez-vous"
@@ -2042,9 +2060,14 @@ object FrStrings : AppStrings {
     override val secPeriodTimesSub = "Personnalisez le début/la fin de chaque période (14 par défaut)"
     override val btnEditPeriodTimes = "Personnaliser les horaires"
     override val periodTimesTitle = "Horaires des cours"
-    override val periodTimesHint = "Format 24 h HH:mm. Les vues jour/semaine, le widget et la notification permanente sont mis à jour immédiatement."
+    override val periodTimesHint = "Ajoutez ou supprimez des périodes (1–24) ; saisissez les heures au format 24 h HH:mm (aussi 800 / 0800 / 8.00). Les vues jour/semaine, le widget et la notification permanente sont mis à jour immédiatement."
     override val periodTimesRestoreDefault = "Rétablir par défaut"
     override val periodTimesRowFmt = "Période %d"
+    override fun periodTimesCount(n: Int) = "$n période(s)"
+    override fun periodTimesCountWarning(maxUsed: Int, configured: Int) =
+        "Attention : l'emploi du temps va jusqu'à la période $maxUsed, mais seulement $configured sont configurées ici — les cours en trop ne s'afficheront pas dans la vue semaine."
+    override val periodTimesAddOne = "+ Ajouter une période"
+    override val periodTimesRemoveOne = "Supprimer cette période"
     override val msgPeriodTimesSaved = "Horaires mis à jour"
     override val msgPeriodTimesInvalid = "Format invalide — remplissez chaque période au format HH:mm"
     override val periodTimesDefaultTag = "Horaires par défaut"

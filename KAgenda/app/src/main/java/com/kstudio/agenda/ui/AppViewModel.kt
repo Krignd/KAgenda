@@ -143,6 +143,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     private var autoSyncTriggered = false
 
+    /** 手动登录时若正好有同步在跑，标记为待办，待当前同步结束后立刻做一次校验登录 */
+    private var pendingVerifySync = false
+
     /** 当前语言文案 */
     private val t get() = AppText.current
 
@@ -151,6 +154,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             AgendaStore.ensureLoaded(getApplication())
             ExtraCoursesStore.ensureLoaded(getApplication())
+        }
+        viewModelScope.launch {
+            // 登录/会话类错误必须能被看到：除顶栏与横幅外，再用 Snackbar 提示一次
+            // （避免用户以为“已同步”而实际未登录）
+            repo.sync.collect { s ->
+                if (s is SyncUi.NeedLogin && s.message.isNotBlank()) {
+                    _messages.emit(s.message)
+                }
+                // 手动登录时若刚好有同步在进行，待其结束后自动补一次“校验新密码”的同步
+                if (s !is SyncUi.Running && pendingVerifySync) {
+                    pendingVerifySync = false
+                    repo.syncNow(verifyCredentials = true)
+                }
+            }
         }
         viewModelScope.launch {
             // 应用已保存的语言（默认跟随系统）；同步系统级“按应用设置语言”
@@ -240,6 +257,16 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 回到今天（日视图「回到当前日」/ 周视图「回到当前周」共用；保持当前查看的视图） */
     fun goToday() = selectDate(LocalDate.now())
 
+    /**
+     * 依据已保存的学期锚点推算教学周（无锚点返回 null）。
+     * 课表尚未加载（未登录 / 同步失败 / 已清缓存）时，界面上仍能显示「第 x 周」。
+     */
+    fun teachingWeekOf(date: LocalDate): Int? {
+        val anchor = settings.value.anchorEpochDay ?: return null
+        val week = Math.floorDiv(date.toEpochDay() - anchor, 7L).toInt() + 1
+        return week.takeIf { it in 1..40 }
+    }
+
     /** 默认周次：优先当前教学周，否则取已抓取的最早一周 */
     private fun resolveWeek(sem: SemesterSchedule, selected: Int): Int {
         if (selected != Int.MIN_VALUE) return selected
@@ -276,10 +303,25 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 message(t.msgSaveFailed)
                 return@launch
             }
-            message(t.msgAccountSaved)
+            AppLog.i(
+                "登录",
+                "手动登录：学号=$id，" + if (newPassword != null) {
+                    "已输入密码（先清会话再真实登录校验）"
+                } else {
+                    "未输入新密码（沿用已保存的密码，不校验）"
+                }
+            )
+            // 用户未输入新密码时把话说清楚：否则容易误以为“刚填的密码被校验过了”
+            message(if (newPassword != null) t.msgAccountSaved else t.msgAccountSavedKeepPwd)
             // 输入了密码 = 用户在“登录”：强制用新密码真实登录一次，
             // 密码错误时明确报错（而不是沿用旧会话显示“已同步”）
-            repo.syncNow(verifyCredentials = newPassword != null)
+            if (newPassword != null && syncState.value is SyncUi.Running) {
+                // 正在同步时不能并发：挂起待办，当前同步结束后自动执行校验登录
+                pendingVerifySync = true
+                AppLog.i("登录", "当前有同步在进行，已挂起“校验新密码”的同步")
+            } else {
+                repo.syncNow(verifyCredentials = newPassword != null)
+            }
         }
     }
 

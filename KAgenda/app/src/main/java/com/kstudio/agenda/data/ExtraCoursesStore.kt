@@ -2,6 +2,7 @@ package com.kstudio.agenda.data
 
 import android.content.Context
 import com.kstudio.agenda.model.Course
+import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.util.AppLog
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -137,7 +138,7 @@ object ExtraCoursesStore {
             val day = o.optInt("dayOfWeek", 0)
             val sp = o.optInt("startPeriod", 0)
             val ep = o.optInt("endPeriod", 0)
-            if (title.isBlank() || day !in 1..7 || sp !in 1..14 || ep < sp) continue
+            if (title.isBlank() || day !in 1..7 || sp !in 1..PeriodTimes.MAX_COUNT || ep < sp) continue
             out.add(
                 Course(
                     title = title,
@@ -146,7 +147,7 @@ object ExtraCoursesStore {
                     weeksRaw = o.optString("weeksRaw"),
                     room = o.optString("room"),
                     startPeriod = sp,
-                    endPeriod = ep.coerceAtMost(14),
+                    endPeriod = ep.coerceAtMost(PeriodTimes.MAX_COUNT),
                     dayOfWeek = day,
                     tag = o.optString("tag"),
                 )

@@ -6,6 +6,7 @@ import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.model.WeekSchedule
 import org.json.JSONArray
 import org.json.JSONObject
+import org.json.JSONTokener
 import java.time.LocalDate
 
 /**
@@ -377,13 +378,13 @@ object ScheduleParser {
         }
     }
 
-    private fun courseFromArrangedItem(o: JSONObject): Course? {
-        val day = o.optInt("dayOfWeek", 0)
+    private fun courseFromArrangedItem(o: JSONObject): Course? {        val day = o.optInt("dayOfWeek", 0)
         if (day !in 1..7) return null
         val start = o.optInt("beginSection", 0)
-        if (start !in 1..PeriodTimes.count) return null
+        // 校验用最大节数（24）：用户可能把节数调小，但不应因此丢弃课程数据
+        if (start !in 1..PeriodTimes.MAX_COUNT) return null
         val end = o.optInt("endSection", start).let { if (it < start) start else it }
-            .coerceAtMost(PeriodTimes.count)
+            .coerceAtMost(PeriodTimes.MAX_COUNT)
         val title = cleanTitle(o.optString("courseName"))
         if (title.isBlank()) return null
 
@@ -433,6 +434,76 @@ object ScheduleParser {
             dayOfWeek = day,
             tag = tag,
         )
+    }
+
+    // ------------------------------------------------------------ 登录账号一致性校验
+
+    /** 可能包含「登录账号」的字段名（不含 userName/name 这类可能是姓名的字段） */
+    private val ACCOUNT_KEYS = listOf(
+        "userid", "userid_", "account", "loginname", "usercode", "studentid", "studentno",
+        "zgh", "xh", "yhm", "uid", "jobnumber", "gh", "sid",
+    )
+
+    /**
+     * 从捕获的接口响应中判断「当前会话账号」是否与 [expect]（设置里的学号）不一致。
+     * 返回不一致的账号（null = 一致 / 无法判断）。
+     *
+     * 用于防止「保存了错误密码但旧会话仍有效」时静默地显示“已同步”。
+     * 判定很保守：只有从 currentUser 接口里读到明确的账号字段、且整个响应里都没有出现
+     * 设置里的学号时，才认为不一致。
+     */
+    fun identityMismatch(raws: List<String>, expect: String): String? {
+        if (expect.isBlank()) return null
+        val expectNorm = expect.lowercase().filter { it.isLetterOrDigit() }
+        if (expectNorm.isBlank()) return null
+        var candidate: String? = null
+        for (raw in raws) {
+            val o = runCatching { JSONObject(raw) }.getOrNull() ?: continue
+            val url = o.optString("url")
+            if (!url.contains("currentUser", ignoreCase = true)) continue
+            val body = o.optString("response")
+            if (body.isBlank()) continue
+            // 响应里出现学号 → 一致
+            if (body.lowercase().filter { it.isLetterOrDigit() }.contains(expectNorm)) return null
+            candidate = candidate ?: runCatching { findAccountValue(JSONTokener(body).nextValue()) }
+                .getOrNull()
+        }
+        val found = candidate ?: return null
+        val foundNorm = found.lowercase().filter { it.isLetterOrDigit() }
+        if (foundNorm.isBlank()) return null
+        if (foundNorm == expectNorm || foundNorm.contains(expectNorm) || expectNorm.contains(foundNorm)) {
+            return null
+        }
+        return found
+    }
+
+    /** 递归在 JSON 结构中查找账号字段的值 */
+    private fun findAccountValue(node: Any?): String? {
+        when (node) {
+            is JSONObject -> {
+                val keys = node.keys()
+                while (keys.hasNext()) {
+                    val key = keys.next()
+                    val value = node.opt(key)
+                    if (value is String && ACCOUNT_KEYS.contains(key.lowercase().trim())) {
+                        val v = value.trim()
+                        // 账号必须含数字且长度合理（排除姓名/角色等文本）
+                        if (v.length in 4..24 && v.any { it.isDigit() } &&
+                            v.all { it.isLetterOrDigit() || it == '_' || it == '-' || it == '.' }
+                        ) {
+                            return v
+                        }
+                    }
+                    findAccountValue(value)?.let { return it }
+                }
+            }
+            is JSONArray -> {
+                for (i in 0 until node.length()) {
+                    findAccountValue(node.opt(i))?.let { return it }
+                }
+            }
+        }
+        return null
     }
 
     /** 判断 cellDetail 文本是否为课程名本身（带“（本）/（研）”等前缀也算） */

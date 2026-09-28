@@ -107,6 +107,9 @@ object JsScripts {
     var docs = allDocs();
     var hasPwd = false;
     var captchaVisible = false;
+    // 统一认证的登录表单在 iframe（login-normal.html）里，错误提示也在 iframe 内，
+    // 因此这里必须聚合所有文档的文本与错误元素，否则“密码错误”会探测不到（表现为登录静默失败）。
+    var allText = '';
     for (var i = 0; i < docs.length; i++) {
       try {
         var pwds = docs[i].querySelectorAll('input[type="password"]');
@@ -115,17 +118,27 @@ object JsScripts {
         }
         var cap = docs[i].getElementById ? docs[i].getElementById('captchaPasswor') : null;
         if (cap && isVisible(cap)) { captchaVisible = true; }
+        try {
+          if (docs[i].body) { allText += ' ' + String(docs[i].body.innerText || docs[i].body.textContent || ''); }
+        } catch(e) {}
       } catch(e){}
     }
-    var text = document.body ? String(document.body.innerText || '') : '';
+    var text = allText;
     var err = '';
     try {
-      var errEls = document.querySelectorAll('#errPassword, .item-validate');
-      for (var k = 0; k < errEls.length; k++) {
-        var t = String(errEls[k].innerText || '').trim();
-        if (t) { err = t; }
+      for (var d = 0; d < docs.length; d++) {
+        var errEls = null;
+        try { errEls = docs[d].querySelectorAll('#errPassword, .item-validate, .alert-danger, [class*="error"]'); } catch(e){}
+        if (errEls) {
+          for (var k = 0; k < errEls.length; k++) {
+            var t = String(errEls[k].innerText || errEls[k].textContent || '').trim();
+            if (t && isVisible(errEls[k])) { err = t; }
+          }
+        }
       }
-      if (!err && /密码错误|用户名或密码错误|账号或密码错误|invalid|incorrect/i.test(text)) { err = '页面提示凭据错误'; }
+      if (!err && /密码错误|用户名或密码错误|账号或密码错误|密码不正确|密码有误|invalid|incorrect/i.test(text)) {
+        err = '页面提示凭据错误';
+      }
     } catch(e){}
     return JSON.stringify({
       url: String(location.href || ''),

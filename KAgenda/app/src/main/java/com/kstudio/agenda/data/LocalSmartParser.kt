@@ -345,11 +345,11 @@ object LocalSmartParser {
         PERIOD_RANGE_REGEX.find(s)?.let { m ->
             val a = m.groupValues[1].toIntOrNull() ?: return@let
             val b = m.groupValues[2].toIntOrNull() ?: return@let
-            if (a in 1..PeriodTimes.count && b in a..PeriodTimes.count) return a to b
+            if (a in 1..PeriodTimes.MAX_COUNT && b in a..PeriodTimes.MAX_COUNT) return a to b
         }
         PERIOD_SINGLE_REGEX.find(s)?.let { m ->
             val a = m.groupValues[1].toIntOrNull() ?: return@let
-            if (a in 1..PeriodTimes.count) return a to a
+            if (a in 1..PeriodTimes.MAX_COUNT) return a to a
         }
         // 用时间反查节次：08:00-09:35 → 1-2
         PERIOD_TIME_REGEX.find(s)?.let { m ->

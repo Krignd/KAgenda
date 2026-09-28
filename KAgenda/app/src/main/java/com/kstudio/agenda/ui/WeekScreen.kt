@@ -76,6 +76,14 @@ import java.time.LocalTime
 /** 当前时间横线的颜色（周视图各模式共用） */
 private val NOW_LINE_COLOR = Color(0xFFE53935)
 
+/** "09/28~10/04" 形式的周范围（无课表数据时用于周次标签） */
+private fun weekRangeOf(monday: LocalDate): String {
+    val sunday = monday.plusDays(6)
+    return "%02d/%02d~%02d/%02d".format(
+        monday.monthValue, monday.dayOfMonth, sunday.monthValue, sunday.dayOfMonth
+    )
+}
+
 /** 记录“当前分钟数”，每 30 秒刷新一次，用于当前时间横线 */
 @Composable
 private fun rememberNowMinutes(): Int {
@@ -113,16 +121,8 @@ fun WeekScreen(
     var zoom by rememberSaveable { mutableStateOf(1f) }
 
     val currentWeek = week
-    if (currentWeek == null) {
-        Column(Modifier.fillMaxSize().padding(20.dp)) {
-            SyncHint(sync)
-            EmptyState(
-                title = t.noScheduleTitle,
-                hint = t.noScheduleHintWeek,
-            )
-        }
-        return
-    }
+    // 没有课表数据时不再整页早退：仍保留周导航与本地日程（课程网格区变为同步引导）
+    val monday = currentWeek?.monday ?: selDate.with(java.time.DayOfWeek.MONDAY)
 
     // 日程表页只展示「日程」（「计划」页的个人计划不在此混排）
     val agenda = agendaAll.filter { !it.isPlan }
@@ -141,8 +141,11 @@ fun WeekScreen(
             }
             Text(
                 text = buildString {
-                    append(t.weekNo(currentWeek.weekNo))
-                    if (currentWeek.weekRangeLabel.isNotBlank()) append("（${currentWeek.weekRangeLabel}）")
+                    val weekNo = currentWeek?.weekNo ?: vm.teachingWeekOf(selDate)
+                    if (weekNo != null) append(t.weekNo(weekNo))
+                    val range = currentWeek?.weekRangeLabel?.takeIf { it.isNotBlank() }
+                        ?: weekRangeOf(monday)
+                    if (range.isNotBlank()) append("（${range}）")
                 },
                 style = MaterialTheme.typography.titleMedium,
             )
@@ -168,48 +171,50 @@ fun WeekScreen(
                 .verticalScroll(contentScroll)
         ) {
             // 周网格区：先在内层横向滚动；已滑到边界时继续横滑才切周
-            Column(
-                Modifier.swipeStep(
-                    key = "week-grid",
-                    canStep = { dir ->
-                        val max = gridScroll.maxValue
-                        when {
-                            max <= 0 || max == Int.MAX_VALUE -> true
-                            dir > 0 -> gridScroll.value >= max
-                            else -> gridScroll.value <= 0
-                        }
-                    },
-                    onStep = { vm.stepWeek(it) },
-                )
-            ) {
-                if (timetableMode) {
-                    WeekGrid(
-                        week = currentWeek,
-                        hScroll = gridScroll,
-                        screenW = screenW,
-                        zoom = zoom,
-                        flashDate = flashDate,
-                        flashTitle = flashTitle,
-                    ) { selected = it }
-                } else {
-                    // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
-                    val (timelineStartMin, timelineEndMin) = settings.timelineWindow
-                    WeekTimelineGrid(
-                        week = currentWeek,
-                        hScroll = gridScroll,
-                        screenW = screenW,
-                        zoom = zoom,
-                        startMin = timelineStartMin,
-                        endMin = timelineEndMin,
-                        flashDate = flashDate,
-                        flashTitle = flashTitle,
-                    ) { selected = it }
+            // （无课表数据时跳过网格，直接显示下方的同步引导与日程）
+            if (currentWeek != null) {
+                Column(
+                    Modifier.swipeStep(
+                        key = "week-grid",
+                        canStep = { dir ->
+                            val max = gridScroll.maxValue
+                            when {
+                                max <= 0 || max == Int.MAX_VALUE -> true
+                                dir > 0 -> gridScroll.value >= max
+                                else -> gridScroll.value <= 0
+                            }
+                        },
+                        onStep = { vm.stepWeek(it) },
+                    )
+                ) {
+                    if (timetableMode) {
+                        WeekGrid(
+                            week = currentWeek,
+                            hScroll = gridScroll,
+                            screenW = screenW,
+                            zoom = zoom,
+                            flashDate = flashDate,
+                            flashTitle = flashTitle,
+                        ) { selected = it }
+                    } else {
+                        // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
+                        val (timelineStartMin, timelineEndMin) = settings.timelineWindow
+                        WeekTimelineGrid(
+                            week = currentWeek,
+                            hScroll = gridScroll,
+                            screenW = screenW,
+                            zoom = zoom,
+                            startMin = timelineStartMin,
+                            endMin = timelineEndMin,
+                            flashDate = flashDate,
+                            flashTitle = flashTitle,
+                        ) { selected = it }
+                    }
                 }
             }
 
             // ---------------- 我的日程（本周，按时间排序） ----------------
             // 该区域内横滑始终切换周（不在课表上，无需让横向滚动先消费）
-            val monday = currentWeek.monday
             val weekEvents = agenda
                 .filter { ev -> (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
                 .sortedWith(compareBy({ it.dateEpochDay }, { com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
@@ -219,6 +224,11 @@ fun WeekScreen(
                     .padding(horizontal = 16.dp)
             ) {
                 Spacer(Modifier.height(10.dp))
+                // 无课表数据：先给出同步引导（不影响下方日程展示）
+                if (currentWeek == null) {
+                    SyncHint(sync)
+                    Spacer(Modifier.height(12.dp))
+                }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = t.myAgendaWeek,

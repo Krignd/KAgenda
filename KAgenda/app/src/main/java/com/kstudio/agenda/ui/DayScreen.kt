@@ -85,6 +85,9 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     val selected by vm.selectedDate.collectAsState()
     val sync by vm.syncState.collectAsState()
     val agendaAll by vm.agenda.collectAsState()
+    // 读一下设置：课程时间/节数变化后 PeriodTimes 是全局对象，Compose 无法感知，
+    // 这里用设置值作为 remember 的 key 来触发重新组合
+    val settings by vm.settings.collectAsState()
     val t = LocalStrings.current
 
     // 日程新建/编辑对话框状态
@@ -92,16 +95,9 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
 
     val currentWeek = week
-    if (currentWeek == null) {
-        Column(Modifier.fillMaxSize().padding(20.dp)) {
-            SyncHint(sync)
-            EmptyState(
-                title = t.noScheduleTitle,
-                hint = t.noScheduleHintDay,
-            )
-        }
-        return
-    }
+    // 没有课表数据（未登录 / 同步失败 / 已清缓存）时不再整页早退：
+    // 依然显示日期条、周导航与本地日程/计划，只是课程区为空
+    val monday = currentWeek?.monday ?: mondayOfDate(selected)
 
     // 日程表页只展示「日程」（「计划」页的个人计划不在此混排）
     val agenda = agendaAll.filter { !it.isPlan }
@@ -116,7 +112,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     // 外层不加滑动手势：在周导航按钮上滑动不应切换日期；
     // 日期条自身支持左右连贯滑动切周（见 DayStripPager），内容区手势只作用于下方列表
     Column(Modifier.fillMaxSize()) {
-        DayStripPager(vm, currentWeek.monday, selected, flashDate = flashDate)
+        DayStripPager(vm, monday, selected, flashDate = flashDate)
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp),
@@ -127,8 +123,12 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             }
             Text(
                 text = buildString {
-                    append(t.weekNo(currentWeek.weekNo))
-                    if (currentWeek.weekRangeLabel.isNotBlank()) append("（${currentWeek.weekRangeLabel}）")
+                    // 无课表数据时用已保存的学期锚点推算周次（仍让用户知道现在是第几周）
+                    val weekNo = currentWeek?.weekNo ?: vm.teachingWeekOf(selected)
+                    if (weekNo != null) append(t.weekNo(weekNo))
+                    val range = currentWeek?.weekRangeLabel?.takeIf { it.isNotBlank() }
+                        ?: weekRangeLabelOf(monday)
+                    if (range.isNotBlank()) append("（${range}）")
                 },
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -147,7 +147,9 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             }
         }
 
-        val courses = currentWeek.coursesOnDate(selected)
+        val courses = remember(selected, currentWeek, settings.periodTimesRaw) {
+            currentWeek?.coursesOnDate(selected).orEmpty()
+        }
         // 显示覆盖当天的所有日程（含跨天长日程），按时间排序
         val dayEvents = agenda
             .filter { it.coversDate(selected) }
@@ -159,11 +161,15 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // 无课表数据：把同步引导放在列表首项，不影响下方日程展示
+                if (currentWeek == null) {
+                    item(key = "sync-hint") { SyncHint(sync) }
+                }
                 if (courses.isEmpty()) {
                     item(key = "empty") {
                         EmptyState(
-                            title = t.noCoursesToday,
-                            hint = t.noCoursesTodayHint,
+                            title = if (currentWeek == null) t.noScheduleTitle else t.noCoursesToday,
+                            hint = if (currentWeek == null) t.noScheduleHintDay else t.noCoursesTodayHint,
                         )
                     }
                 } else {
@@ -220,6 +226,10 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
+                // 无课表数据：把同步引导放在列表首项，不影响下方日程展示
+                if (currentWeek == null) {
+                    item(key = "sync-hint") { SyncHint(sync) }
+                }
                 item(key = "mixed-header") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -239,7 +249,10 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                 }
                 if (merged.isEmpty()) {
                     item(key = "mixed-empty") {
-                        EmptyState(title = t.noCoursesToday, hint = t.noCoursesTodayHint)
+                        EmptyState(
+                            title = if (currentWeek == null) t.noScheduleTitle else t.noCoursesToday,
+                            hint = if (currentWeek == null) t.noScheduleHintDay else t.noCoursesTodayHint,
+                        )
                     }
                 } else {
                     items(merged, key = { item ->
@@ -307,6 +320,14 @@ private fun mergeDayItems(courses: List<Course>, events: List<AgendaEvent>): Lis
 
 /** 日期所在周的周一（ISO 周：周一为起点） */
 private fun mondayOfDate(date: LocalDate): LocalDate = date.with(java.time.DayOfWeek.MONDAY)
+
+/** "09/28~10/04" 形式的周范围（无课表数据时用于周次标签） */
+private fun weekRangeLabelOf(monday: LocalDate): String {
+    val sunday = monday.plusDays(6)
+    return "%02d/%02d~%02d/%02d".format(
+        monday.monthValue, monday.dayOfMonth, sunday.monthValue, sunday.dayOfMonth
+    )
+}
 
 /** 周 → 日期条页索引 */
 private fun pageIndexOf(minMonday: LocalDate, monday: LocalDate, totalPages: Int): Int =

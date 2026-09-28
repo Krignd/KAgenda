@@ -113,9 +113,9 @@ class WebScheduleEngine(private val appContext: Context) {
         private const val MSG_CREDENTIAL_ERROR =
             "登录失败：账号或密码错误，请核对「设置」中的学号与密码后重试"
 
-        /** 用户手动登录时，若旧会话仍有效导致新密码无法验证，给出的中性提示 */
+        /** 用户手动登录时，若旧会话仍有效导致新密码无法验证（正常不应出现——会先彻底清会话） */
         private const val MSG_CREDENTIAL_UNVERIFIED =
-            "已同步（未能校验新密码：当前登录会话仍然有效，可在设置中「退出登录」后再登录）"
+            "未能校验新密码：仍处于已登录状态。请先在「设置」中「退出登录」，再用新密码重新登录"
 
         /** 统一认证常见的会话 Cookie 名（手动登录前清除，以强制出现登录表单） */
         private val CAS_COOKIE_NAMES = listOf(
@@ -127,6 +127,12 @@ class WebScheduleEngine(private val appContext: Context) {
 
     /** 当前学校（同步开始时按设置刷新；默认北航） */
     private var school: School = Schools.of(null)
+
+    /** 是否在本轮同步中真正看到并提交过登录表单（用于区分“真登录”与“旧会话直接回跳”） */
+    private var ssoFormSeen = false
+
+    /** 本轮同步对应的学号（用于登录后的身份一致性校验） */
+    private var expectedStudentId = ""
 
     /** 拼统一认证地址（按当前学校） */
     private fun ssoUrlWith(service: String): String =
@@ -329,7 +335,6 @@ class WebScheduleEngine(private val appContext: Context) {
     /**
      * 清除统一身份认证的会话 Cookie（仅认证主机），使登录页重新出现表单。
      * 用于「用户手动登录」场景：否则已有 CAS 会话会让错误密码“看起来登录成功”。
-     * 教务系统的会话 Cookie 不动：万一新密码有误，已缓存的课表仍可离线查看。
      */
     private fun clearCasSession() {
         val host = hostOf(school.ssoUrl)
@@ -337,7 +342,7 @@ class WebScheduleEngine(private val appContext: Context) {
         val cm = CookieManager.getInstance()
         val url = "https://$host"
         CAS_COOKIE_NAMES.forEach { name ->
-            listOf("/", "/cas", "/login").forEach { path ->
+            listOf("/", "/cas", "/login", "/authserver", "/sso").forEach { path ->
                 runCatching { cm.setCookie(url, "$name=; Path=$path; Max-Age=0") }
             }
         }
@@ -345,9 +350,27 @@ class WebScheduleEngine(private val appContext: Context) {
         AppLog.i(TAG, "已清除统一认证会话 Cookie（强制重新登录以校验新密码）")
     }
 
-    /** Success 附加提示（其他结果原样返回） */
-    private fun SyncResult.withNotice(notice: String): SyncResult =
-        if (this is SyncResult.Success && notice.isNotBlank()) copy(notice = notice) else this
+    /**
+     * 清除教务系统自身的会话（主页 Cookie）。
+     * 手动登录必须清掉它：否则旧的教学系统会话会让「按周重放」直接成功，
+     * 导致新密码根本没被提交也显示“已同步”。
+     */
+    private fun clearSchoolSession() {
+        val host = hostOf(school.homeUrl)
+        if (host.isBlank()) return
+        val cm = CookieManager.getInstance()
+        val url = "https://$host"
+        val names = runCatching { cm.getCookie(url) }.getOrNull().orEmpty()
+            .split(';')
+            .mapNotNull { it.trim().split('=').firstOrNull()?.takeIf { n -> n.isNotBlank() } }
+        names.forEach { name ->
+            listOf("/", "/jwapp", "/jwapp/sys").forEach { path ->
+                runCatching { cm.setCookie(url, "$name=; Path=$path; Max-Age=0") }
+            }
+        }
+        runCatching { cm.flush() }
+        AppLog.i(TAG, "已清除教务系统会话 Cookie（${names.size} 个）")
+    }
 
     /**
      * 执行一次同步（阶段化流程，全程带日志与超时保护）。
@@ -380,41 +403,50 @@ class WebScheduleEngine(private val appContext: Context) {
             }
             val view = ensureWebView()
             AppLog.i(TAG, "===== 开始同步（凭据：${if (credentials != null) "已保存" else "未保存"}${if (verifyCredentials) "，校验新密码" else ""}）=====")
-            // 用户在设置页手动登录：先清掉统一认证会话，保证下面的登录流程确实用了新密码
-            if (verifyCredentials && credentials != null) clearCasSession()
+            ssoFormSeen = false
+            expectedStudentId = credentials?.studentId.orEmpty()
+            // 用户在设置页手动登录：先彻底清掉浏览器会话（统一认证 + 教务系统），
+            // 强制走一次真实登录来校验新密码；否则旧会话会让错误密码“看起来登录成功”。
+            if (verifyCredentials && credentials != null) {
+                clearCasSession()
+                clearSchoolSession()
+            }
 
-            // ---------- 阶段 1：直接打开教务系统首页（已有会话时最快） ----------
-            // 若 WebView 已停留在首页，loadUrl 同一地址可能不会真正刷新（沿用上一轮残留的 DOM），
-            // 会导致退出登录后仍被误判为“已登录”。这里强制真正重新加载，并等待新文档就绪。
-            val readyBefore = pageReadyCount
-            val currentUrl = view.url.orEmpty()
-            val schoolHome = school.homeUrl.substringBefore("#")
-            if (schoolHome.isNotBlank() && currentUrl.startsWith(schoolHome)) {
-                AppLog.i(TAG, "WebView 已在首页，强制刷新以核对最新会话状态")
-                view.reload()
+            // ---------- 阶段 1：打开教务系统首页（已有会话时最快） ----------
+            // 手动登录（校验新密码）时跳过本阶段：北航的正确顺序是「先进统一身份认证 → 再取本研课表」，
+            // 且必须先真正提交一次账密，不能被残留会话短路。
+            var probe: PageProbe? = null
+            if (verifyCredentials && credentials != null) {
+                AppLog.i(TAG, "手动登录：跳过首页，直接进入统一身份认证完成登录校验")
             } else {
-                view.loadUrl(school.homeUrl)
-            }
-            // 等待本次导航完成（onPageFinished），避免随后探测到刷新前的残留旧 DOM（最多等 10 秒）
-            val readyDeadline = SystemClock.uptimeMillis() + 10_000
-            while (pageReadyCount <= readyBefore && SystemClock.uptimeMillis() < readyDeadline) {
-                delay(200)
-            }
-            var probe = waitFor(view, HOME_FIRST_WAIT_MS) { p -> looksReady(p) || p.hasLoginForm || p.netError }
-            AppLog.i(TAG, "阶段1 首页探测: ${probe?.summary() ?: "超时无响应"}")
+                // 若 WebView 已停留在首页，loadUrl 同一地址可能不会真正刷新（沿用上一轮残留的 DOM），
+                // 会导致退出登录后仍被误判为“已登录”。这里强制真正重新加载，并等待新文档就绪。
+                val readyBefore = pageReadyCount
+                val currentUrl = view.url.orEmpty()
+                val schoolHome = school.homeUrl.substringBefore("#")
+                if (schoolHome.isNotBlank() && currentUrl.startsWith(schoolHome)) {
+                    AppLog.i(TAG, "WebView 已在首页，强制刷新以核对最新会话状态")
+                    view.reload()
+                } else {
+                    view.loadUrl(school.homeUrl)
+                }
+                // 等待本次导航完成（onPageFinished），避免随后探测到刷新前的残留旧 DOM（最多等 10 秒）
+                val readyDeadline = SystemClock.uptimeMillis() + 10_000
+                while (pageReadyCount <= readyBefore && SystemClock.uptimeMillis() < readyDeadline) {
+                    delay(200)
+                }
+                probe = waitFor(view, HOME_FIRST_WAIT_MS) { p -> looksReady(p) || p.hasLoginForm || p.netError }
+                AppLog.i(TAG, "阶段1 首页探测: ${probe?.summary() ?: "超时无响应"}")
 
-            // 只有“已渲染课表/应用且无网络异常”才可直接提取；
-            // “网络异常 + 残留旧课表”说明会话已失效但页面还留着旧内容（例如退出登录后），
-            // 必须转入登录流程重新建立会话，否则按周重放接口会全部失败。
-            if (probe?.netError == true && (probe.hasGrid || probe.hasApp)) {
-                AppLog.w(TAG, "首页显示网络异常但残留旧课表内容，判定会话已失效，转入登录流程")
-            }
-            if (looksReady(probe)) {
-                if (!verifyCredentials) {
+                // 只有“已渲染课表/应用且无网络异常”才可直接提取；
+                // “网络异常 + 残留旧课表”说明会话已失效但页面还留着旧内容（例如退出登录后），
+                // 必须转入登录流程重新建立会话，否则按周重放接口会全部失败。
+                if (probe?.netError == true && (probe.hasGrid || probe.hasApp)) {
+                    AppLog.w(TAG, "首页显示网络异常但残留旧课表内容，判定会话已失效，转入登录流程")
+                }
+                if (looksReady(probe)) {
                     return@withContext extract(view, "首页直出", incrementalAgainstSemester)
                 }
-                // 手动登录：即使首页已有会话也继续走登录流程，确保新密码被真正提交校验
-                AppLog.i(TAG, "手动登录：首页已有会话，仍继续走登录流程校验新密码")
             }
 
             // ---------- 阶段 2：走统一身份认证 ----------
@@ -429,11 +461,13 @@ class WebScheduleEngine(private val appContext: Context) {
             }
 
             if (looksReady(loginProbe)) {
-                // 手动登录却直接回到了课表（旧会话仍未失效）→ 无法校验新密码，如实告知用户
-                val notice = if (verifyCredentials) MSG_CREDENTIAL_UNVERIFIED else ""
-                if (notice.isNotBlank()) AppLog.w(TAG, "未能校验新密码：统一认证仍处于登录态")
+                // 手动登录时若未看到登录表单就回到课表：说明会话并未真正重建（正常已清 Cookie，不应出现）
+                if (verifyCredentials && !ssoFormSeen) {
+                    AppLog.w(TAG, "校验新密码失败：未出现登录表单，会话仍处于登录态")
+                    return@withContext SyncResult.LoginRequired(MSG_CREDENTIAL_UNVERIFIED)
+                }
+                AppLog.i(TAG, "直接进入课表页面，无需登录")
                 return@withContext extract(view, "登录页直达课表", incrementalAgainstSemester)
-                    .withNotice(notice)
             }
             if (loginProbe == null || !loginProbe.hasLoginForm) {
                 val p = loginProbe
@@ -563,6 +597,7 @@ class WebScheduleEngine(private val appContext: Context) {
             AppLog.i(TAG, "统一认证#${index + 1} 状态: ${probe?.summary() ?: "超时无响应"}")
 
             if (probe == null) continue
+            if (probe.hasLoginForm) ssoFormSeen = true
             if (probe.ssoError) {
                 AppLog.w(TAG, "service 未被接受（未认证授权的服务），尝试下一个地址")
                 continue
@@ -673,6 +708,21 @@ class WebScheduleEngine(private val appContext: Context) {
         }
         if (semester == null) {
             return SyncResult.Failure("已进入课表页面但未解析到课程（可能页面改版），请把日志发给开发者")
+        }
+        // 身份校验（尽力而为）：确认当前会话的账号与设置里填写的学号一致。
+        // 防止“保存了错误密码 + 旧会话仍有效”这类情况静默地显示“已同步”。
+        val mismatch = withContext(Dispatchers.Default) {
+            ScheduleParser.identityMismatch(raws, expectedStudentId)
+        }
+        if (mismatch != null) {
+            AppLog.w(TAG, "账号不一致：当前会话=$mismatch，设置学号=$expectedStudentId")
+            return SyncResult.LoginRequired(
+                "当前教务会话的账号（$mismatch）与设置中的学号（$expectedStudentId）不一致，" +
+                    "请点「退出登录」后用正确账号重新登录"
+            )
+        }
+        if (expectedStudentId.isNotBlank()) {
+            AppLog.i(TAG, "账号校验通过（$expectedStudentId）")
         }
         // 原始接口抓包用于排查改版问题：写盘切到 IO 线程（原实现占用主线程）
         withContext(Dispatchers.IO) {

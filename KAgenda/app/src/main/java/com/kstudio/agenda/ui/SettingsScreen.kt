@@ -39,6 +39,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
@@ -117,6 +118,8 @@ fun SettingsScreen(
     val settings by vm.settings.collectAsState()
     val selectedDate by vm.selectedDate.collectAsState()
     val syncState by vm.syncState.collectAsState()
+    // 课表里的全部课程（用于“节数配置是否够用”的提醒）
+    val semesterCourses = vm.semester.collectAsState().value?.weeks?.values?.flatten().orEmpty()
     val context = LocalContext.current
     val t = LocalStrings.current
 
@@ -564,13 +567,15 @@ fun SettingsScreen(
                 t.secPeriodTimesSub,
                 expanded = expPeriodTimes,
                 onToggle = { expPeriodTimes = !expPeriodTimes },
-                trailing = if (settings.periodTimesRaw.isBlank()) t.periodTimesDefaultTag
-                else t.periodTimesCustomTag,
+                trailing = t.periodTimesCount(PeriodTimes.count),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = if (settings.periodTimesRaw.isBlank()) t.periodTimesDefaultTag
-                        else t.periodTimesCustomTag,
+                        text = if (settings.periodTimesRaw.isBlank()) {
+                            "${t.periodTimesDefaultTag} · ${t.periodTimesCount(PeriodTimes.count)}"
+                        } else {
+                            "${t.periodTimesCustomTag} · ${t.periodTimesCount(PeriodTimes.count)}"
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f),
@@ -581,7 +586,7 @@ fun SettingsScreen(
                 }
                 // 预览前四节，让用户确认当前生效的作息
                 Text(
-                    text = (1..4).joinToString("  ") {
+                    text = (1..minOf(4, PeriodTimes.count)).joinToString("  ") {
                         "${it}·${PeriodTimes.format(PeriodTimes.startOf(it))}-${
                             PeriodTimes.format(PeriodTimes.endOf(it))
                         }"
@@ -589,6 +594,18 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                // 节数小于课表实际最大节次时，周视图不会显示超出部分——提前提醒
+                val maxPeriodUsed = remember(semesterCourses) {
+                    semesterCourses.maxOfOrNull { it.endPeriod } ?: 0
+                }
+                if (maxPeriodUsed > PeriodTimes.count) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = t.periodTimesCountWarning(maxPeriodUsed, PeriodTimes.count),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                }
             }
         }
 
@@ -1538,7 +1555,7 @@ private fun PeriodTimesDialog(
         text = {
             Column(
                 Modifier
-                    .heightIn(max = 400.dp)
+                    .heightIn(max = 420.dp)
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
@@ -1546,8 +1563,15 @@ private fun PeriodTimesDialog(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(10.dp))
-                for (i in 0 until PeriodTimes.count) {
+                Spacer(Modifier.height(4.dp))
+                // 当前节数（可增删，1..24 节）
+                Text(
+                    text = t.periodTimesCount(starts.size),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Spacer(Modifier.height(8.dp))
+                for (i in starts.indices) {
                     Row(
                         modifier = Modifier.padding(vertical = 3.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -1555,18 +1579,48 @@ private fun PeriodTimesDialog(
                         Text(
                             text = t.periodTimesRowFmt.format(i + 1),
                             style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.width(56.dp),
+                            modifier = Modifier.width(52.dp),
                         )
                         TimeField(starts[i], Modifier.weight(1f)) { starts[i] = it }
-                        Text("–", modifier = Modifier.padding(horizontal = 6.dp))
+                        Text("–", modifier = Modifier.padding(horizontal = 4.dp))
                         TimeField(ends[i], Modifier.weight(1f)) { ends[i] = it }
+                        // 删减节次（至少保留 1 节）
+                        IconButton(
+                            onClick = {
+                                if (starts.size > PeriodTimes.MIN_COUNT) {
+                                    starts.removeAt(i)
+                                    ends.removeAt(i)
+                                }
+                            },
+                            enabled = starts.size > PeriodTimes.MIN_COUNT,
+                            modifier = Modifier.size(30.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = t.periodTimesRemoveOne,
+                                modifier = Modifier.size(15.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 }
+                Spacer(Modifier.height(6.dp))
+                // 新增节次（默认作息向后推算，可再手改）
+                OutlinedButton(
+                    onClick = {
+                        if (starts.size < PeriodTimes.MAX_COUNT) {
+                            val p = PeriodTimes.defaultPairOf(starts.size + 1)
+                            starts.add(PeriodTimes.format(p.first))
+                            ends.add(PeriodTimes.format(p.second))
+                        }
+                    },
+                    enabled = starts.size < PeriodTimes.MAX_COUNT,
+                ) { Text(t.periodTimesAddOne) }
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val list = (0 until PeriodTimes.count).map { i ->
+                val list = starts.indices.map { i ->
                     val s = parseLooseTime(starts[i])
                     val e = parseLooseTime(ends[i])
                     if (s == null || e == null) null else s to e
@@ -1577,9 +1631,12 @@ private fun PeriodTimesDialog(
         dismissButton = {
             Row {
                 TextButton(onClick = {
-                    PeriodTimes.defaults.forEachIndexed { i, p ->
-                        starts[i] = PeriodTimes.format(p.first)
-                        ends[i] = PeriodTimes.format(p.second)
+                    // 恢复默认：回到内置的 14 节作息
+                    starts.clear()
+                    ends.clear()
+                    PeriodTimes.defaults.forEach { p ->
+                        starts.add(PeriodTimes.format(p.first))
+                        ends.add(PeriodTimes.format(p.second))
                     }
                 }) { Text(t.periodTimesRestoreDefault) }
                 TextButton(onClick = onDismiss) { Text(t.cancel) }
