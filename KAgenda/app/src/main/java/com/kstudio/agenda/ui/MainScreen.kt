@@ -20,6 +20,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.EventAvailable
@@ -179,7 +180,13 @@ fun MainScreen(
                     else MaterialTheme.colorScheme.surface,
                 ),
                 title = {
-                    Column {
+                    // 点「K日程」标题或下面的同步状态小字 = 手动同步（与右上角刷新按钮等价）
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { vm.syncNow() }
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                    ) {
                         Text(t.appTitle, style = MaterialTheme.typography.titleLarge)
                         when (val s = sync) {
                             is SyncUi.Success -> Column {
