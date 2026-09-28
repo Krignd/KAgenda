@@ -60,6 +60,9 @@ import com.kstudio.agenda.model.WeekSchedule
 import com.kstudio.agenda.ui.components.EmptyState
 import com.kstudio.agenda.ui.components.StatusBanner
 import com.kstudio.agenda.ui.components.TagChip
+import com.kstudio.agenda.ui.components.cardBaseColor
+import com.kstudio.agenda.ui.components.cardShadowElevation
+import com.kstudio.agenda.ui.components.cardTonalElevation
 import com.kstudio.agenda.ui.components.rememberFlashPulse
 import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
@@ -438,7 +441,7 @@ internal fun DayStrip(
                     )
                 )
                 else -> Brush.linearGradient(
-                    listOf(MaterialTheme.colorScheme.surface, MaterialTheme.colorScheme.surface)
+                    listOf(cardBaseColor(), cardBaseColor())
                 )
             }
             val fg = when {
@@ -506,16 +509,19 @@ fun CourseCard(
     val pulse = rememberFlashPulse(flash)
     // CoursePalette 返回 Android 原生 ARGB Int，这里转换为 Compose Color
     val color = Color(CoursePalette.colorFor(course))
-    // 卡片底色：闪烁时按课程色做“深浅变化”；平时白底 + 细描边，与页面背景区分更清晰
+    // 卡片底色：白天纯白（比页面底色更白、不带主色染色），夜间用 surface；
+    // 闪烁时按课程色做“深浅变化”
+    val base = cardBaseColor()
     val cardColor = if (flash) {
-        color.copy(alpha = 0.10f + 0.30f * pulse).compositeOver(MaterialTheme.colorScheme.surface)
+        color.copy(alpha = 0.10f + 0.30f * pulse).compositeOver(base)
     } else {
-        MaterialTheme.colorScheme.surface
+        base
     }
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = cardColor,
-        tonalElevation = 2.dp,
+        tonalElevation = cardTonalElevation(),
+        shadowElevation = cardShadowElevation(),
         modifier = Modifier
             .fillMaxWidth()
             .then(

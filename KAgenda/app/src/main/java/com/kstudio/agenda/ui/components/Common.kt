@@ -10,6 +10,7 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -36,7 +37,36 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+
+/**
+ * 卡片底色（白天 / 夜间 / 液态玻璃统一口径）：
+ * - **白天：纯白** —— 比页面底色明显更白，卡片看起来更干净；
+ * - 夜间：用 surface（比深色背景略亮）；
+ * - 液态玻璃：用带 alpha 的 surface（叠加在渐变背景上形成毛玻璃）。
+ *
+ * 注意：不要再靠 `Surface(tonalElevation = 2.dp)` 来做白底——M3 会把主色按比例混进表面，
+ * 白天看起来是「灰蓝白」，反而不如页面底色干净（见 [cardTonalElevation]）。
+ */
+@Composable
+fun cardBaseColor(): Color =
+    if (isSystemInDarkTheme() || LocalGlassEnabled.current) {
+        MaterialTheme.colorScheme.surface
+    } else {
+        Color.White
+    }
+
+/** 配合 [cardBaseColor] 的色调叠加：白天与液态玻璃为 0（避免把白染灰），夜间 2dp */
+@Composable
+fun cardTonalElevation(): Dp =
+    if (isSystemInDarkTheme() && !LocalGlassEnabled.current) 2.dp else 0.dp
+
+/** 配合 [cardBaseColor] 的阴影：白天给极淡投影（不带主色染色），夜间/玻璃不需要 */
+@Composable
+fun cardShadowElevation(): Dp =
+    if (isSystemInDarkTheme() || LocalGlassEnabled.current) 0.dp else 1.dp
 
 /** 小标签（本 / 研 / 周次等） */
 @Composable
@@ -92,8 +122,9 @@ fun SectionCard(
                 RoundedCornerShape(20.dp),
             ),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        color = cardBaseColor(),
+        tonalElevation = cardTonalElevation(),
+        shadowElevation = cardShadowElevation(),
     ) {
         Column(Modifier.padding(18.dp)) {
             Text(
@@ -138,8 +169,9 @@ fun CollapsibleSectionCard(
                 RoundedCornerShape(20.dp),
             ),
         shape = RoundedCornerShape(20.dp),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp,
+        color = cardBaseColor(),
+        tonalElevation = cardTonalElevation(),
+        shadowElevation = cardShadowElevation(),
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(

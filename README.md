@@ -61,3 +61,9 @@ cd KAgenda
 ## 免责声明 / Disclaimer
 
 本项目仅用于个人学习与课表自动化管理；同步能力依赖各学校网页结构，可能随学校改版失效。
+
+## 许可证 / License
+
+本项目采用 **MIT License** 开源，详见仓库根目录的 [`LICENSE`](LICENSE)。
+
+This project is licensed under the **MIT License** — see the [`LICENSE`](LICENSE) file for details.

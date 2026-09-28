@@ -75,6 +75,9 @@ import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.AgendaTypes
 import com.kstudio.agenda.ui.components.RepeatRulePicker
 import com.kstudio.agenda.ui.components.TagChip
+import com.kstudio.agenda.ui.components.cardBaseColor
+import com.kstudio.agenda.ui.components.cardShadowElevation
+import com.kstudio.agenda.ui.components.cardTonalElevation
 import com.kstudio.agenda.ui.components.rememberFlashPulse
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -97,11 +100,13 @@ fun AgendaCard(
     } else {
         MaterialTheme.colorScheme.tertiary
     }
-    // 卡片底色：闪烁时按条目色做“深浅变化”提醒；平时白底 + 细描边，与页面背景对比更清晰
+    // 卡片底色：白天纯白（比页面底色更白、不带主色染色），夜间用 surface；
+    // 闪烁时按条目色做“深浅变化”提醒
+    val base = cardBaseColor()
     val cardColor = if (flash) {
-        accent.copy(alpha = 0.10f + 0.30f * pulse).compositeOver(MaterialTheme.colorScheme.surface)
+        accent.copy(alpha = 0.10f + 0.30f * pulse).compositeOver(base)
     } else {
-        MaterialTheme.colorScheme.surface
+        base
     }
     val ongoing = event.isOngoing()
     // 类型标签：优先本地化类型名；否则按 计划/长日程/日程 显示
@@ -114,7 +119,8 @@ fun AgendaCard(
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = cardColor,
-        tonalElevation = 2.dp,
+        tonalElevation = cardTonalElevation(),
+        shadowElevation = cardShadowElevation(),
         modifier = Modifier
             .fillMaxWidth()
             .then(

@@ -189,3 +189,8 @@ app/src/main/java/com/kstudio/agenda/
 
 > 各校作息不同：可在「设置 → 用户自定义 → 课程时间」中逐节修改（支持 `HH:mm`、`H:mm`、`HHmm` 写法），
 > 点「恢复默认」即回到上表。自定义作息保存在本机，并用于周/日视图、时间线视图、小组件与常驻通知。
+---
+
+## 许可证（License）
+
+本项目采用 **MIT License** 开源，详见仓库根目录的 [`LICENSE`](../LICENSE)。

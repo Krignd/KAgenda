@@ -1095,10 +1095,16 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                        RoundedCornerShape(20.dp),
+                    )
                     .clickable { showDevTools = true },
                 shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp,
+                color = com.kstudio.agenda.ui.components.cardBaseColor(),
+                tonalElevation = com.kstudio.agenda.ui.components.cardTonalElevation(),
+                shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
             ) {
                 Row(
                     modifier = Modifier.padding(18.dp),
@@ -1436,8 +1442,9 @@ private fun SettingsCategoryMenu(
                     )
                     .clickable { onOpen(index) },
                 shape = RoundedCornerShape(20.dp),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 1.dp,
+                color = com.kstudio.agenda.ui.components.cardBaseColor(),
+                tonalElevation = com.kstudio.agenda.ui.components.cardTonalElevation(),
+                shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
