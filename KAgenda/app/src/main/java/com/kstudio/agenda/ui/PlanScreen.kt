@@ -107,7 +107,8 @@ private fun PlanDayView(vm: AppViewModel) {
 
     val monday = selected.minusDays((selected.dayOfWeek.value - 1).toLong())
     Column(Modifier.fillMaxSize()) {
-        DayStrip(monday, selected, vm::selectDate)
+        // 与日程表日视图一致：日期条每页一周，左右滑动即可切周（外部换周自动同步）
+        DayStripPager(vm, monday, selected)
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -122,6 +123,10 @@ private fun PlanDayView(vm: AppViewModel) {
             )
             IconButton(onClick = { vm.selectDate(selected.plusDays(7)) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = t.nextWeek)
+            }
+            // 回到今天：与日程表日视图保持一致
+            if (selected != LocalDate.now()) {
+                TextButton(onClick = { vm.goToday() }) { Text(t.backToToday) }
             }
         }
 
@@ -210,6 +215,10 @@ private fun PlanWeekView(vm: AppViewModel) {
             Text(rangeLabel(monday), style = MaterialTheme.typography.titleMedium)
             IconButton(onClick = { vm.selectDate(selected.plusDays(7)) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = t.nextWeek)
+            }
+            // 回到本周：与日程表周视图保持一致
+            if (monday != LocalDate.now().with(java.time.DayOfWeek.MONDAY)) {
+                TextButton(onClick = { vm.goToday() }) { Text(t.backToThisWeek) }
             }
         }
 

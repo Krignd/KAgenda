@@ -457,6 +457,73 @@ interface AppStrings {
     fun notifClassSoon(title: String): String
     val syncTimeLabel: String
     val exportTimeLabel: String
+
+    // ---------------- 回到今天 / 本周 ----------------
+    val backToToday: String
+    val backToThisWeek: String
+
+    // ---------------- 自定义课程时间 ----------------
+    val secPeriodTimes: String
+    val secPeriodTimesSub: String
+    val btnEditPeriodTimes: String
+    val periodTimesTitle: String
+    val periodTimesHint: String
+    val periodTimesRestoreDefault: String
+    val periodTimesRowFmt: String          // “第1节”
+    val msgPeriodTimesSaved: String
+    val msgPeriodTimesInvalid: String
+    val periodTimesDefaultTag: String
+    val periodTimesCustomTag: String
+
+    // ---------------- 锁屏显示 ----------------
+    val secLockScreen: String
+    val secLockScreenSub: String
+    val btnOpenNotifSettings: String
+    val lockScreenHint: String
+
+    // ---------------- 界面风格（液态玻璃） ----------------
+    val secUiStyle: String
+    val secUiStyleSub: String
+    val uiStyleDefault: String
+    val uiStyleDefaultSub: String
+    val uiStyleGlass: String
+    val uiStyleGlassSub: String
+
+    // ---------------- 文档导入 / 导出 ----------------
+    val secDocs: String
+    val secDocsSub: String
+    val docTitle: String
+    val docIntro: String
+    val docOpenHint: String
+    val docPick: String
+    val docReading: String
+    fun docReadFail(msg: String): String
+    fun docUnsupportedExt(ext: String): String
+    val docNoText: String
+    val docTextLabel: String
+    fun docDetected(events: Int, courses: Int): String
+    val docImportAgenda: String
+    val docImportPlan: String
+    val docImportCourses: String
+    fun docAnchorLabel(date: String): String
+    val docAnchorHint: String
+    fun docImportedList(n: Int): String
+    val docClearImported: String
+    val docExport: String
+    val docExportHint: String
+    val docExportCsv: String
+    val docExportMd: String
+    val docExported: String
+    val docExportFailed: String
+    val msgImportedCoursesCleared: String
+    fun msgImportedCourses(n: Int): String
+    val msgImportNoCourses: String
+    val msgImportNoEvents: String
+    val docLocalOnly: String
+
+    // ---------------- AI 助手的本地识别 ----------------
+    val aiOfflineParse: String
+    fun aiOfflineDone(n: Int): String
 }
 
 // ==================================================================== 中文
@@ -914,6 +981,67 @@ object ZhStrings : AppStrings {
     override fun notifClassSoon(title: String) = "即将上课：${title}"
     override val syncTimeLabel = "数据同步时间："
     override val exportTimeLabel = "导出时间："
+
+    override val backToToday = "回到今天"
+    override val backToThisWeek = "回到本周"
+
+    override val secPeriodTimes = "课程时间"
+    override val secPeriodTimesSub = "自定义每一节课的起止时间（默认与学校作息一致，共 14 节）"
+    override val btnEditPeriodTimes = "自定义课程时间"
+    override val periodTimesTitle = "课程时间"
+    override val periodTimesHint = "按 24 小时制填写 HH:mm。修改后日/周视图、小组件与常驻通知的时间立即更新。"
+    override val periodTimesRestoreDefault = "恢复默认"
+    override val periodTimesRowFmt = "第%d节"
+    override val msgPeriodTimesSaved = "课程时间已更新"
+    override val msgPeriodTimesInvalid = "时间格式不正确，请按 HH:mm 填写全部节次"
+    override val periodTimesDefaultTag = "默认作息"
+    override val periodTimesCustomTag = "自定义作息"
+
+    override val secLockScreen = "锁屏显示"
+    override val secLockScreenSub = "关闭后常驻通知不会出现在锁屏上"
+    override val btnOpenNotifSettings = "打开系统通知设置"
+    override val lockScreenHint = "锁屏上看不到通知？部分系统（如 MIUI/HyperOS、EMUI）会默认隐藏静默通知；可在系统通知设置里为本应用开启「锁屏通知」。"
+
+    override val secUiStyle = "界面风格"
+    override val secUiStyleSub = "选择整体视觉风格（默认保留原样式）"
+    override val uiStyleDefault = "默认"
+    override val uiStyleDefaultSub = "当前的不透明卡片样式"
+    override val uiStyleGlass = "液态玻璃"
+    override val uiStyleGlassSub = "渐变背景 + 半透明毛玻璃卡片，圆角更柔和"
+
+    override val secDocs = "文档导入"
+    override val secDocsSub = "读取 Word / Excel / PPT / PDF / 文本，自动识别课程表、日程与计划"
+    override val docTitle = "文档导入"
+    override val docIntro = "选择本地文档，应用会在本机提取文字并自动识别课程表、日程与计划（不上传任何内容）。"
+    override val docOpenHint = "在文件管理或其他应用里选择「用 K日程 打开」也能直接进入本页。"
+    override val docPick = "选择文档"
+    override val docReading = "正在读取文档…"
+    override fun docReadFail(msg: String) = "读取失败：$msg"
+    override fun docUnsupportedExt(ext: String) = "暂不支持 .$ext 格式（可另存为 docx / xlsx / pdf / txt 后重试）"
+    override val docNoText = "未从文档中提取到文字（扫描版 PDF / 图片型文档需要手动粘贴文字）"
+    override val docTextLabel = "文档文字（可修改后重新识别）"
+    override fun docDetected(events: Int, courses: Int) = "已识别：$events 条日程/计划，$courses 门课程"
+    override val docImportAgenda = "导入为日程"
+    override val docImportPlan = "导入为计划"
+    override val docImportCourses = "导入为课程表"
+    override fun docAnchorLabel(date: String) = "第 1 教学周周一：$date"
+    override val docAnchorHint = "课程周次按该日期换算，与本学期同步数据保持一致；可左右微调"
+    override fun docImportedList(n: Int) = "已导入课程（$n）"
+    override val docClearImported = "清空导入课程"
+    override val docExport = "导出为文档"
+    override val docExportHint = "把当前课表与日程导出为 CSV / Markdown 文件（存到你选择的位置）"
+    override val docExportCsv = "导出 CSV"
+    override val docExportMd = "导出 Markdown"
+    override val docExported = "已导出到所选位置"
+    override val docExportFailed = "导出失败"
+    override fun msgImportedCourses(n: Int) = "已导入 $n 门课程"
+    override val msgImportedCoursesCleared = "已清空导入课程"
+    override val msgImportNoCourses = "未识别到课程，请确认文档里有「星期 + 节次」信息"
+    override val msgImportNoEvents = "未识别到日程或计划"
+    override val docLocalOnly = "全部在本机完成，不发送到网络"
+
+    override val aiOfflineParse = "本地识别"
+    override fun aiOfflineDone(n: Int) = "本地识别到 $n 条（未调用 AI）"
 }
 
 // ==================================================================== English
@@ -1378,6 +1506,67 @@ object EnStrings : AppStrings {
     override fun notifClassSoon(title: String) = "Class soon: ${title}"
     override val syncTimeLabel = "Synced: "
     override val exportTimeLabel = "Exported: "
+
+    override val backToToday = "Back to today"
+    override val backToThisWeek = "Back to this week"
+
+    override val secPeriodTimes = "Class times"
+    override val secPeriodTimesSub = "Customize the start/end time of every period (14 periods by default)"
+    override val btnEditPeriodTimes = "Customize class times"
+    override val periodTimesTitle = "Class times"
+    override val periodTimesHint = "Use 24-hour HH:mm. Day/week views, widgets and the persistent notification update immediately."
+    override val periodTimesRestoreDefault = "Restore defaults"
+    override val periodTimesRowFmt = "Period %d"
+    override val msgPeriodTimesSaved = "Class times updated"
+    override val msgPeriodTimesInvalid = "Invalid time format — please fill every period as HH:mm"
+    override val periodTimesDefaultTag = "Default schedule"
+    override val periodTimesCustomTag = "Custom schedule"
+
+    override val secLockScreen = "Show on lock screen"
+    override val secLockScreenSub = "When off, the persistent notification stays off the lock screen"
+    override val btnOpenNotifSettings = "Open system notification settings"
+    override val lockScreenHint = "Notification missing on the lock screen? Some systems (MIUI/HyperOS, EMUI) hide silent notifications by default — enable “Lock screen notifications” for this app in the system settings."
+
+    override val secUiStyle = "Appearance"
+    override val secUiStyleSub = "Choose the overall visual style (default keeps the current look)"
+    override val uiStyleDefault = "Default"
+    override val uiStyleDefaultSub = "The current opaque card style"
+    override val uiStyleGlass = "Liquid Glass"
+    override val uiStyleGlassSub = "Gradient background + translucent frosted cards with softer corners"
+
+    override val secDocs = "Document import"
+    override val secDocsSub = "Read Word / Excel / PPT / PDF / text and detect timetables, events and plans"
+    override val docTitle = "Document import"
+    override val docIntro = "Pick a document; the text is extracted on this device and timetables, events and plans are detected automatically (nothing is uploaded)."
+    override val docOpenHint = "Opening a file with \"Open with K日程\" from another app leads here as well."
+    override val docPick = "Choose document"
+    override val docReading = "Reading document…"
+    override fun docReadFail(msg: String) = "Read failed: $msg"
+    override fun docUnsupportedExt(ext: String) = ".$ext is not supported yet (re-save as docx / xlsx / pdf / txt)"
+    override val docNoText = "No text could be extracted (scanned or image-only documents need manual pasting)"
+    override val docTextLabel = "Document text (editable, then detect again)"
+    override fun docDetected(events: Int, courses: Int) = "Detected: $events event(s)/plan(s), $courses course(s)"
+    override val docImportAgenda = "Import as events"
+    override val docImportPlan = "Import as plans"
+    override val docImportCourses = "Import as timetable"
+    override fun docAnchorLabel(date: String) = "Monday of teaching week 1: $date"
+    override val docAnchorHint = "Course weeks are calculated from this date; adjust by weeks if needed"
+    override fun docImportedList(n: Int) = "Imported courses ($n)"
+    override val docClearImported = "Clear imported courses"
+    override val docExport = "Export as document"
+    override val docExportHint = "Export the current timetable and events as CSV / Markdown to a location you choose"
+    override val docExportCsv = "Export CSV"
+    override val docExportMd = "Export Markdown"
+    override val docExported = "Exported to the selected location"
+    override val docExportFailed = "Export failed"
+    override fun msgImportedCourses(n: Int) = "$n course(s) imported"
+    override val msgImportedCoursesCleared = "Imported courses cleared"
+    override val msgImportNoCourses = "No course detected — make sure the document contains weekday and period info"
+    override val msgImportNoEvents = "No event or plan detected"
+    override val docLocalOnly = "Everything happens on this device; nothing is sent online"
+
+    override val aiOfflineParse = "Offline detect"
+    override fun aiOfflineDone(n: Int) = "Detected $n item(s) offline (no AI used)"
 }
 
 // ==================================================================== Français
@@ -1845,6 +2034,67 @@ object FrStrings : AppStrings {
     override fun notifClassSoon(title: String) = "Cours bientôt : ${title}"
     override val syncTimeLabel = "Synchro : "
     override val exportTimeLabel = "Exporté : "
+
+    override val backToToday = "Revenir à aujourd'hui"
+    override val backToThisWeek = "Revenir à cette semaine"
+
+    override val secPeriodTimes = "Horaires des cours"
+    override val secPeriodTimesSub = "Personnalisez le début/la fin de chaque période (14 par défaut)"
+    override val btnEditPeriodTimes = "Personnaliser les horaires"
+    override val periodTimesTitle = "Horaires des cours"
+    override val periodTimesHint = "Format 24 h HH:mm. Les vues jour/semaine, le widget et la notification permanente sont mis à jour immédiatement."
+    override val periodTimesRestoreDefault = "Rétablir par défaut"
+    override val periodTimesRowFmt = "Période %d"
+    override val msgPeriodTimesSaved = "Horaires mis à jour"
+    override val msgPeriodTimesInvalid = "Format invalide — remplissez chaque période au format HH:mm"
+    override val periodTimesDefaultTag = "Horaires par défaut"
+    override val periodTimesCustomTag = "Horaires personnalisés"
+
+    override val secLockScreen = "Afficher sur l'écran verrouillé"
+    override val secLockScreenSub = "Désactivé, la notification permanente n'apparaît pas sur l'écran verrouillé"
+    override val btnOpenNotifSettings = "Ouvrir les réglages de notifications"
+    override val lockScreenHint = "Notification absente de l'écran verrouillé ? Certains systèmes (MIUI/HyperOS, EMUI) masquent les notifications silencieuses — activez « Notifications sur écran verrouillé » pour cette application."
+
+    override val secUiStyle = "Apparence"
+    override val secUiStyleSub = "Choisissez le style visuel global (par défaut : style actuel conservé)"
+    override val uiStyleDefault = "Par défaut"
+    override val uiStyleDefaultSub = "Le style actuel à cartes opaques"
+    override val uiStyleGlass = "Verre liquide"
+    override val uiStyleGlassSub = "Fond dégradé + cartes translucides dépoli, coins plus doux"
+
+    override val secDocs = "Import de documents"
+    override val secDocsSub = "Lire Word / Excel / PPT / PDF / texte et détecter emplois du temps, événements et plans"
+    override val docTitle = "Import de documents"
+    override val docIntro = "Choisissez un document : le texte est extrait sur cet appareil et les emplois du temps, événements et plans sont détectés automatiquement (rien n'est envoyé)."
+    override val docOpenHint = "Ouvrir un fichier avec « Ouvrir avec K日程 » depuis une autre application mène aussi ici."
+    override val docPick = "Choisir un document"
+    override val docReading = "Lecture du document…"
+    override fun docReadFail(msg: String) = "Échec de lecture : $msg"
+    override fun docUnsupportedExt(ext: String) = "Le format .$ext n'est pas pris en charge (réenregistrez en docx / xlsx / pdf / txt)"
+    override val docNoText = "Aucun texte extrait (les PDF scannés ou les documents image nécessitent un copier-coller)"
+    override val docTextLabel = "Texte du document (modifiable, puis relancer la détection)"
+    override fun docDetected(events: Int, courses: Int) = "Détecté : $events événement(s)/plan(s), $courses cours"
+    override val docImportAgenda = "Importer comme événements"
+    override val docImportPlan = "Importer comme plans"
+    override val docImportCourses = "Importer comme emploi du temps"
+    override fun docAnchorLabel(date: String) = "Lundi de la semaine 1 : $date"
+    override val docAnchorHint = "Les semaines des cours sont calculées depuis cette date ; ajustez si besoin"
+    override fun docImportedList(n: Int) = "Cours importés ($n)"
+    override val docClearImported = "Vider les cours importés"
+    override val docExport = "Exporter en document"
+    override val docExportHint = "Exporter l'emploi du temps et les événements en CSV / Markdown vers l'emplacement choisi"
+    override val docExportCsv = "Exporter CSV"
+    override val docExportMd = "Exporter Markdown"
+    override val docExported = "Exporté vers l'emplacement choisi"
+    override val docExportFailed = "Échec de l'export"
+    override fun msgImportedCourses(n: Int) = "$n cours importé(s)"
+    override val msgImportedCoursesCleared = "Cours importés vidés"
+    override val msgImportNoCourses = "Aucun cours détecté — vérifiez que le document contient le jour et la période"
+    override val msgImportNoEvents = "Aucun événement ou plan détecté"
+    override val docLocalOnly = "Tout se passe sur cet appareil ; rien n'est envoyé en ligne"
+
+    override val aiOfflineParse = "Détection locale"
+    override fun aiOfflineDone(n: Int) = "$n élément(s) détecté(s) localement (sans IA)"
 }
 
 // ==================================================================== 全局入口

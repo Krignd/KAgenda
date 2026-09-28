@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -82,7 +83,14 @@ fun SectionCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            // 提高与页面背景的对比度：卡片加一圈可见描边
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                RoundedCornerShape(20.dp),
+            ),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,
@@ -121,7 +129,14 @@ fun CollapsibleSectionCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            // 提高与页面背景的对比度：卡片加一圈可见描边
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                RoundedCornerShape(20.dp),
+            ),
         shape = RoundedCornerShape(20.dp),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 1.dp,

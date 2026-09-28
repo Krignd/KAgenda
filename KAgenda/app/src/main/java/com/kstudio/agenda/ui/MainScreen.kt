@@ -32,12 +32,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,6 +52,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -87,6 +90,9 @@ fun MainScreen(
     // 旋转屏幕/系统重建后保持当前页签与弹窗状态
     var tab by rememberSaveable { mutableStateOf(HomeTab.Schedule) }
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
+    // 文档导入页（设置入口 / 其他应用传入文档时打开）
+    var docImportOpen by rememberSaveable { mutableStateOf(false) }
+    var docImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     // 内容区尺寸（用于把可拖拽悬浮按钮限制在屏幕内）
     var contentSize by remember { mutableStateOf(IntSize.Zero) }
     val sync by vm.syncState.collectAsState()
@@ -134,6 +140,11 @@ fun MainScreen(
         // 否则在计划/进行中/设置页点悬浮球会被强行跳回日程表
         if (l.focusEpochDay != null) tab = HomeTab.Schedule
         if (l.quickAdd) showQuickAdd = true
+        // 其他应用传入文档：直接打开文档导入页
+        if (l.docUri != null) {
+            docImportUri = l.docUri
+            docImportOpen = true
+        }
         l.focusEpochDay?.let { day ->
             val date = LocalDate.ofEpochDay(day)
             // 小组件点击：优先定位“此刻正在进行”的课程（小组件状态可能滞后），
@@ -158,8 +169,15 @@ fun MainScreen(
     }
 
     Scaffold(
+        // 液态玻璃：容器透明，露出底层的渐变背景（卡片/导航栏半透明形成毛玻璃观感）
+        containerColor = if (settings.glassUi) Color.Transparent
+        else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = if (settings.glassUi) Color.Transparent
+                    else MaterialTheme.colorScheme.surface,
+                ),
                 title = {
                     Column {
                         Text(t.appTitle, style = MaterialTheme.typography.titleLarge)
@@ -222,7 +240,13 @@ fun MainScreen(
             )
         },
         bottomBar = {
-            NavigationBar {
+            NavigationBar(
+                containerColor = if (settings.glassUi) {
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
+                } else {
+                    NavigationBarDefaults.containerColor
+                },
+            ) {
                 NavigationBarItem(
                     selected = tab == HomeTab.Schedule,
                     onClick = { tab = HomeTab.Schedule },
@@ -269,6 +293,10 @@ fun MainScreen(
                     vm = vm,
                     onWebLogin = {
                         webLoginLauncher.launch(Intent(context, WebLoginActivity::class.java))
+                    },
+                    onOpenDocImport = {
+                        docImportUri = null
+                        docImportOpen = true
                     },
                 )
             }
@@ -336,6 +364,18 @@ fun MainScreen(
 
     if (showQuickAdd) {
         AiQuickAddDialog(vm) { showQuickAdd = false }
+    }
+
+    // 文档导入：独立整页（从设置入口或其他应用传入文档打开）
+    if (docImportOpen) {
+        DocumentImportScreen(
+            vm = vm,
+            initialUri = docImportUri,
+            onClose = {
+                docImportOpen = false
+                docImportUri = null
+            },
+        )
     }
 }
 

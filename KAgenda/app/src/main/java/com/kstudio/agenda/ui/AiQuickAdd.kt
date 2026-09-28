@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.AiAssistant
 import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
+import com.kstudio.agenda.data.LocalSmartParser
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.RepeatRules
@@ -58,7 +59,10 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
 
     // 发起识别：记录文本快照；等待期间用户若改动文字，返回结果作废
     // （防止“改了内容却把旧文字的操作执行了”的误操作）
-    fun startRecognize() {
+    //
+    // 本地优先：先用 [LocalSmartParser] 离线识别（覆盖通知/列表/课程表等常见格式），
+    // 只有离线识别不到内容时才调用 DeepSeek，从而让应用不依赖 API 也能正常使用。
+    fun startRecognize(offlineOnly: Boolean = false) {
         if (text.isBlank() || busy) return
         busy = true
         msg = t.aiRunning
@@ -66,9 +70,25 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         val asked = text
         scope.launch {
             try {
+                val local = runCatching {
+                    LocalSmartParser.parseEvents(asked, LocalDate.now())
+                }.getOrDefault(emptyList())
+                if (offlineOnly) {
+                    if (local.isEmpty()) msg = t.qaNothing
+                    else {
+                        ops = local
+                        msg = t.aiOfflineDone(local.size)
+                    }
+                    return@launch
+                }
                 val key = SettingsStore.effectiveAiKey(context)
                 if (key.isNullOrBlank()) {
-                    msg = t.aiNeedKey
+                    // 没有可用 Key（或用户未配置且内置 Key 缺失）：直接使用本地结果
+                    if (local.isEmpty()) msg = t.aiNeedKey
+                    else {
+                        ops = local
+                        msg = t.aiOfflineDone(local.size)
+                    }
                     return@launch
                 }
                 val model = SettingsStore.effectiveAiModel(context)
@@ -87,11 +107,17 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     return@launch
                 }
                 val list = AiSkills.parseOpsReply(reply)
-                if (list.isEmpty()) {
-                    msg = t.qaNothing
-                } else {
-                    ops = list
-                    msg = ""
+                when {
+                    list.isNotEmpty() -> {
+                        ops = list
+                        msg = ""
+                    }
+                    // AI 无结果但本地识别到了：用本地结果兵底
+                    local.isNotEmpty() -> {
+                        ops = local
+                        msg = t.aiOfflineDone(local.size)
+                    }
+                    else -> msg = t.qaNothing
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
@@ -161,13 +187,19 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
             ) { Text(t.qaConfirm) }
         },
         dismissButton = {
-            TextButton(
-                onClick = {
-                    // 已有预览时再次识别会清空（含手动修改的内容）：先让用户确认
-                    if (ops.isNotEmpty()) askReparse = true else startRecognize()
-                },
-                enabled = text.isNotBlank() && !busy,
-            ) { Text(t.qaParse) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(
+                    onClick = { if (ops.isNotEmpty()) askReparse = true else startRecognize(offlineOnly = true) },
+                    enabled = text.isNotBlank() && !busy,
+                ) { Text(t.aiOfflineParse) }
+                TextButton(
+                    onClick = {
+                        // 已有预览时再次识别会清空（含手动修改的内容）：先让用户确认
+                        if (ops.isNotEmpty()) askReparse = true else startRecognize()
+                    },
+                    enabled = text.isNotBlank() && !busy,
+                ) { Text(t.qaParse) }
+            }
         },
     )
 

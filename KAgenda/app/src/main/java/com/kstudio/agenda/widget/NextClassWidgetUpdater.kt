@@ -19,9 +19,7 @@ import com.kstudio.agenda.model.CoursePalette
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.ui.MainActivity
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.time.Duration
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -49,7 +47,8 @@ object NextClassWidgetUpdater {
     val SPECS = listOf(
         WidgetSpec(NextClassWidget2x1::class.java, R.layout.widget_class_2x1, showTitle = false, showNext2 = false, compactInfo = true),
         WidgetSpec(NextClassWidget2x2::class.java, R.layout.widget_class_2x2, showTitle = true, showNext2 = true),
-        WidgetSpec(NextClassWidget4x1::class.java, R.layout.widget_class_4x1, showTitle = false, showNext2 = false),
+        // 4×1：在「时间 · 老师」下方额外显示下一节课
+        WidgetSpec(NextClassWidget4x1::class.java, R.layout.widget_class_4x1, showTitle = false, showNext2 = true),
         WidgetSpec(NextClassWidget4x2::class.java, R.layout.widget_class_4x2, showTitle = true, showNext2 = true),
     )
 
@@ -110,10 +109,11 @@ object NextClassWidgetUpdater {
      */
     fun scheduleNext(context: Context) {
         val appContext = context.applicationContext
-        // 刷新间隔来自设置（DataStore 读取需要协程），因此调度异步执行，不阻塞调用方
-        CoroutineScope(Dispatchers.IO).launch {
-            runCatching { scheduleNextInternal(appContext) }
-        }
+        // 刷新间隔来自设置（DataStore 读取需要协程）。
+        // 这里必须**在调用返回前**完成调度：本方法会被 BroadcastReceiver（WidgetRefreshReceiver /
+        // 小组件 onUpdate）调用，接收器一旦返回进程就可能被回收，原来“另起协程异步调度”会直接丢失，
+        // 导致刷新链在几次触发后彻底停止（用户感知为“刷新频率无效”）。
+        runCatching { runBlocking { scheduleNextInternal(appContext) } }
     }
 
     private suspend fun scheduleNextInternal(context: Context) {

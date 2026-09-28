@@ -14,5 +14,10 @@ applyTo: "**/app/build.gradle.kts"
   正确做法（用 main 覆盖 public 工作区，不做历史合并）：
   `git checkout public` → `git reset --hard HEAD` → `git checkout main -- .` → `git diff --stat <public提交> main`（必须为空，确认公开树 == main 树）→ `git commit`（英文提交信息，不含校名）→ `git push origin HEAD:main` → `git push origin HEAD:refs/tags/<tag>`（tag 只能指向公开提交，绝不能推本地 main 提交）→ `git checkout main`
 - 发布 Release 用 `gh release create <tag> <apk> --title ... --notes-file ... --target main --latest`；标题与说明**不得出现学校名称**
+- **Release 说明里的 bug 修复措辞（2026-09-28 用户要求）**：
+  - 一般 bug 修复**只需一句**「修复了一些 bug」或等价的英文表述（如 `Fixed several bugs`），不要把逐条细节写进公开面；
+  - 只有**特别重大**的 bug（如数据丢失、无法启动、账号风险）才写具体描述；
+  - 细节必须完整写进**本地**文档（`对话记录\项目大事记.md`、`对话记录\buaa-kebiao-notes.md`），保证可追溯；
+  - 新功能仍可正常逐条列出（只有 bug 修复才做概括）。
 - 归档：APK 复制到**仓库外**的归档目录，命名 `KAgenda_版本_日期.apk`，并更新该目录的 `归档清单.md`（追加一行并更新"推荐安装"备注）
 - **构建产物禁止入库**：`app/release/`、`app/build/`、`*.apk` 一律留在 .gitignore 之外（历史上曾误提交 `app/release/`，需 `git rm -r --cached` 修正）

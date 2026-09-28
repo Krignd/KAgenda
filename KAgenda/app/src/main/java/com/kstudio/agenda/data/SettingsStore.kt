@@ -13,6 +13,12 @@ import kotlinx.coroutines.flow.map
 
 private val Context.settingsDataStore by preferencesDataStore(name = "settings")
 
+/** 界面风格：默认 */
+const val UI_STYLE_DEFAULT = "default"
+
+/** 界面风格：液态玻璃 */
+const val UI_STYLE_GLASS = "glass"
+
 /** 应用设置（对外暴露的只读快照） */
 data class AppSettings(
     val studentId: String = "",
@@ -50,7 +56,17 @@ data class AppSettings(
     val widgetRefreshNearMinutes: Int = SettingsStore.WIDGET_REFRESH_NEAR_DEFAULT,
     val widgetRefreshSoonMinutes: Int = SettingsStore.WIDGET_REFRESH_SOON_DEFAULT,
     val widgetRefreshFarMinutes: Int = SettingsStore.WIDGET_REFRESH_FAR_DEFAULT,
+    /** 用户自定义的课程时间（持久化原文；空串=使用默认作息，见 [com.kstudio.agenda.model.PeriodTimes]） */
+    val periodTimesRaw: String = "",
+    /** 常驻通知是否允许在锁屏上显示（关闭时通知不出现在锁屏） */
+    val statusOnLockScreen: Boolean = true,
+    /** 界面风格："default"=默认；"glass"=液态玻璃 */
+    val uiStyle: String = UI_STYLE_DEFAULT,
 ) {
+
+    /** 是否使用液态玻璃界面风格 */
+    val glassUi: Boolean get() = uiStyle == UI_STYLE_GLASS
+
     /** 时间线实际显示窗口（分钟）：结束时间 ≤ 开始时间时视为跨到次日（end 可 > 1440） */
     val timelineWindow: Pair<Int, Int>
         get() {
@@ -113,6 +129,9 @@ object SettingsStore {
     private val KEY_WIDGET_REFRESH_NEAR = intPreferencesKey("widget_refresh_near_minutes")
     private val KEY_WIDGET_REFRESH_SOON = intPreferencesKey("widget_refresh_soon_minutes")
     private val KEY_WIDGET_REFRESH_FAR = intPreferencesKey("widget_refresh_far_minutes")
+    private val KEY_PERIOD_TIMES = stringPreferencesKey("period_times")
+    private val KEY_STATUS_LOCK_SCREEN = booleanPreferencesKey("status_on_lock_screen")
+    private val KEY_UI_STYLE = stringPreferencesKey("ui_style")
 
     fun settingsFlow(context: Context): Flow<AppSettings> = context.settingsDataStore.data.map { p ->
         AppSettings(
@@ -143,6 +162,9 @@ object SettingsStore {
                 .coerceIn(1, 120),
             widgetRefreshFarMinutes = (p[KEY_WIDGET_REFRESH_FAR] ?: WIDGET_REFRESH_FAR_DEFAULT)
                 .coerceIn(1, 720),
+            periodTimesRaw = p[KEY_PERIOD_TIMES] ?: "",
+            statusOnLockScreen = p[KEY_STATUS_LOCK_SCREEN] ?: true,
+            uiStyle = p[KEY_UI_STYLE] ?: UI_STYLE_DEFAULT,
         )
     }
 
@@ -210,6 +232,23 @@ object SettingsStore {
 
     suspend fun setTimelineEnd(context: Context, minutes: Int) {
         context.settingsDataStore.edit { it[KEY_TIMELINE_END] = minutes.coerceIn(0, 1439) }
+    }
+
+    /** 用户自定义课程时间（持久化原文；空串=恢复默认作息） */
+    suspend fun setPeriodTimes(context: Context, raw: String) {
+        context.settingsDataStore.edit { p ->
+            if (raw.isBlank()) p.remove(KEY_PERIOD_TIMES) else p[KEY_PERIOD_TIMES] = raw
+        }
+    }
+
+    /** 常驻通知是否在锁屏显示 */
+    suspend fun setStatusOnLockScreen(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_STATUS_LOCK_SCREEN] = enabled }
+    }
+
+    /** 界面风格（default / glass） */
+    suspend fun setUiStyle(context: Context, style: String) {
+        context.settingsDataStore.edit { it[KEY_UI_STYLE] = style }
     }
 
     suspend fun setAppLanguage(context: Context, tag: String) {

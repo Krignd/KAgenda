@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -41,11 +43,13 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -55,6 +59,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -78,6 +83,7 @@ import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.SyncUi
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.School
 import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.notif.Notifier
@@ -89,6 +95,7 @@ import com.kstudio.agenda.ui.components.TrailingChevron
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
+import java.time.LocalTime
 import java.util.Date
 import java.util.Locale
 
@@ -102,7 +109,11 @@ import java.util.Locale
 private const val SHOW_WEB_LOGIN_ENTRY = false
 
 @Composable
-fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
+fun SettingsScreen(
+    vm: AppViewModel,
+    onWebLogin: () -> Unit,
+    onOpenDocImport: () -> Unit = {},
+) {
     val settings by vm.settings.collectAsState()
     val selectedDate by vm.selectedDate.collectAsState()
     val syncState by vm.syncState.collectAsState()
@@ -123,6 +134,8 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
     var showAdapterDialog by remember { mutableStateOf(false) }
     // 时间线范围选择器：""=无；"start"/"end"
     var timelinePick by remember { mutableStateOf("") }
+    // 课程时间自定义对话框
+    var showPeriodTimes by remember { mutableStateOf(false) }
     var aiKeyInput by rememberSaveable { mutableStateOf("") }
     var aiModel by rememberSaveable { mutableStateOf("") }
 
@@ -146,7 +159,10 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
     var expWidget by rememberSaveable { mutableStateOf(true) }
     var expTimeline by rememberSaveable { mutableStateOf(true) }
     var expWidgetRefresh by rememberSaveable { mutableStateOf(true) }
+    var expPeriodTimes by rememberSaveable { mutableStateOf(true) }
+    var expUiStyle by rememberSaveable { mutableStateOf(true) }
     var expData by rememberSaveable { mutableStateOf(true) }
+    var expDocs by rememberSaveable { mutableStateOf(true) }
     var expLang by rememberSaveable { mutableStateOf(true) }
     var expSchool by rememberSaveable { mutableStateOf(true) }
     // 关于：默认折叠（折叠时右侧显示 K日程 + 版本号）
@@ -249,6 +265,11 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             SettingsSubHeader(
                 title = categoryTitles.getOrElse(settingsTab) { "" },
                 onBack = { settingsTab = -1 },
+            )
+            // 二级页顶栏与内容之间的分隔线（提高层级可辨认度）
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                thickness = 1.dp,
             )
         }
         LazyColumn(
@@ -536,6 +557,41 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             }
         }
 
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：课程时间
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secPeriodTimes,
+                t.secPeriodTimesSub,
+                expanded = expPeriodTimes,
+                onToggle = { expPeriodTimes = !expPeriodTimes },
+                trailing = if (settings.periodTimesRaw.isBlank()) t.periodTimesDefaultTag
+                else t.periodTimesCustomTag,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = if (settings.periodTimesRaw.isBlank()) t.periodTimesDefaultTag
+                        else t.periodTimesCustomTag,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { showPeriodTimes = true }) {
+                        Text(t.btnEditPeriodTimes)
+                    }
+                }
+                // 预览前四节，让用户确认当前生效的作息
+                Text(
+                    text = (1..4).joinToString("  ") {
+                        "${it}·${PeriodTimes.format(PeriodTimes.startOf(it))}-${
+                            PeriodTimes.format(PeriodTimes.endOf(it))
+                        }"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         // ---------------------------------------------------------- 【选项卡 2】用户自定义：时间线显示范围
         if (settingsTab == 2) item {
             CollapsibleSectionCard(
@@ -785,10 +841,69 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                     )
                     Text(t.statusSrcAi, modifier = Modifier.weight(1f))
                 }
+                // 锁屏显示：关闭后常驻通知不会出现在锁屏上
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(t.secLockScreen)
+                        Text(
+                            text = t.secLockScreenSub,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(
+                        checked = settings.statusOnLockScreen,
+                        onCheckedChange = { vm.setStatusOnLockScreen(it) },
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = t.lockScreenHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                // 部分系统（MIUI/HyperOS、EMUI 等）默认隐藏“静默通知”，只能由用户在系统里开启
+                TextButton(onClick = {
+                    runCatching {
+                        context.startActivity(
+                            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                                putExtra(
+                                    Settings.EXTRA_CHANNEL_ID,
+                                    com.kstudio.agenda.notif.StatusNotification.CHANNEL_ID,
+                                )
+                            }
+                        )
+                    }
+                }) { Text(t.btnOpenNotifSettings) }
                 Text(
                     text = t.statusHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：界面风格
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secUiStyle,
+                t.secUiStyleSub,
+                expanded = expUiStyle,
+                onToggle = { expUiStyle = !expUiStyle },
+                trailing = if (settings.glassUi) t.uiStyleGlass else t.uiStyleDefault,
+            ) {
+                UiStyleOption(
+                    label = t.uiStyleDefault,
+                    sub = t.uiStyleDefaultSub,
+                    selected = !settings.glassUi,
+                    onClick = { vm.setUiStyle(com.kstudio.agenda.data.UI_STYLE_DEFAULT) },
+                )
+                UiStyleOption(
+                    label = t.uiStyleGlass,
+                    sub = t.uiStyleGlassSub,
+                    selected = settings.glassUi,
+                    onClick = { vm.setUiStyle(com.kstudio.agenda.data.UI_STYLE_GLASS) },
                 )
             }
         }
@@ -828,6 +943,24 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
                         }) { Text(label) }
                     }
                 }
+            }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 3】数据与图片：文档导入
+        if (settingsTab == 3) item {
+            CollapsibleSectionCard(
+                t.secDocs,
+                t.secDocsSub,
+                expanded = expDocs,
+                onToggle = { expDocs = !expDocs },
+            ) {
+                Text(
+                    text = t.docIntro,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = onOpenDocImport) { Text(t.docTitle) }
             }
         }
 
@@ -1009,6 +1142,18 @@ fun SettingsScreen(vm: AppViewModel, onWebLogin: () -> Unit) {
             dismissButton = {
                 TextButton(onClick = { showClearCredConfirm = false }) { Text(t.cancel) }
             },
+        )
+    }
+
+    // 课程时间自定义（14 节起止时间；保存后立即生效）
+    if (showPeriodTimes) {
+        PeriodTimesDialog(
+            onDismiss = { showPeriodTimes = false },
+            onSave = { list ->
+                vm.setPeriodTimes(list)
+                showPeriodTimes = false
+            },
+            onInvalid = { vm.message(t.msgPeriodTimesInvalid) },
         )
     }
 
@@ -1267,6 +1412,11 @@ private fun SettingsCategoryMenu(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(20.dp))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                        RoundedCornerShape(20.dp),
+                    )
                     .clickable { onOpen(index) },
                 shape = RoundedCornerShape(20.dp),
                 color = MaterialTheme.colorScheme.surface,
@@ -1280,7 +1430,8 @@ private fun SettingsCategoryMenu(
                         Text(
                             text = title,
                             style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                         val sub = subs.getOrNull(index).orEmpty()
                         if (sub.isNotBlank()) {
@@ -1293,7 +1444,12 @@ private fun SettingsCategoryMenu(
                         }
                     }
                     Spacer(Modifier.width(8.dp))
-                    TrailingChevron()
+                    // 强调色箭头：让分类入口更容易被看到
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
                 }
             }
         }
@@ -1320,6 +1476,153 @@ private fun SettingsSubHeader(title: String, onBack: () -> Unit) {
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.SemiBold,
         )
+    }
+}
+
+/**
+ * 界面风格选项：单选行（标题 + 说明），点击整行生效。
+ */
+@Composable
+private fun UiStyleOption(
+    label: String,
+    sub: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .clickable { onClick() }
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        RadioButton(selected = selected, onClick = null)
+        Column(Modifier.weight(1f)) {
+            Text(label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = sub,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * 课程时间自定义对话框：逐节编辑 14 节的上课起止时间。
+ * 支持 "HH:mm"、"H:mm"、"HHmm" 三种写法；任一项无法解析时提示且不关闭对话框。
+ */
+@Composable
+private fun PeriodTimesDialog(
+    onDismiss: () -> Unit,
+    onSave: (List<Pair<LocalTime, LocalTime>>) -> Unit,
+    onInvalid: () -> Unit,
+) {
+    val t = LocalStrings.current
+    val initial = remember { PeriodTimes.current() }
+    val starts = remember {
+        mutableStateListOf<String>().apply {
+            addAll(initial.map { PeriodTimes.format(it.first) })
+        }
+    }
+    val ends = remember {
+        mutableStateListOf<String>().apply {
+            addAll(initial.map { PeriodTimes.format(it.second) })
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(t.periodTimesTitle) },
+        text = {
+            Column(
+                Modifier
+                    .heightIn(max = 400.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Text(
+                    text = t.periodTimesHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(10.dp))
+                for (i in 0 until PeriodTimes.count) {
+                    Row(
+                        modifier = Modifier.padding(vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = t.periodTimesRowFmt.format(i + 1),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.width(56.dp),
+                        )
+                        TimeField(starts[i], Modifier.weight(1f)) { starts[i] = it }
+                        Text("–", modifier = Modifier.padding(horizontal = 6.dp))
+                        TimeField(ends[i], Modifier.weight(1f)) { ends[i] = it }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val list = (0 until PeriodTimes.count).map { i ->
+                    val s = parseLooseTime(starts[i])
+                    val e = parseLooseTime(ends[i])
+                    if (s == null || e == null) null else s to e
+                }
+                if (list.any { it == null }) onInvalid() else onSave(list.filterNotNull())
+            }) { Text(t.save) }
+        },
+        dismissButton = {
+            Row {
+                TextButton(onClick = {
+                    PeriodTimes.defaults.forEachIndexed { i, p ->
+                        starts[i] = PeriodTimes.format(p.first)
+                        ends[i] = PeriodTimes.format(p.second)
+                    }
+                }) { Text(t.periodTimesRestoreDefault) }
+                TextButton(onClick = onDismiss) { Text(t.cancel) }
+            }
+        },
+    )
+}
+
+/** 单个时间输入框（课程时间对话框内使用） */
+@Composable
+private fun TimeField(value: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodyMedium,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+        modifier = modifier,
+    )
+}
+
+/** 宽松解析时间："8:00" / "08:00" / "0800" / "800" / "8.00" / 全角冒号 均可 */
+private fun parseLooseTime(raw: String): LocalTime? {
+    val s = raw.trim().replace('：', ':').replace('.', ':')
+    if (s.isEmpty()) return null
+    if (s.contains(':')) {
+        val h = s.substringBefore(':').trim().toIntOrNull() ?: return null
+        val m = s.substringAfter(':').trim().ifEmpty { "0" }.toIntOrNull() ?: return null
+        return if (h in 0..23 && m in 0..59) LocalTime.of(h, m) else null
+    }
+    val d = s.filter { it.isDigit() }
+    return when (d.length) {
+        4 -> {
+            val h = d.substring(0, 2).toInt()
+            val m = d.substring(2, 4).toInt()
+            if (h in 0..23 && m in 0..59) LocalTime.of(h, m) else null
+        }
+        3 -> {
+            val h = d.substring(0, 1).toInt()
+            val m = d.substring(1, 3).toInt()
+            if (h in 0..23 && m in 0..59) LocalTime.of(h, m) else null
+        }
+        else -> null
     }
 }
 

@@ -16,6 +16,7 @@ import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.overlay.FloatingBallService
+import com.kstudio.agenda.ui.theme.GlassBackdrop
 import com.kstudio.agenda.ui.theme.KAgendaTheme
 import com.kstudio.agenda.util.AppPresence
 import kotlinx.coroutines.launch
@@ -30,6 +31,8 @@ data class LaunchRequest(
     val focusEpochDay: Long?,
     val focusTitle: String,
     val fromWidget: Boolean = false,
+    /** 由其他应用「用 K日程 打开 / 分享到」传入的文档（进入文档导入页） */
+    val docUri: android.net.Uri? = null,
     val id: Long = System.nanoTime(),
 )
 
@@ -43,14 +46,26 @@ class MainActivity : ComponentActivity() {
         setContent {
             // 语言状态由 AppText.state 驱动：切换语言即时重组全部界面（无需重建 Activity）
             val lang by AppText.state.collectAsState()
+            val vm: AppViewModel = viewModel()
+            // 界面风格（默认 / 液态玻璃）由设置驱动，切换后立即生效
+            val settings by vm.settings.collectAsState()
+            val glass = settings.glassUi
             CompositionLocalProvider(LocalStrings provides AppText.stringsFor(lang)) {
-                KAgendaTheme {
-                    val vm: AppViewModel = viewModel()
-                    MainScreen(
-                        vm = vm,
-                        launch = launchRequest.value,
-                        onLaunchHandled = { launchRequest.value = null },
-                    )
+                KAgendaTheme(glass = glass) {
+                    // 液态玻璃：先铺渐变背景（含两团柔光），内容叠在其上形成毛玻璃观感
+                    if (glass) GlassBackdrop {
+                        MainScreen(
+                            vm = vm,
+                            launch = launchRequest.value,
+                            onLaunchHandled = { launchRequest.value = null },
+                        )
+                    } else {
+                        MainScreen(
+                            vm = vm,
+                            launch = launchRequest.value,
+                            onLaunchHandled = { launchRequest.value = null },
+                        )
+                    }
                 }
             }
         }
@@ -92,18 +107,47 @@ class MainActivity : ComponentActivity() {
         val focusDay = if (intent.hasExtra(EXTRA_FOCUS_EPOCH_DAY)) {
             intent.getLongExtra(EXTRA_FOCUS_EPOCH_DAY, -1L).takeIf { it >= 0 }
         } else null
-        if (!quickAdd && focusDay == null) return
+        // 其他应用「用 K日程 打开」/「分享到 K日程」带进来的文档
+        val docUri = docUriFrom(intent)
+        if (!quickAdd && focusDay == null && docUri == null) return
         launchRequest.value = LaunchRequest(
             quickAdd = quickAdd,
             focusEpochDay = focusDay,
             focusTitle = intent.getStringExtra(EXTRA_FOCUS_TITLE).orEmpty(),
             fromWidget = intent.getBooleanExtra(EXTRA_FOCUS_FROM_WIDGET, false),
+            docUri = docUri,
         )
         // 消费后清除 extras：避免旋转/恢复时重复触发快速添加或闪烁
         intent.removeExtra(EXTRA_QUICK_ADD)
         intent.removeExtra(EXTRA_FOCUS_EPOCH_DAY)
         intent.removeExtra(EXTRA_FOCUS_TITLE)
         intent.removeExtra(EXTRA_FOCUS_FROM_WIDGET)
+    }
+
+    /**
+     * 取出其他应用传入的文档 Uri：
+     * - ACTION_VIEW / ACTION_EDIT：intent.data
+     * - ACTION_SEND / ACTION_SEND_MULTIPLE：EXTRA_STREAM（Android 10+ 也可能放在 clipData）
+     */
+    private fun docUriFrom(intent: Intent): android.net.Uri? {
+        when (intent.action) {
+            Intent.ACTION_VIEW, Intent.ACTION_EDIT -> {
+                intent.data?.let { return it }
+            }
+            Intent.ACTION_SEND -> {
+                @Suppress("DEPRECATION")
+                (intent.getParcelableExtra(Intent.EXTRA_STREAM) as? android.net.Uri)?.let { return it }
+            }
+            Intent.ACTION_SEND_MULTIPLE -> {
+                @Suppress("DEPRECATION")
+                (intent.getParcelableArrayListExtra<android.net.Uri>(Intent.EXTRA_STREAM))
+                    ?.firstOrNull()?.let { return it }
+            }
+        }
+        // 兜底：从 ClipData 取（部分应用只给 ClipData）
+        val clip = intent.clipData ?: return null
+        if (clip.itemCount == 0) return null
+        return clip.getItemAt(0).uri
     }
 
     companion object {

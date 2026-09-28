@@ -45,10 +45,11 @@ private val DarkColors = darkColorScheme(
 )
 
 @Composable
-fun KAgendaTheme(content: @Composable () -> Unit) {
+fun KAgendaTheme(glass: Boolean = false, content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
+    val scheme = if (glass) glassScheme(dark) else if (dark) DarkColors else LightColors
     MaterialTheme(
-        colorScheme = if (dark) DarkColors else LightColors,
+        colorScheme = scheme,
         content = content,
     )
 }

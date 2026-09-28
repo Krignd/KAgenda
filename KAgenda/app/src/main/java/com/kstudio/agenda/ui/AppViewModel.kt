@@ -11,6 +11,7 @@ import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.AiAssistant
 import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.AppSettings
+import com.kstudio.agenda.data.ExtraCoursesStore
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.SyncUi
@@ -20,6 +21,7 @@ import com.kstudio.agenda.export.ScheduleImageRenderer
 import com.kstudio.agenda.i18n.AppLang
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.AgendaEvent
+import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.FuzzyTime
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.Schools
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -81,6 +84,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 本地日程 / 计划（用户自建，与课表独立；isPlan 区分归属） */
     val agenda: StateFlow<List<AgendaEvent>> = AgendaStore.events
+
+    /** 用户导入/手动添加的课程（与教务课表合并展示） */
+    val importedCourses: StateFlow<List<Course>> = ExtraCoursesStore.courses
+
+    /** 导入课程的「第 1 教学周周一」 */
+    val importedAnchor: StateFlow<LocalDate?> =
+        ExtraCoursesStore.anchorEpochDay
+            .map { epoch -> epoch?.let { LocalDate.ofEpochDay(it) } }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _messages = MutableSharedFlow<String>(extraBufferCapacity = 8)
     val messages: SharedFlow<String> = _messages.asSharedFlow()
@@ -135,9 +147,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val t get() = AppText.current
 
     init {
-        // 日程文件读取放到 IO 线程（不在主线程做文件 IO；写操作内部也会确保已加载）
+        // 日程/导入课程文件读取放到 IO 线程（不在主线程做文件 IO；写操作内部也会确保已加载）
         viewModelScope.launch(Dispatchers.IO) {
             AgendaStore.ensureLoaded(getApplication())
+            ExtraCoursesStore.ensureLoaded(getApplication())
         }
         viewModelScope.launch {
             // 应用已保存的语言（默认跟随系统）；同步系统级“按应用设置语言”
@@ -146,6 +159,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AppText.applySystemLocale(getApplication(), AppText.state.value)
 
             settings.collect { s ->
+                // 用户自定义课程时间：设置变化时立即生效（未自定义时回落默认作息）
+                PeriodTimes.applyCustom(PeriodTimes.decode(s.periodTimesRaw))
                 // 打开 App 自动刷新：有账号且（无缓存 或 超过 6 小时）时静默同步一次。
                 // 阈值放宽 + 延后启动：减少不必要的全量重放，并避开首帧渲染与 WebView 首次创建的主线程开销叠加
                 if (!autoSyncTriggered && s.autoRefresh && s.hasPassword) {
@@ -221,6 +236,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 周视图：前后平移一周（不再限制在已抓取周次内，仅受导航边界限制） */
     fun stepWeek(delta: Int) = selectDate(_selectedDate.value.plusDays(7L * delta))
+
+    /** 回到今天（日视图「回到当前日」/ 周视图「回到当前周」共用；保持当前查看的视图） */
+    fun goToday() = selectDate(LocalDate.now())
 
     /** 默认周次：优先当前教学周，否则取已抓取的最早一周 */
     private fun resolveWeek(sem: SemesterSchedule, selected: Int): Int {
@@ -446,6 +464,80 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             SettingsStore.setWidgetRefreshMinutes(getApplication(), tier, minutes)
             withContext(Dispatchers.IO) { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
         }
+    }
+
+    /** 用户自定义课程时间（14 节起止）；传 null / 默认值时恢复默认作息 */
+    fun setPeriodTimes(list: List<Pair<java.time.LocalTime, java.time.LocalTime>>?) {
+        viewModelScope.launch {
+            val raw = if (list == null) "" else PeriodTimes.encode(list)
+            SettingsStore.setPeriodTimes(getApplication(), raw)
+            PeriodTimes.applyCustom(PeriodTimes.decode(raw))
+            // 课程时间变化会影响小组件与常驻通知中的时间文案，立即刷新
+            withContext(Dispatchers.IO) {
+                runCatching { StatusNotification.refresh(getApplication()) }
+                runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            }
+            message(t.msgPeriodTimesSaved)
+        }
+    }
+
+    // ------------------------------------------------------------ 课程导入
+
+    /** 读取本地文件中的导入课程（应用启动时调用一次） */
+    fun ensureImportedCoursesLoaded() {
+        viewModelScope.launch(Dispatchers.IO) { ExtraCoursesStore.ensureLoaded(getApplication()) }
+    }
+
+    /** 导入课程表：与已有导入课程合并（去重），并立即刷新课表/小组件/通知 */
+    fun importCourses(courses: List<Course>, anchor: LocalDate?) {
+        if (courses.isEmpty()) {
+            message(t.msgImportNoCourses)
+            return
+        }
+        viewModelScope.launch {
+            val added = withContext(Dispatchers.IO) {
+                ExtraCoursesStore.addAll(getApplication(), courses, anchor)
+            }
+            repo.onImportedCoursesChanged()
+            message(t.msgImportedCourses(added))
+        }
+    }
+
+    fun deleteImportedCourse(id: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { ExtraCoursesStore.delete(getApplication(), id) }
+            repo.onImportedCoursesChanged()
+        }
+    }
+
+    fun clearImportedCourses() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { ExtraCoursesStore.clear(getApplication()) }
+            repo.onImportedCoursesChanged()
+            message(t.msgImportedCoursesCleared)
+        }
+    }
+
+    /** 批量导入日程/计划（文档导入 / 离线识别共用） */
+    fun importAgendaEvents(events: List<AgendaEvent>) {
+        if (events.isEmpty()) {
+            message(t.msgImportNoEvents)
+            return
+        }
+        saveAgendaEvents(events)
+    }
+
+    /** 常驻通知锁屏显示开关 */
+    fun setStatusOnLockScreen(enabled: Boolean) {
+        viewModelScope.launch {
+            SettingsStore.setStatusOnLockScreen(getApplication(), enabled)
+            withContext(Dispatchers.IO) { StatusNotification.refresh(getApplication()) }
+        }
+    }
+
+    /** 界面风格（默认 / 液态玻璃） */
+    fun setUiStyle(style: String) {
+        viewModelScope.launch { SettingsStore.setUiStyle(getApplication(), style) }
     }
 
     /** 系统悬浮球开关：写入设置并启/停前台服务（无悬浮窗权限时给出提示） */

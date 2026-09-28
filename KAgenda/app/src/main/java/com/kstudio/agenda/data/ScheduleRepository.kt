@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
@@ -67,7 +68,13 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     private fun currentGeneration(): Long = synchronized(generationLock) { generation }
 
     private val _semester = MutableStateFlow<SemesterSchedule?>(null)
-    val semester: StateFlow<SemesterSchedule?> = _semester.asStateFlow()
+
+    /**
+     * 对外的课表数据 = 教务同步课表 + 用户导入/手动添加的课程（[ExtraCoursesStore]）。
+     * 教务课表本身保存到 [_semester]，此处只做合并展示（不污染缓存数据）。
+     */
+    private val _displayed = MutableStateFlow<SemesterSchedule?>(null)
+    val semester: StateFlow<SemesterSchedule?> = _displayed.asStateFlow()
 
     private val _sync = MutableStateFlow<SyncUi>(SyncUi.Idle)
     val sync: StateFlow<SyncUi> = _sync.asStateFlow()
@@ -76,8 +83,33 @@ class ScheduleRepository private constructor(private val appContext: Context) {
 
     /** 应用启动时调用：加载磁盘缓存并恢复提醒调度 */
     fun bootstrap() {
+        // 导入课程（本地文件）与同步课表合并：数据变化时自动刷新对外课表
+        scope.launch {
+            ExtraCoursesStore.ensureLoaded(appContext)
+            combine(
+                _semester,
+                ExtraCoursesStore.courses,
+                ExtraCoursesStore.anchorEpochDay,
+            ) { sem, extra, anchor -> ExtraCoursesStore.mergeInto(sem, extra, anchor) }
+                .collect { _displayed.value = it }
+        }
         scope.launch {
             ScheduleCache.load(appContext)?.let { _semester.value = it }
+            runCatching { ReminderScheduler.reschedule(appContext) }
+            runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
+            runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
+        }
+    }
+
+    /** 导入课程发生变化后调用：让缓存文件也带上导入课程（供小组件/常驻通知等读取缓存的地方使用） */
+    fun onImportedCoursesChanged() {
+        scope.launch {
+            val merged = ExtraCoursesStore.mergeInto(
+                ScheduleCache.load(appContext),
+                ExtraCoursesStore.courses.value,
+                ExtraCoursesStore.anchorEpochDay.value,
+            )
+            if (merged != null) ScheduleCache.save(appContext, merged)
             runCatching { ReminderScheduler.reschedule(appContext) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
             runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
@@ -159,7 +191,8 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                             semester = semester.copy(weeks = merged)
                         }
                     }
-                    ScheduleCache.save(appContext, semester)
+                    // 缓存里同时写入「导入课程」，保证小组件/常驻通知（直接读缓存）也能看到导入的课
+                    ScheduleCache.save(appContext, withImported(semester))
                     SettingsStore.setLastSync(appContext, semester.fetchedAtMillis)
                     SettingsStore.setSemesterAnchor(
                         appContext,
@@ -193,6 +226,17 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     /** 仅重新调度提醒（不联网） */
     fun rescheduleReminders() {
         scope.launch { runCatching { ReminderScheduler.reschedule(appContext) } }
+    }
+
+    /** 把「导入课程」并入课表（供缓存写入使用；未导入时原样返回） */
+    private fun withImported(semester: SemesterSchedule): SemesterSchedule {
+        ExtraCoursesStore.ensureLoaded(appContext)
+        val merged = ExtraCoursesStore.mergeInto(
+            semester,
+            ExtraCoursesStore.courses.value,
+            ExtraCoursesStore.anchorEpochDay.value,
+        )
+        return merged ?: semester
     }
 
     /** 仅删除本地保存的学号密码（保留网页会话与课表缓存，便于测试“无密码但有会话”场景） */
@@ -229,6 +273,7 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             runCatching { ReminderScheduler.cancelAll(appContext) }
             SettingsStore.clearAll(appContext)
             ScheduleCache.clear(appContext)
+            ExtraCoursesStore.clear(appContext)
             _semester.value = null
             _sync.value = SyncUi.Idle
             withContext(Dispatchers.Main) {

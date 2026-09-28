@@ -94,7 +94,7 @@ object StatusNotification {
         ensureChannel(context)
         // 「AI 快速添加」入口：文本框样式，点按直达 App 的 AI 添加界面（可在设置→常驻通知里单独关闭）
         if (settings.statusAiEntry) {
-            notifyAiEntry(context, nm)
+            notifyAiEntry(context, nm, settings.statusOnLockScreen)
         } else {
             nm.cancel(AI_NOTIF_ID)
         }
@@ -120,10 +120,17 @@ object StatusNotification {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVisibility(lockScreenVisibility(settings))
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pi)
+            .apply {
+                // 「锁屏显示」开启时提供锁屏公开版本：
+                // 即使系统设置了“隐藏敏感通知内容”，锁屏上也能看到课程内容（而不是空白/已隐藏）
+                if (settings.statusOnLockScreen) {
+                    setPublicVersion(publicVersion(context, pi, lines.first()))
+                }
+            }
             .build()
         try {
             nm.notify(NOTIF_ID, notif)
@@ -131,8 +138,40 @@ object StatusNotification {
         }
     }
 
+    /** 锁屏可见性：开启「锁屏显示」时为 PUBLIC，关闭时为 SECRET（不在锁屏上出现） */
+    private fun lockScreenVisibility(settings: AppSettings): Int =
+        if (settings.statusOnLockScreen) NotificationCompat.VISIBILITY_PUBLIC
+        else NotificationCompat.VISIBILITY_SECRET
+
+    /** 锁屏公开版本：内容本身不含隐私信息（课程/日程名），直接展示标题与首行内容 */
+    private fun publicVersion(
+        context: Context,
+        pi: PendingIntent,
+        firstLine: String,
+    ): android.app.Notification {
+        val t = AppText.current
+        return NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setContentTitle(t.appTitle)
+            .setContentText(firstLine)
+            .setOngoing(true)
+            .setOnlyAlertOnce(true)
+            .setShowWhen(false)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pi)
+            .build()
+    }
+
     /** 常驻通知中的「AI 快速添加」：显示为一个文本框，点按打开 App 的 AI 添加界面 */
-    private fun notifyAiEntry(context: Context, nm: NotificationManagerCompat) {
+    private fun notifyAiEntry(
+        context: Context,
+        nm: NotificationManagerCompat,
+        onLockScreen: Boolean,
+    ) {
+        val visibility = if (onLockScreen) NotificationCompat.VISIBILITY_PUBLIC
+        else NotificationCompat.VISIBILITY_SECRET
         val t = AppText.current
         val pi = PendingIntent.getActivity(
             context,
@@ -163,7 +202,7 @@ object StatusNotification {
                     .setOngoing(true)
                     .setOnlyAlertOnce(true)
                     .setShowWhen(false)
-                    .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                    .setVisibility(visibility)
                     .setCategory(NotificationCompat.CATEGORY_STATUS)
                     .setContentIntent(pi)
                     .build()
@@ -171,7 +210,7 @@ object StatusNotification {
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVisibility(visibility)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(pi)

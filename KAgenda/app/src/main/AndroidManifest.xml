@@ -19,6 +19,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- 精确闹钟（Android 12+ 特殊权限，需用户在系统设置中允许；未授予时自动降级为粗略提醒） -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Android 13+ 起 SCHEDULE_EXACT_ALARM 默认拒绝（需用户手动开启），只靠它会退化成“粗略闹钟”，
+         表现为「小组件刷新频率设置无效／提醒不准时」。本应用属于日历/日程类应用，
+         声明 USE_EXACT_ALARM（系统自动授予）以保证课前提醒与小组件刷新链准时。 -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
     <!-- 开机后重新安排提醒 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- 请求忽略电池优化（后台提醒更可靠；用户可在设置页一键跳转授权） -->
@@ -52,6 +56,38 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- 其他应用中「用 K日程 打开」文档：Word / Excel / PPT / PDF / 文本 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/xml" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+            </intent-filter>
+
+            <!-- 分享文档到 K日程（ACTION_SEND / SEND_MULTIPLE） -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/*" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
         </activity>
 

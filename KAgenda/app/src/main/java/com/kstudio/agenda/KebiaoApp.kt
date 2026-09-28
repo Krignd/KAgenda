@@ -2,9 +2,14 @@ package com.kstudio.agenda
 
 import android.app.Application
 import com.kstudio.agenda.data.ScheduleRepository
+import com.kstudio.agenda.data.SettingsStore
+import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.notif.Notifier
 import com.kstudio.agenda.notif.SyncWorker
 import com.kstudio.agenda.util.AppLog
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class KebiaoApp : Application() {
 
@@ -22,6 +27,14 @@ class KebiaoApp : Application() {
         SyncWorker.enqueuePeriodic(this)
         // 加载本地缓存的课表 + 恢复提醒
         ScheduleRepository.get(this).bootstrap()
+        // 用户自定义的课程时间（异步读设置；未自定义 / 读取失败时保持默认作息）。
+        // 小组件、常驻通知等后台入口也会用到，所以放在 Application 层加载
+        CoroutineScope(Dispatchers.IO).launch {
+            runCatching {
+                val raw = SettingsStore.read(this@KebiaoApp).periodTimesRaw
+                PeriodTimes.applyCustom(PeriodTimes.decode(raw))
+            }
+        }
     }
 
     private fun installCrashLogger() {

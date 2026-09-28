@@ -59,6 +59,17 @@
             android:textColor="#64748B"
             android:textSize="10sp" />
 
+        <!-- 下一节课：紧跟在「时间 · 老师」下方（4×1 要求） -->
+        <TextView
+            android:id="@+id/widget_next2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#64748B"
+            android:textSize="10sp"
+            android:visibility="gone" />
+
         <!-- 地点单独一行：老师名字过长时也不会把地点挤出显示范围 -->
         <TextView
             android:id="@+id/widget_room"
@@ -68,14 +79,6 @@
             android:maxLines="1"
             android:textColor="#64748B"
             android:textSize="10sp" />
-
-        <TextView
-            android:id="@+id/widget_next2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="#64748B"
-            android:textSize="10sp"
-            android:visibility="gone" />
     </LinearLayout>
 
     <TextView

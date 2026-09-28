@@ -149,6 +149,10 @@ fun WeekScreen(
             IconButton(onClick = { vm.stepWeek(1) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = t.nextWeek)
             }
+            // 回到本周：从任意周快速回到当前教学周
+            if (selDate.with(java.time.DayOfWeek.MONDAY) != LocalDate.now().with(java.time.DayOfWeek.MONDAY)) {
+                TextButton(onClick = { vm.goToday() }) { Text(t.backToThisWeek) }
+            }
             Spacer(Modifier.weight(1f))
             // 只显示保存图标（不显示文字）
             IconButton(onClick = { vm.saveWeekImage() }) {

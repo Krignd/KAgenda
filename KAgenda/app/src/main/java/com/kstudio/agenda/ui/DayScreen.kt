@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -134,6 +135,10 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             )
             IconButton(onClick = { vm.stepWeek(1) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = t.nextWeek)
+            }
+            // 回到今天：从任意周快速跳回当前日期（周次标签同步更新）
+            if (selected != LocalDate.now()) {
+                TextButton(onClick = { vm.goToday() }) { Text(t.backToToday) }
             }
             Spacer(Modifier.weight(1f))
             // 只显示保存图标（不显示文字）
@@ -312,9 +317,14 @@ private fun pageIndexOf(minMonday: LocalDate, monday: LocalDate, totalPages: Int
  * - 每页 = 一周，页面之间左右滑动即可切周，不再固定于当前这一周；
  * - 滑到相邻周后保持同一星期几（周一→周一…），与内容区按天滑动的手感一致；
  * - 外部改变周次（上一周/下一周按钮、内容区滑动跨周、通知/小组件定位）时日期条自动滑到对应页。
+ *
+ * 注意：这里用 [rememberUpdatedState] 保存「当前周 / 选中日期」的最新值。
+ * 之前直接捕获闭包变量导致：只要日期条发生一次动画滚动，就会用**首次组合时**的旧日期
+ * 重算选中日，从而出现“选周四切到下一周变回周一”“逐日滑到上一周从周日跳回周一/周六”等异常。
+ * 另外用 [programmaticTarget] 标记程序化滚动目标页，避免动画过程被误判为用户滑动。
  */
 @Composable
-private fun DayStripPager(
+internal fun DayStripPager(
     vm: AppViewModel,
     monday: LocalDate,
     selected: LocalDate,
@@ -330,18 +340,33 @@ private fun DayStripPager(
         initialPage = pageIndexOf(minMonday, monday, totalPages),
     ) { totalPages }
 
+    val latestMonday by rememberUpdatedState(monday)
+    val latestSelected by rememberUpdatedState(selected)
+    var programmaticTarget by remember { mutableStateOf<Int?>(null) }
+
+    // 外部换周 / 选日期 → 日期条滚到对应页（同一周内选日期不滚动）
     LaunchedEffect(monday, totalPages) {
         val target = pageIndexOf(minMonday, monday, totalPages)
-        if (pagerState.currentPage != target) pagerState.animateScrollToPage(target)
-    }
-    LaunchedEffect(pagerState) {
-        snapshotFlow { pagerState.settledPage }.collect { page ->
-            val pageMonday = minMonday.plusWeeks(page.toLong())
-            if (pageMonday != monday) {
-                // 换周时保持同一星期几
-                vm.selectDate(pageMonday.plusDays((selected.dayOfWeek.value - 1).toLong()))
-            }
+        if (pagerState.currentPage == target && !pagerState.isScrollInProgress) return@LaunchedEffect
+        programmaticTarget = target
+        try {
+            pagerState.animateScrollToPage(target)
+        } finally {
+            programmaticTarget = null
         }
+    }
+    // 用户滑动日期条 → 换周（保持同一星期几）；程序化滚动与中间态一律忽略
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.currentPage to pagerState.isScrollInProgress }
+            .collect { (page, scrolling) ->
+                if (scrolling) return@collect
+                if (page == programmaticTarget) return@collect
+                val pageMonday = minMonday.plusWeeks(page.toLong())
+                if (pageMonday != mondayOfDate(latestSelected)) {
+                    // 换周时保持同一星期几
+                    vm.selectDate(pageMonday.plusDays((latestSelected.dayOfWeek.value - 1).toLong()))
+                }
+            }
     }
 
     HorizontalPager(state = pagerState, modifier = Modifier.fillMaxWidth()) { page ->
