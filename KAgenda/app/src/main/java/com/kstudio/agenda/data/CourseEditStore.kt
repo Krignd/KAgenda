@@ -79,7 +79,11 @@ object CourseEditStore {
         }
     }
 
-    /** 保存一条修改（同一目标重复修改时覆盖旧记录，存档仍用第一次的原课程） */
+    /**
+     * 保存一条修改：
+     * - 同一目标重复修改 → 覆盖旧记录，但**存档仍用第一次的原课程**（还原时要回到教务最初的样子）；
+     * - 选择「全部同一课程」时，同一门课已有的「仅这一次」记录会被这条整体修改取代（避免互相打架）。
+     */
     fun save(context: Context, original: Course, edited: Course, applyAll: Boolean): CourseEdit {
         ensureLoaded(context)
         val candidate = CourseEdit(
@@ -92,8 +96,10 @@ object CourseEditStore {
             val old = _edits.value.firstOrNull { it.targetKey == candidate.targetKey }
             // 保留最初的存档：用户反复修改同一门课时，存档要一直是「教务系统原本的样子」
             val record = if (old != null) candidate.copy(original = old.original) else candidate
-            _edits.value = _edits.value.filterNot { it.targetKey == record.targetKey } +
-                listOf(record)
+            _edits.value = _edits.value.filterNot {
+                it.targetKey == record.targetKey ||
+                    (record.applyAll && !it.applyAll && it.original.sameSeriesAs(record.original))
+            } + listOf(record)
             persist(context)
             AppLog.i(TAG, "已保存课程修改：${record.edited.title}（applyAll=${record.applyAll}）")
             return record

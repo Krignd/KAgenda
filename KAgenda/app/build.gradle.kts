@@ -18,7 +18,7 @@ android {
         // - 同一版本名重复发布（覆盖包）：再追加 `(revN)`，如 `2026.9 v2.0.8(pre1)(rev1)`
         // - versionCode 只增不减：v2.0.7 因多次覆盖已到 20260910，故 v2.0.8(pre1) 取 20260911
         versionCode = 20260911
-        versionName = "2026.9 v2.0.8(pre1)"
+        versionName = "2026.9 v2.0.8(pre1)(rev1)"
         // WebView 相关无 NDK 需求
     }
 
