@@ -79,18 +79,63 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     private val _sync = MutableStateFlow<SyncUi>(SyncUi.Idle)
     val sync: StateFlow<SyncUi> = _sync.asStateFlow()
 
+    /**
+     * 同步后发现「教务数据既不是用户改前、也不是用户改后」的课程修改冲突。
+     * 由界面弹窗询问用户是否与教务系统同步（清空后不再询问）。
+     */
+    private val _editConflicts = MutableStateFlow<List<CourseEditConflict>>(emptyList())
+    val editConflicts: StateFlow<List<CourseEditConflict>> = _editConflicts.asStateFlow()
+
+    fun dismissEditConflicts() {
+        _editConflicts.value = emptyList()
+    }
+
+    /**
+     * 处理一条课程修改冲突：
+     * @param followAcademic true=与教务系统同步（放弃用户修改）；false=保留用户修改（把存档更新为最新教务数据）
+     */
+    fun resolveEditConflict(conflict: CourseEditConflict, followAcademic: Boolean) {
+        if (followAcademic) {
+            CourseEditStore.remove(appContext, conflict.edit.targetKey)
+        } else {
+            CourseEditStore.keepEdited(appContext, conflict.edit, conflict.latest)
+        }
+        _editConflicts.value = _editConflicts.value.filterNot {
+            it.edit.targetKey == conflict.edit.targetKey
+        }
+        onCourseEditsChanged()
+    }
+
+    /** 批量处理全部冲突（「全部跟随教务」/「全部保留修改」） */
+    fun resolveAllEditConflicts(followAcademic: Boolean) {
+        _editConflicts.value.forEach { conflict ->
+            if (followAcademic) {
+                CourseEditStore.remove(appContext, conflict.edit.targetKey)
+            } else {
+                CourseEditStore.keepEdited(appContext, conflict.edit, conflict.latest)
+            }
+        }
+        _editConflicts.value = emptyList()
+        onCourseEditsChanged()
+    }
+
     val settings: Flow<AppSettings> = SettingsStore.settingsFlow(appContext)
 
     /** 应用启动时调用：加载磁盘缓存并恢复提醒调度 */
     fun bootstrap() {
-        // 导入课程（本地文件）与同步课表合并：数据变化时自动刷新对外课表
+        // 导入课程（本地文件）与同步课表合并；叠加「课程修改」后作为对外展示数据。
+        // 数据变化时自动刷新（不污染缓存文件：缓存里始终是教务原始数据）
         scope.launch {
             ExtraCoursesStore.ensureLoaded(appContext)
+            CourseEditStore.ensureLoaded(appContext)
             combine(
                 _semester,
                 ExtraCoursesStore.courses,
                 ExtraCoursesStore.anchorEpochDay,
-            ) { sem, extra, anchor -> ExtraCoursesStore.mergeInto(sem, extra, anchor) }
+                CourseEditStore.edits,
+            ) { sem, extra, anchor, edits ->
+                CourseEditStore.apply(ExtraCoursesStore.mergeInto(sem, extra, anchor), edits)
+            }
                 .collect { _displayed.value = it }
         }
         scope.launch {
@@ -110,6 +155,15 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                 ExtraCoursesStore.anchorEpochDay.value,
             )
             if (merged != null) ScheduleCache.save(appContext, merged)
+            runCatching { ReminderScheduler.reschedule(appContext) }
+            runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
+            runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
+        }
+    }
+
+    /** 课程修改发生变化后调用：重新排程提醒并刷新小组件/常驻通知（它们直接读缓存文件） */
+    fun onCourseEditsChanged() {
+        scope.launch {
             runCatching { ReminderScheduler.reschedule(appContext) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
             runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
@@ -201,6 +255,15 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                     )
                     _semester.value = semester
                     _sync.value = SyncUi.Success(semester.fetchedAtMillis, result.notice)
+                    // 课程修改与最新教务数据比对：教务已一致 → 去掉「已修改」标记；两者都不同 → 询问用户
+                    runCatching { CourseEditStore.reconcile(appContext, semester) }
+                        .onSuccess { conflicts ->
+                            _editConflicts.value = conflicts
+                            if (conflicts.isNotEmpty()) {
+                                AppLog.w(TAG, "发现 ${conflicts.size} 门课程的修改与教务系统不一致，等待用户确认")
+                            }
+                        }
+                        .onFailure { AppLog.e(TAG, "课程修改比对失败", it) }
                     runCatching { ReminderScheduler.reschedule(appContext) }
                     runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
                     runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
@@ -274,6 +337,8 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             SettingsStore.clearAll(appContext)
             ScheduleCache.clear(appContext)
             ExtraCoursesStore.clear(appContext)
+            CourseEditStore.clear(appContext)
+            _editConflicts.value = emptyList()
             _semester.value = null
             _sync.value = SyncUi.Idle
             withContext(Dispatchers.Main) {

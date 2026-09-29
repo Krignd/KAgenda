@@ -14,6 +14,7 @@ import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.model.WeekSchedule
+import com.kstudio.agenda.ui.markedTitle
 import java.time.LocalDate
 
 /**
@@ -88,7 +89,7 @@ object ScheduleImageRenderer {
                     PAD + 56f, y + 62f, paintText(34f, color, bold = true)
                 )
                 canvas.drawText(
-                    trim(course.title, 34f, W - PAD * 2 - 56f),
+                    trim(markedTitle(course), 34f, W - PAD * 2 - 56f),
                     PAD + 56f, y + 122f, paintText(46f, TEXT_MAIN, bold = true)
                 )
                 val info = listOfNotNull(
@@ -239,7 +240,7 @@ object ScheduleImageRenderer {
             val textPaint = paintText(26f, TEXT_MAIN, bold = true)
             val maxW = rect.width() - 40f
             var ty = rect.top + 46f
-            trimmedLines(course.title, textPaint, maxW, 3).forEach { line ->
+            trimmedLines(markedTitle(course), textPaint, maxW, 3).forEach { line ->
                 canvas.drawText(line, rect.left + 26f, ty, textPaint)
                 ty += 34f
             }
@@ -312,7 +313,7 @@ object ScheduleImageRenderer {
                 semester.weeks[weekNo]
                     ?.filter { it.dayOfWeek == date.dayOfWeek.value }
                     ?.sortedBy { it.startPeriod }
-                    ?.forEach { bars.add(it.title to CoursePalette.colorFor(it)) }
+                    ?.forEach { bars.add(markedTitle(it) to CoursePalette.colorFor(it)) }
             }
             events.filter { it.coversDate(date) }
                 .sortedWith(compareBy({ com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))

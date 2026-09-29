@@ -11,6 +11,8 @@ import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.AiAssistant
 import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.AppSettings
+import com.kstudio.agenda.data.CourseEditConflict
+import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.ExtraCoursesStore
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SettingsStore
@@ -88,6 +90,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 用户导入/手动添加的课程（与教务课表合并展示） */
     val importedCourses: StateFlow<List<Course>> = ExtraCoursesStore.courses
 
+    /** 课程修改：已修改的课程数 + 同步后待用户确认的冲突 */
+    val courseEditCount: StateFlow<Int> =
+        CourseEditStore.edits.map { it.size }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    val editConflicts: StateFlow<List<CourseEditConflict>> = repo.editConflicts
+
     /** 导入课程的「第 1 教学周周一」 */
     val importedAnchor: StateFlow<LocalDate?> =
         ExtraCoursesStore.anchorEpochDay
@@ -154,6 +161,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch(Dispatchers.IO) {
             AgendaStore.ensureLoaded(getApplication())
             ExtraCoursesStore.ensureLoaded(getApplication())
+            CourseEditStore.ensureLoaded(getApplication())
         }
         viewModelScope.launch {
             // 登录/会话类错误必须能被看到：除顶栏与横幅外，再用 Snackbar 提示一次
@@ -167,6 +175,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     pendingVerifySync = false
                     repo.syncNow(verifyCredentials = true)
                 }
+            }
+        }
+        viewModelScope.launch {
+            // 同步后发现“教务数据既不是改前也不是改后”的课程修改冲突：用 Snackbar 提醒一次
+            // （具体选择在弹窗里做：见 editConflicts）
+            var lastConflicts = 0
+            repo.editConflicts.collect { list ->
+                if (list.size > lastConflicts) {
+                    _messages.emit(t.msgEditConflicts(list.size))
+                }
+                lastConflicts = list.size
             }
         }
         viewModelScope.launch {
@@ -559,6 +578,74 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             message(t.msgImportedCoursesCleared)
         }
     }
+
+    // ------------------------------------------------------------ 课程修改
+
+    /**
+     * 保存课程修改。
+     * - 导入课程：直接改本地记录（不参与「与教务系统比对」）；
+     * - 教务课程：写入修改记录（存档原课程），展示层立即生效并显示「已修改」标记。
+     *
+     * @param applyAll true=修改全部同一课程；false=仅修改这一次
+     */
+    fun saveCourseEdit(source: Course, edited: Course, applyAll: Boolean) {
+        if (edited.title.isBlank()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch {
+            // 导入课程属于本地数据：直接改本地记录，不走「与教务系统比对」的流程
+            val imported = importedCourses.value.any { it.id == source.id }
+            withContext(Dispatchers.IO) {
+                if (imported) {
+                    if (applyAll) {
+                        ExtraCoursesStore.replaceSeries(app, source, edited)
+                    } else {
+                        ExtraCoursesStore.replace(app, source.id, edited)
+                    }
+                } else {
+                    CourseEditStore.save(app, source, edited, applyAll)
+                }
+            }
+            // 导入课程走导入链路刷新；教务课程走课程修改链路（重排提醒 + 刷新小组件/常驻通知）
+            if (imported) repo.onImportedCoursesChanged() else repo.onCourseEditsChanged()
+            message(if (imported) t.msgImportedCourseEdited else t.msgCourseEditSaved)
+        }
+    }
+
+    /** 仅还原课程修改（不联网）：把全部课程恢复为教务系统存档的原样 */
+    fun restoreCourseEdits() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { CourseEditStore.clear(getApplication()) }
+            repo.dismissEditConflicts()
+            repo.onCourseEditsChanged()
+            message(t.msgCourseEditsRestored)
+        }
+    }
+
+    /** 与教务系统同步并清除所有课程修改（清掉本地修改后立即重新同步） */
+    fun syncAndClearCourseEdits() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { CourseEditStore.clear(getApplication()) }
+            repo.dismissEditConflicts()
+            repo.onCourseEditsChanged()
+            message(t.msgCourseEditsClearedSyncing)
+            repo.syncNow()
+        }
+    }
+
+    /** 冲突处理：跟随教务系统（放弃修改）/ 保留用户修改 */
+    fun resolveEditConflict(conflict: CourseEditConflict, followAcademic: Boolean) {
+        repo.resolveEditConflict(conflict, followAcademic)
+        message(if (followAcademic) t.msgEditFollowed else t.msgEditKept)
+    }
+
+    /** 一次性处理全部冲突 */
+    fun resolveAllEditConflicts(followAcademic: Boolean) {
+        repo.resolveAllEditConflicts(followAcademic)
+        message(if (followAcademic) t.msgEditFollowed else t.msgEditKept)
+    }
+
+    /** 稍后再处理：只关闭弹窗（修改继续保留，下次同步时再问） */
+    fun dismissEditConflicts() = repo.dismissEditConflicts()
 
     /** 批量导入日程/计划（文档导入 / 离线识别共用） */
     fun importAgendaEvents(events: List<AgendaEvent>) {

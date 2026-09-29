@@ -139,6 +139,11 @@ fun SettingsScreen(
     var timelinePick by remember { mutableStateOf("") }
     // 课程时间自定义对话框
     var showPeriodTimes by remember { mutableStateOf(false) }
+    // 课程修改：卡片展开与两个入口的确认弹窗
+    var expCourseEdits by rememberSaveable { mutableStateOf(true) }
+    var showRestoreEditsConfirm by remember { mutableStateOf(false) }
+    var showSyncClearEditsConfirm by remember { mutableStateOf(false) }
+    val courseEditCount by vm.courseEditCount.collectAsState()
     var aiKeyInput by rememberSaveable { mutableStateOf("") }
     var aiModel by rememberSaveable { mutableStateOf("") }
 
@@ -606,6 +611,48 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.error,
                     )
                 }
+            }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：课程修改
+        // 应对「课程信息已经变了、教务系统还没改」：可逐门课本地修正，也可一键还原 / 清除后重新同步
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secCourseEdits,
+                t.secCourseEditsSub,
+                expanded = expCourseEdits,
+                onToggle = { expCourseEdits = !expCourseEdits },
+                trailing = if (courseEditCount > 0) t.courseEditsCount(courseEditCount) else null,
+            ) {
+                Text(
+                    text = t.courseEditsIntro,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                if (courseEditCount == 0) {
+                    Text(
+                        text = t.courseEditsNone,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    OutlinedButton(
+                        onClick = { showRestoreEditsConfirm = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(t.btnRestoreCourseEdits) }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showSyncClearEditsConfirm = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) { Text(t.btnSyncClearCourseEdits) }
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = t.courseEditsHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
 
@@ -1164,6 +1211,42 @@ fun SettingsScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showClearCredConfirm = false }) { Text(t.cancel) }
+            },
+        )
+    }
+
+    // 仅还原课程修改（不联网）
+    if (showRestoreEditsConfirm) {
+        AlertDialog(
+            onDismissRequest = { showRestoreEditsConfirm = false },
+            title = { Text(t.askRestoreEditsTitle) },
+            text = { Text(t.askRestoreEditsBody) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showRestoreEditsConfirm = false
+                    vm.restoreCourseEdits()
+                }) { Text(t.confirm) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRestoreEditsConfirm = false }) { Text(t.cancel) }
+            },
+        )
+    }
+
+    // 与教务系统同步并清除所有课程修改
+    if (showSyncClearEditsConfirm) {
+        AlertDialog(
+            onDismissRequest = { showSyncClearEditsConfirm = false },
+            title = { Text(t.askSyncClearEditsTitle) },
+            text = { Text(t.askSyncClearEditsBody) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showSyncClearEditsConfirm = false
+                    vm.syncAndClearCourseEdits()
+                }) { Text(t.confirm) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showSyncClearEditsConfirm = false }) { Text(t.cancel) }
             },
         )
     }

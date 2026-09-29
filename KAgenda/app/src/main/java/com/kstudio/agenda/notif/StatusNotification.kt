@@ -12,7 +12,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.AppSettings
-import com.kstudio.agenda.data.ScheduleCache
+import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.AgendaEvent
@@ -244,7 +244,8 @@ object StatusNotification {
 
     private fun nextDelayMs(context: Context): Long {
         val now = LocalDateTime.now()
-        val semester = ScheduleCache.load(context)
+        // 叠加用户课程修改后的课表（下节课的时间可能被用户改过）
+        val semester = CourseEditStore.appliedFromCache(context)
         if (semester != null && findCurrentCourse(semester, now) != null) return 60_000L
         if (semester != null) {
             val next = findNextCourse(semester, now)
@@ -259,7 +260,7 @@ object StatusNotification {
         val t = AppText.current
         val lines = mutableListOf<String>()
         val now = LocalDateTime.now()
-        val semester = ScheduleCache.load(context)
+        val semester = CourseEditStore.appliedFromCache(context)
 
         if ("course" in sources && semester != null) {
             val current = findCurrentCourse(semester, now)

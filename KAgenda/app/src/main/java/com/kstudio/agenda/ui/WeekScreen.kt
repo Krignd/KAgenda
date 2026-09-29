@@ -31,7 +31,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -64,8 +63,6 @@ import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.WeekSchedule
 import com.kstudio.agenda.ui.components.EmptyState
-import com.kstudio.agenda.ui.components.InfoLine
-import com.kstudio.agenda.ui.components.TagChip
 import com.kstudio.agenda.ui.components.rememberFlashPulse
 import com.kstudio.agenda.ui.components.pinchZoom
 import com.kstudio.agenda.ui.components.swipeStep
@@ -114,6 +111,8 @@ fun WeekScreen(
     val settings by vm.settings.collectAsState()
     val t = LocalStrings.current
     var selected by remember { mutableStateOf<Course?>(null) }
+    // 正在修改的课程（详情 → 「修改课程」）
+    var editingCourse by remember { mutableStateOf<Course?>(null) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
     // 双指缩放（0.7x~2x）；默认列宽：课程表模式一屏显示周一到周五，时间线模式一屏显示周一至周日
@@ -269,9 +268,30 @@ fun WeekScreen(
     }
 
     selected?.let { course ->
-        ModalBottomSheet(onDismissRequest = { selected = null }) {
-            CourseDetailContent(course)
-        }
+        CourseDetailSheet(
+            course = course,
+            onEdit = {
+                editingCourse = course
+                selected = null
+            },
+            onDismiss = { selected = null },
+        )
+    }
+
+    // 修改课程（教务系统没更新时的本地修正）
+    editingCourse?.let { course ->
+        CourseEditDialog(
+            initial = course,
+            onDismiss = { editingCourse = null },
+            onSave = { edited, applyAll ->
+                vm.saveCourseEdit(course, edited, applyAll)
+                editingCourse = null
+            },
+            onNoChange = {
+                vm.message(t.editNoChange)
+                editingCourse = null
+            },
+        )
     }
 
     if (editorOpen) {
@@ -527,7 +547,7 @@ private fun DayColumn(
             ) {
                 Column {
                     Text(
-                        text = course.title,
+                        text = markedTitle(course),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 3,
@@ -771,7 +791,7 @@ private fun TimelineDayColumn(
             ) {
                 Column {
                     Text(
-                        text = course.title,
+                        text = markedTitle(course),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = if (mins < 50) 1 else if (mins < 100) 3 else 5,
@@ -804,33 +824,3 @@ private fun TimelineDayColumn(
 }
 
 // ---------------------------------------------------------------- 详情
-
-@Composable
-private fun CourseDetailContent(course: Course) {
-    val t = LocalStrings.current
-    // CoursePalette 返回 Android 原生 ARGB Int，这里转换为 Compose Color
-    val color = Color(CoursePalette.colorFor(course))
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp)
-            .padding(bottom = 36.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = course.title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            if (course.tag.isNotBlank()) TagChip(course.tag, color)
-        }
-        Spacer(Modifier.height(16.dp))
-        InfoLine(t.detailTime, "${course.timeRange}（${course.periodLabel}）")
-        InfoLine(t.detailWeekday, t.weekdayShort(course.dayOfWeek))
-        if (course.teacher.isNotBlank()) InfoLine(t.detailTeacher, course.teacher)
-        if (course.room.isNotBlank()) InfoLine(t.detailRoom, course.room)
-        if (course.weeksRaw.isNotBlank()) InfoLine(t.detailWeeks, t.weeksValue(course.weeksRaw))
-        if (course.code.isNotBlank()) InfoLine(t.detailCode, course.code)
-    }
-}

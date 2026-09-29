@@ -386,7 +386,7 @@ private fun buildCsvExport(
     val sb = StringBuilder()
     sb.append("课程名,星期,节次,时间,周次,教室,教师,课程号\n")
     for (c in courses.values.sortedWith(compareBy({ it.dayOfWeek }, { it.startPeriod }))) {
-        sb.append(csvCell(c.title)).append(',')
+        sb.append(csvCell(markedTitle(c))).append(',')
             .append(c.dayOfWeek).append(',')
             .append(csvCell(c.periodLabel)).append(',')
             .append(csvCell(c.timeRange)).append(',')
@@ -417,7 +417,7 @@ private fun buildMarkdownExport(
         sb.append("| 课程 | 星期 | 节次 | 时间 | 周次 | 教室 | 教师 |\n")
         sb.append("| --- | --- | --- | --- | --- | --- | --- |\n")
         for (c in courses.values.sortedWith(compareBy({ it.dayOfWeek }, { it.startPeriod }))) {
-            sb.append("| ").append(mdCell(c.title))
+            sb.append("| ").append(mdCell(markedTitle(c)))
                 .append(" | ").append(c.dayOfWeek)
                 .append(" | ").append(mdCell(c.periodLabel))
                 .append(" | ").append(mdCell(c.timeRange))

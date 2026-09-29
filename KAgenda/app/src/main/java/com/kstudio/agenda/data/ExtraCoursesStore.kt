@@ -92,6 +92,56 @@ object ExtraCoursesStore {
         }
     }
 
+    /**
+     * 修改单条导入课程（导入课程属于本地数据，直接改本地记录）。
+     * 返回 false 表示找不到该课程。
+     */
+    fun replace(context: Context, id: String, edited: Course): Boolean {
+        ensureLoaded(context)
+        synchronized(this) {
+            var found = false
+            _courses.value = _courses.value.map {
+                if (it.id == id) {
+                    found = true
+                    edited
+                } else {
+                    it
+                }
+            }
+            if (found) persist(context)
+            return found
+        }
+    }
+
+    /**
+     * 修改全部同一门导入课程：
+     * - 目标课程块：整条替换（位置也可以改）；
+     * - 其他课程块：只套用文字信息（课程名/老师/地点/周次/代码），保留各自的星期与节次。
+     */
+    fun replaceSeries(context: Context, target: Course, edited: Course): Int {
+        ensureLoaded(context)
+        synchronized(this) {
+            var count = 0
+            _courses.value = _courses.value.map { c ->
+                if (!c.sameSeriesAs(target)) return@map c
+                count++
+                if (c.id == target.id) {
+                    edited
+                } else {
+                    c.copy(
+                        title = edited.title,
+                        code = edited.code,
+                        teacher = edited.teacher,
+                        room = edited.room,
+                        weeksRaw = edited.weeksRaw,
+                    )
+                }
+            }
+            if (count > 0) persist(context)
+            return count
+        }
+    }
+
     fun clear(context: Context) {
         synchronized(this) {
             _courses.value = emptyList()

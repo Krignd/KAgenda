@@ -13,8 +13,12 @@ android {
         minSdk = 26          // Android 8.0+（向下兼容；悬浮窗 TYPE_APPLICATION_OVERLAY 即 API 26 起）
         targetSdk = 35
         // 版本命名逻辑（2026.9 起）：年份.月份 v序号；versionCode = 年×10000 + 月×100 + 序号
-        versionCode = 20260910
-        versionName = "2026.9 v2.0.7"
+        // - 正式版：`2026.9 v2.0.7`；补丁：`2026.9 v2.0.7.1`
+        // - 预览版：`2026.9 v2.0.8(pre1)`（(preN) 递增）
+        // - 同一版本名重复发布（覆盖包）：再追加 `(revN)`，如 `2026.9 v2.0.8(pre1)(rev1)`
+        // - versionCode 只增不减：v2.0.7 因多次覆盖已到 20260910，故 v2.0.8(pre1) 取 20260911
+        versionCode = 20260911
+        versionName = "2026.9 v2.0.8(pre1)"
         // WebView 相关无 NDK 需求
     }
 

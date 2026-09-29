@@ -373,6 +373,19 @@ fun MainScreen(
         AiQuickAddDialog(vm) { showQuickAdd = false }
     }
 
+    // 同步后：课程修改与教务系统都不一致时询问（自动同步也会触发）
+    val editConflicts by vm.editConflicts.collectAsState()
+    if (editConflicts.isNotEmpty()) {
+        CourseEditConflictDialog(
+            conflicts = editConflicts,
+            onFollow = { vm.resolveEditConflict(it, followAcademic = true) },
+            onKeep = { vm.resolveEditConflict(it, followAcademic = false) },
+            onFollowAll = { vm.resolveAllEditConflicts(followAcademic = true) },
+            onKeepAll = { vm.resolveAllEditConflicts(followAcademic = false) },
+            onLater = { vm.dismissEditConflicts() },
+        )
+    }
+
     // 文档导入：独立整页（从设置入口或其他应用传入文档打开）
     if (docImportOpen) {
         DocumentImportScreen(

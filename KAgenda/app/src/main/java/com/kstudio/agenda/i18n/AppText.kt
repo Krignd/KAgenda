@@ -529,6 +529,56 @@ interface AppStrings {
     // ---------------- AI 助手的本地识别 ----------------
     val aiOfflineParse: String
     fun aiOfflineDone(n: Int): String
+
+    // ---------------- 课程修改（教务系统未更新时的本地修正） ----------------
+    val tagEdited: String
+    val btnEditCourse: String
+    val courseEditTitle: String
+    val courseEditIntro: String
+    val editScopeLabel: String
+    val editScopeOne: String
+    val editScopeOneHint: String
+    val editScopeAll: String
+    val editScopeAllHint: String
+    val fieldCourseName: String
+    val editWeeksHint: String
+    val editPeriodStart: String
+    val editPeriodEnd: String
+    val editNoChange: String
+    val editSavedNote: String
+    val msgCourseEditSaved: String
+    val msgImportedCourseEdited: String
+    val msgCourseEditsRestored: String
+    val msgCourseEditsClearedSyncing: String
+    val msgEditFollowed: String
+    val msgEditKept: String
+    fun msgEditConflicts(n: Int): String
+
+    // 设置项：「课程修改」
+    val secCourseEdits: String
+    val secCourseEditsSub: String
+    fun courseEditsCount(n: Int): String
+    val courseEditsNone: String
+    val courseEditsIntro: String
+    val btnRestoreCourseEdits: String
+    val btnSyncClearCourseEdits: String
+    val courseEditsHint: String
+    val askRestoreEditsTitle: String
+    val askRestoreEditsBody: String
+    val askSyncClearEditsTitle: String
+    val askSyncClearEditsBody: String
+
+    // 同步后的冲突询问
+    val editConflictTitle: String
+    val editConflictIntro: String
+    val editConflictLatest: String
+    val editConflictYours: String
+    val editConflictMissing: String
+    val btnFollowAcademic: String
+    val btnKeepMine: String
+    val btnFollowAll: String
+    val btnKeepAll: String
+    val editConflictLater: String
 }
 
 // ==================================================================== 中文
@@ -939,7 +989,7 @@ object ZhStrings : AppStrings {
             "内置 DeepSeek AI 助手（可添加/修改/删除日程，入口：顶栏按钮或悬浮球）。" +
             "除用户自行配置的 AI 接口外，不上传任何个人信息。"
     override val aboutTip = "提示：若同步失败而网页可正常访问，多为学校页面改版——北航可到「开发者工具」分享运行日志；其他学校可在「设置 → 学校 → 添加学校」更新适配代码。"
-    override val aboutPeriods = "课程节数与时間均可自定义：默认 14 节（上午 4 + 下午 5 + 晚上 5），可在「设置 → 用户自定义 → 课程时间」中增删节次并修改起止时间。"
+    override val aboutPeriods = "课程节数与时間均可自定义：默认 14 节（上午 4 + 下午 5 + 晚上 5），可在「设置 → 用户自定义 → 课程时间」中增删节次并修改起止时间。课程信息已经变了但教务系统还没更新时，可在课程详情里用「修改课程」做本地修正（支持「仅这一次」与「全部同一课程」），设置里可一键还原或清除后重新同步。"
 
     override val logTitle = "运行日志"
     override val logDesc = "日志记录每次同步的阶段、页面状态与错误信息（不包含密码），可直接分享给开发者排查。"
@@ -1053,6 +1103,57 @@ object ZhStrings : AppStrings {
 
     override val aiOfflineParse = "本地识别"
     override fun aiOfflineDone(n: Int) = "本地识别到 $n 条（未调用 AI）"
+
+    // ---------------- 课程修改 ----------------
+    override val tagEdited = "已修改"
+    override val btnEditCourse = "修改课程"
+    override val courseEditTitle = "修改课程"
+    override val courseEditIntro =
+        "用于教务系统还没更新、但课程信息已经变了的情况：修改只保存在本机，不会改动教务系统。"
+    override val editScopeLabel = "修改范围"
+    override val editScopeOne = "仅修改这一次"
+    override val editScopeOneHint = "只改动这一个课程块（星期与节次也可以一起调整）"
+    override val editScopeAll = "修改全部同一课程"
+    override val editScopeAllHint = "这门课在各个星期/节次的安排都会套用这次修改"
+    override val fieldCourseName = "课程名"
+    override val editWeeksHint = "如 2-17；留空表示每周"
+    override val editPeriodStart = "起始节次"
+    override val editPeriodEnd = "结束节次"
+    override val editNoChange = "没有检测到修改"
+    override val editSavedNote = "已在本机修改，尚未与教务系统同步"
+    override val msgCourseEditSaved = "已保存课程修改，并标记为「已修改」"
+    override val msgImportedCourseEdited = "已修改导入的课程"
+    override val msgCourseEditsRestored = "已还原全部课程修改"
+    override val msgCourseEditsClearedSyncing = "已清除课程修改，正在与教务系统同步…"
+    override val msgEditFollowed = "已改为跟随教务系统"
+    override val msgEditKept = "已保留你的修改"
+    override fun msgEditConflicts(n: Int) = "有 $n 门课程的修改与教务系统不一致，请确认"
+
+    override val secCourseEdits = "课程修改"
+    override val secCourseEditsSub = "教务系统还没更新时的本地修正"
+    override fun courseEditsCount(n: Int) = "$n 门已修改"
+    override val courseEditsNone = "暂无课程修改"
+    override val courseEditsIntro =
+        "点课表里的课程卡片即可修改课程信息；教务系统之后同步到同样内容时，「已修改」标记会自动消失。"
+    override val btnRestoreCourseEdits = "仅还原课程修改"
+    override val btnSyncClearCourseEdits = "与教务系统同步并清除所有课程修改"
+    override val courseEditsHint =
+        "「仅还原」只把课表恢复成教务系统的原样（不联网）；「同步并清除」会先清掉全部修改，再重新拉取教务课表。"
+    override val askRestoreEditsTitle = "还原全部课程修改？"
+    override val askRestoreEditsBody = "全部课程会恢复为教务系统保存的原样，「已修改」标记一并消失。"
+    override val askSyncClearEditsTitle = "与教务系统同步并清除修改？"
+    override val askSyncClearEditsBody = "将清除全部本地课程修改并重新同步课表，教务系统的数据会直接生效。"
+
+    override val editConflictTitle = "课程信息与教务系统不一致"
+    override val editConflictIntro = "教务系统更新了这些课程，与你之前修改的内容也不同。是否改为跟随教务系统？"
+    override val editConflictLatest = "教务系统最新"
+    override val editConflictYours = "你的修改"
+    override val editConflictMissing = "教务系统中已找不到这门课"
+    override val btnFollowAcademic = "跟随教务系统"
+    override val btnKeepMine = "保留我的修改"
+    override val btnFollowAll = "全部跟随教务系统"
+    override val btnKeepAll = "全部保留我的修改"
+    override val editConflictLater = "稍后处理"
 }
 
 // ==================================================================== English
@@ -1468,7 +1569,7 @@ object EnStrings : AppStrings {
             "persistent status notification, and a DeepSeek AI assistant (add/update/delete events; toolbar button or floating ball over other apps). " +
             "No personal data is uploaded except to the AI endpoint you configure."
     override val aboutTip = "Note: if syncing fails while the website works, the school pages may have changed. BUAA users can share the runtime log from Developer tools; other schools can update the adapter code in Settings → School → Add school."
-    override val aboutPeriods = "Period count and times are fully customizable: 14 by default (4 morning + 5 afternoon + 5 evening). Add or remove periods and edit their times in Settings → Custom → Class times."
+    override val aboutPeriods = "Period count and times are fully customizable: 14 by default (4 morning + 5 afternoon + 5 evening). Add or remove periods and edit their times in Settings → Custom → Class times. When class info changes before the academic system catches up, use \u201cEdit course\u201d in the course details (this occurrence or all occurrences); Settings can restore them or clear and re-sync."
 
     override val logTitle = "Runtime logs"
     override val logDesc = "Logs record each sync stage, page state and errors (never passwords). Share them with the developer for diagnosis."
@@ -1584,6 +1685,60 @@ object EnStrings : AppStrings {
 
     override val aiOfflineParse = "Offline detect"
     override fun aiOfflineDone(n: Int) = "Detected $n item(s) offline (no AI used)"
+
+    // ---------------- Course edits ----------------
+    override val tagEdited = "Edited"
+    override val btnEditCourse = "Edit course"
+    override val courseEditTitle = "Edit course"
+    override val courseEditIntro =
+        "Use this when the class info already changed but the academic system hasn't caught up. Edits stay on this device and never touch the academic system."
+    override val editScopeLabel = "Apply to"
+    override val editScopeOne = "Only this occurrence"
+    override val editScopeOneHint = "Change just this block (weekday and periods can be adjusted too)"
+    override val editScopeAll = "All occurrences of this course"
+    override val editScopeAllHint = "Every weekday/period block of this course gets the same change"
+    override val fieldCourseName = "Course name"
+    override val editWeeksHint = "e.g. 2-17; leave empty for every week"
+    override val editPeriodStart = "From period"
+    override val editPeriodEnd = "To period"
+    override val editNoChange = "No change detected"
+    override val editSavedNote = "Edited on this device, not synced to the academic system yet"
+    override val msgCourseEditSaved = "Course edit saved and marked as edited"
+    override val msgImportedCourseEdited = "Imported course updated"
+    override val msgCourseEditsRestored = "All course edits restored"
+    override val msgCourseEditsClearedSyncing = "Course edits cleared, syncing with the academic system…"
+    override val msgEditFollowed = "Now following the academic system"
+    override val msgEditKept = "Your edit was kept"
+    override fun msgEditConflicts(n: Int) = "$n course(s) differ from the academic system — please review"
+
+    override val secCourseEdits = "Course edits"
+    override val secCourseEditsSub = "Local fixes while the academic system lags behind"
+    override fun courseEditsCount(n: Int) = "$n edited"
+    override val courseEditsNone = "No course edits yet"
+    override val courseEditsIntro =
+        "Tap a course card in the timetable to edit its info. Once the academic system matches your edit, the \u201cEdited\u201d mark disappears automatically."
+    override val btnRestoreCourseEdits = "Restore course edits only"
+    override val btnSyncClearCourseEdits = "Sync with the academic system and clear all course edits"
+    override val courseEditsHint =
+        "\u201cRestore only\u201d puts the timetable back to the academic version (offline). \u201cSync and clear\u201d removes every edit and fetches the timetable again."
+    override val askRestoreEditsTitle = "Restore all course edits?"
+    override val askRestoreEditsBody =
+        "Every course returns to the version saved by the academic system and the \u201cEdited\u201d marks disappear."
+    override val askSyncClearEditsTitle = "Sync and clear course edits?"
+    override val askSyncClearEditsBody =
+        "All local course edits are removed and the timetable is fetched again; the academic data takes effect."
+
+    override val editConflictTitle = "Course info differs from the academic system"
+    override val editConflictIntro =
+        "The academic system updated these courses, and the new data differs from your edit. Follow the academic system instead?"
+    override val editConflictLatest = "Academic system now"
+    override val editConflictYours = "Your edit"
+    override val editConflictMissing = "This course is no longer in the academic system"
+    override val btnFollowAcademic = "Follow academic"
+    override val btnKeepMine = "Keep my edit"
+    override val btnFollowAll = "Follow academic for all"
+    override val btnKeepAll = "Keep all my edits"
+    override val editConflictLater = "Later"
 }
 
 // ==================================================================== Français
@@ -2002,7 +2157,7 @@ object FrStrings : AppStrings {
             "notification permanente et ajout rapide par IA DeepSeek (bouton ou bulle flottante au-dessus des autres applis). " +
             "Aucune donnée personnelle n'est envoyée, hormis vers l'API IA que vous configurez."
     override val aboutTip = "Remarque : si la synchro échoue alors que le site fonctionne, les pages de l'école ont peut-être changé. Les utilisateurs BUAA peuvent partager le journal via Outils développeur ; pour les autres écoles, mettez à jour le code d'adaptation dans Réglages → École → Ajouter une école."
-    override val aboutPeriods = "Le nombre de périodes et leurs horaires sont entièrement personnalisables : 14 par défaut (4 le matin + 5 l'après-midi + 5 le soir). Ajoutez/supprimez des périodes dans Réglages → Personnalisation → Horaires des cours."
+    override val aboutPeriods = "Le nombre de périodes et leurs horaires sont entièrement personnalisables : 14 par défaut (4 le matin + 5 l'après-midi + 5 le soir). Ajoutez/supprimez des périodes dans Réglages → Personnalisation → Horaires des cours. Si les informations changent avant le système scolaire, utilisez « Modifier le cours » dans le détail du cours (cette occurrence ou toutes) ; les réglages permettent de restaurer ou d'effacer puis resynchroniser."
 
     override val logTitle = "Journaux d'exécution"
     override val logDesc = "Les journaux enregistrent chaque étape de synchro, l'état des pages et les erreurs (jamais les mots de passe)."
@@ -2118,6 +2273,60 @@ object FrStrings : AppStrings {
 
     override val aiOfflineParse = "Détection locale"
     override fun aiOfflineDone(n: Int) = "$n élément(s) détecté(s) localement (sans IA)"
+
+    // ---------------- Modifications de cours ----------------
+    override val tagEdited = "Modifié"
+    override val btnEditCourse = "Modifier le cours"
+    override val courseEditTitle = "Modifier le cours"
+    override val courseEditIntro =
+        "À utiliser quand les informations du cours ont changé mais que le système scolaire ne les a pas encore mises à jour. Les modifications restent sur cet appareil et ne touchent pas le système scolaire."
+    override val editScopeLabel = "Appliquer à"
+    override val editScopeOne = "Seulement cette occurrence"
+    override val editScopeOneHint = "Modifier uniquement ce bloc (jour et périodes modifiables aussi)"
+    override val editScopeAll = "Toutes les occurrences de ce cours"
+    override val editScopeAllHint = "Chaque bloc de ce cours recevra la même modification"
+    override val fieldCourseName = "Nom du cours"
+    override val editWeeksHint = "ex. 2-17 ; vide = chaque semaine"
+    override val editPeriodStart = "Période de début"
+    override val editPeriodEnd = "Période de fin"
+    override val editNoChange = "Aucune modification détectée"
+    override val editSavedNote = "Modifié sur cet appareil, pas encore synchronisé avec le système scolaire"
+    override val msgCourseEditSaved = "Modification enregistrée et marquée comme « Modifié »"
+    override val msgImportedCourseEdited = "Cours importé modifié"
+    override val msgCourseEditsRestored = "Toutes les modifications de cours sont restaurées"
+    override val msgCourseEditsClearedSyncing = "Modifications effacées, synchronisation en cours…"
+    override val msgEditFollowed = "Aligné sur le système scolaire"
+    override val msgEditKept = "Votre modification est conservée"
+    override fun msgEditConflicts(n: Int) = "$n cours diffèrent du système scolaire — à vérifier"
+
+    override val secCourseEdits = "Modifications de cours"
+    override val secCourseEditsSub = "Corrections locales quand le système scolaire est en retard"
+    override fun courseEditsCount(n: Int) = "$n modifié(s)"
+    override val courseEditsNone = "Aucune modification de cours pour l'instant"
+    override val courseEditsIntro =
+        "Touchez une carte de cours dans l'emploi du temps pour modifier ses informations. Quand le système scolaire correspondra à votre modification, la marque « Modifié » disparaît automatiquement."
+    override val btnRestoreCourseEdits = "Restaurer uniquement les modifications"
+    override val btnSyncClearCourseEdits = "Synchroniser et effacer toutes les modifications"
+    override val courseEditsHint =
+        "« Restaurer » remet l'emploi du temps à la version du système scolaire (hors ligne). « Synchroniser et effacer » supprime toutes les modifications puis récupère l'emploi du temps."
+    override val askRestoreEditsTitle = "Restaurer toutes les modifications ?"
+    override val askRestoreEditsBody =
+        "Chaque cours revient à la version enregistrée par le système scolaire et les marques « Modifié » disparaissent."
+    override val askSyncClearEditsTitle = "Synchroniser et effacer les modifications ?"
+    override val askSyncClearEditsBody =
+        "Toutes les modifications locales seront supprimées et l'emploi du temps récupéré à nouveau ; les données du système scolaire s'appliquent."
+
+    override val editConflictTitle = "Informations différentes du système scolaire"
+    override val editConflictIntro =
+        "Le système scolaire a mis à jour ces cours, différemment de votre modification. Suivre le système scolaire ?"
+    override val editConflictLatest = "Système scolaire (actuel)"
+    override val editConflictYours = "Votre modification"
+    override val editConflictMissing = "Ce cours n'existe plus dans le système scolaire"
+    override val btnFollowAcademic = "Suivre le système"
+    override val btnKeepMine = "Garder ma modification"
+    override val btnFollowAll = "Tout suivre le système"
+    override val btnKeepAll = "Garder toutes mes modifications"
+    override val editConflictLater = "Plus tard"
 }
 
 // ==================================================================== 全局入口

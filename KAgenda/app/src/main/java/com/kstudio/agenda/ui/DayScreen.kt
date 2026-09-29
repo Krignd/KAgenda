@@ -96,6 +96,9 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     // 日程新建/编辑对话框状态
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
+    // 课程详情（点课程卡片）与课程修改（详情 → 「修改课程」）
+    var detailCourse by remember { mutableStateOf<Course?>(null) }
+    var editingCourse by remember { mutableStateOf<Course?>(null) }
 
     val currentWeek = week
     // 没有课表数据（未登录 / 同步失败 / 已清缓存）时不再整页早退：
@@ -181,6 +184,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                             course = course,
                             highlight = isOngoing(course, selected),
                             flash = matchesFlash(course.title),
+                            onClick = { detailCourse = course },
                         )
                     }
                 }
@@ -269,6 +273,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                                 course = item.course,
                                 highlight = isOngoing(item.course, selected),
                                 flash = matchesFlash(item.course.title),
+                                onClick = { detailCourse = item.course },
                             )
                             is DayItem.EventItem -> AgendaCard(
                                 event = item.event,
@@ -292,6 +297,33 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             onDismiss = { editorOpen = false },
             onSave = { vm.saveAgendaEvent(it); editorOpen = false },
             onDelete = { id -> vm.deleteAgendaEvent(id); editorOpen = false },
+        )
+    }
+
+    // 课程详情 → 修改课程（与周视图同一套弹层，交互保持一致）
+    detailCourse?.let { course ->
+        CourseDetailSheet(
+            course = course,
+            onEdit = {
+                editingCourse = course
+                detailCourse = null
+            },
+            onDismiss = { detailCourse = null },
+        )
+    }
+
+    editingCourse?.let { course ->
+        CourseEditDialog(
+            initial = course,
+            onDismiss = { editingCourse = null },
+            onSave = { edited, applyAll ->
+                vm.saveCourseEdit(course, edited, applyAll)
+                editingCourse = null
+            },
+            onNoChange = {
+                vm.message(t.editNoChange)
+                editingCourse = null
+            },
         )
     }
 }
@@ -557,6 +589,10 @@ fun CourseCard(
                     )
                     if (highlight) {
                         TagChip(t.tagOngoing, MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    if (course.edited) {
+                        TagChip(t.tagEdited, MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(6.dp))
                     }
                     if (course.tag.isNotBlank()) {

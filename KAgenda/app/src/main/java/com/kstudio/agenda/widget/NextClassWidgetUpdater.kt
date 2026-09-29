@@ -11,7 +11,7 @@ import android.view.View
 import android.widget.RemoteViews
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AgendaStore
-import com.kstudio.agenda.data.ScheduleCache
+import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
@@ -71,7 +71,8 @@ object NextClassWidgetUpdater {
     /** 仅更新全部小组件 */
     fun updateAll(context: Context) {
         val manager = AppWidgetManager.getInstance(context) ?: return
-        val semester = ScheduleCache.load(context)
+        // 叠加用户课程修改后的课表（课程名/地点/时间可能被用户改过）
+        val semester = CourseEditStore.appliedFromCache(context)
         AgendaStore.ensureLoaded(context)
         // 小组件只展示「日程/课程」，不展示「计划」
         val events = AgendaStore.events.value.filter { !it.isPlan }
@@ -122,7 +123,7 @@ object NextClassWidgetUpdater {
         am.cancel(pi)
         if (!hasAnyWidget(context)) return
 
-        val semester = ScheduleCache.load(context)
+        val semester = CourseEditStore.appliedFromCache(context)
         AgendaStore.ensureLoaded(context)
         // 小组件只展示「日程/课程」，不展示「计划」
         val events = AgendaStore.events.value.filter { !it.isPlan }

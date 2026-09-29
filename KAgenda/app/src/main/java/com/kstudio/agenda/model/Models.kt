@@ -7,6 +7,8 @@ import java.time.LocalDate
  *
  * @param weeksRaw 上课周次原文，如 "2-17"、"2-9,11-17"，无法解析时为 ""
  * @param dayOfWeek 1=周一 ... 7=周日
+ * @param edited 该课程由用户手动修改过（本地修改，尚未与教务系统一致）；
+ *   只在展示层由 [com.kstudio.agenda.data.CourseEditStore] 置位，缓存文件里始终是教务原始数据
  */
 data class Course(
     val title: String,
@@ -18,10 +20,36 @@ data class Course(
     val endPeriod: Int,
     val dayOfWeek: Int,
     val tag: String = "",
+    val edited: Boolean = false,
 ) {
     /** 稳定标识：用于提醒的 requestCode / 图片配色 */
     val id: String
         get() = "${code.ifBlank { title }}@${dayOfWeek}-${startPeriod}-${endPeriod}-$room"
+
+    /** 同一门课的标识（「修改全部同一课程」的判定依据）：优先课程代码，无代码时用课程名 */
+    val seriesKey: String
+        get() = code.trim().ifBlank { title.trim() }.lowercase()
+
+    /** 课表位置（星期 + 起止节次）：「仅修改这一次」的定位依据 */
+    val slotKey: String
+        get() = "$dayOfWeek-$startPeriod-$endPeriod"
+
+    /**
+     * 可编辑信息是否完全一致（用于「同步后与教务系统比对」）：
+     * 只比较用户可改的字段；`tag` / `edited` 等展示态字段不参与判定。
+     */
+    fun sameEditableContent(other: Course): Boolean =
+        title.trim() == other.title.trim() &&
+            code.trim() == other.code.trim() &&
+            teacher.trim() == other.teacher.trim() &&
+            room.trim() == other.room.trim() &&
+            weeksRaw.trim() == other.weeksRaw.trim() &&
+            dayOfWeek == other.dayOfWeek &&
+            startPeriod == other.startPeriod &&
+            endPeriod == other.endPeriod
+
+    /** 是否与另一条课程属于同一门课（课程代码优先，无代码时用课程名） */
+    fun sameSeriesAs(other: Course): Boolean = seriesKey == other.seriesKey
 
     val periodLabel: String
         get() = if (startPeriod == endPeriod) "第${startPeriod}节" else "第${startPeriod}-${endPeriod}节"

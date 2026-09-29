@@ -5,7 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import com.kstudio.agenda.data.ScheduleCache
+import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.PeriodTimes
@@ -32,7 +32,8 @@ object ReminderScheduler {
             return
         }
 
-        val semester = ScheduleCache.load(context)
+        // 课表统一走 CourseEditStore：用户手动修改过的课程（时间/地点等）也要按修改后排提醒
+        val semester = CourseEditStore.appliedFromCache(context)
         if (semester == null) {
             // 课表缓存不存在（尚未同步 / 已被“清缓存”清掉）：取消残留闹钟，
             // 避免按旧课表继续弹出“即将上课”提醒

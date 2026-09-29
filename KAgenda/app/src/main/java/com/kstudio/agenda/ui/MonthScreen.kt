@@ -228,7 +228,10 @@ internal fun MonthCell(
             )
             val agendaDefault = MaterialTheme.colorScheme.tertiary
             val entries = mutableListOf<Pair<String, Color>>()
-            for (course in courses) entries.add(course.title to Color(CoursePalette.colorFor(course)))
+            // 已修改的课程（教务系统未更新）加记号，便于一眼区分
+            for (course in courses) {
+                entries.add(markedTitle(course) to Color(CoursePalette.colorFor(course)))
+            }
             for (ev in events) {
                 val color = if (ev.displayColor != 0) Color(ev.displayColor) else agendaDefault
                 // 时间标记：有开始时间时以 "HH:mm 标题" 展示
