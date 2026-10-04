@@ -62,6 +62,13 @@ data class AppSettings(
     val statusOnLockScreen: Boolean = true,
     /** 界面风格："default"=默认；"glass"=液态玻璃 */
     val uiStyle: String = UI_STYLE_DEFAULT,
+    /**
+     * 江苏大学专用：是否「通过 WebVPN」访问教务系统（默认勾选）。
+     *
+     * 勾选与不勾选对应 data/UjsFlow.kt 里两份完全隔离的链路实现
+     * （[UjsWebVpnFlow] / [UjsDefaultFlow]），见 WebScheduleEngine 与 WebLoginActivity 的分派。
+     */
+    val ujsWebVpn: Boolean = true,
 ) {
 
     /** 是否使用液态玻璃界面风格 */
@@ -132,6 +139,7 @@ object SettingsStore {
     private val KEY_PERIOD_TIMES = stringPreferencesKey("period_times")
     private val KEY_STATUS_LOCK_SCREEN = booleanPreferencesKey("status_on_lock_screen")
     private val KEY_UI_STYLE = stringPreferencesKey("ui_style")
+    private val KEY_UJS_WEB_VPN = booleanPreferencesKey("ujs_webvpn")
 
     fun settingsFlow(context: Context): Flow<AppSettings> = context.settingsDataStore.data.map { p ->
         AppSettings(
@@ -165,6 +173,7 @@ object SettingsStore {
             periodTimesRaw = p[KEY_PERIOD_TIMES] ?: "",
             statusOnLockScreen = p[KEY_STATUS_LOCK_SCREEN] ?: true,
             uiStyle = p[KEY_UI_STYLE] ?: UI_STYLE_DEFAULT,
+            ujsWebVpn = p[KEY_UJS_WEB_VPN] ?: true,
         )
     }
 
@@ -349,5 +358,13 @@ object SettingsStore {
 
     suspend fun setFloatingBall(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_FLOATING_BALL] = enabled }
+    }
+
+    /**
+     * 江苏大学：是否「通过 WebVPN」访问教务系统。
+     * 写入后由引擎/登录窗口在下一次同步或下一次打开网页登录时按新值分派链路。
+     */
+    suspend fun setUjsWebVpn(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_UJS_WEB_VPN] = enabled }
     }
 }

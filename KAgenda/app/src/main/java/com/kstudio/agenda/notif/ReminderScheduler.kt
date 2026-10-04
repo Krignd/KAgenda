@@ -8,6 +8,7 @@ import android.os.Build
 import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.model.Course
+import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import org.json.JSONArray
 import java.io.File
@@ -51,6 +52,8 @@ object ReminderScheduler {
             val date = today.plusDays(offset.toLong())
             val weekNo = semester.teachingWeekOf(date)
             if (weekNo < 1 || weekNo > 40) continue
+            // 法定节假日停课：不排课，也就不提醒
+            if (HolidayTable.isHoliday(date)) continue
             val courses = semester.weeks[weekNo].orEmpty()
                 .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
             for (course in courses) {

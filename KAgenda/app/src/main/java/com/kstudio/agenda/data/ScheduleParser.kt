@@ -38,8 +38,10 @@ object ScheduleParser {
             val title = o.optString("title").trim()
             if (title.isBlank()) continue
             val day = parseAdapterDay(o.opt("day")) ?: continue
-            val start = o.optInt("start", 1).coerceIn(1, 14)
-            val end = o.optInt("end", start).coerceIn(start, 14)
+            // 用「支持的最大节数」而非固定的 14：各校作息差异很大（江大 11 节、
+            // 有的学校 15+ 节），不能因为默认 14 节就把多出来的课悄悄截掉。
+            val start = o.optInt("start", 1).coerceIn(1, PeriodTimes.MAX_COUNT)
+            val end = o.optInt("end", start).coerceIn(start, PeriodTimes.MAX_COUNT)
             courses.add(
                 Course(
                     title = title,
@@ -67,9 +69,23 @@ object ScheduleParser {
         }
         val anchorWeek = weekNoHint.coerceAtLeast(1)
         val monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
-        val anchor = monday.minusWeeks((anchorWeek - 1).toLong()).toEpochDay()
+
+        // 锚点（第 1 教学周周一）：
+        // 1) 适配器在 meta.firstWeekMonday 给出精确值时直接采用（如江苏大学：
+        //    秋季学期「含 9 月 1 日的一周」为第 1 周，见 JsScripts.UJS_EXTRACT）；
+        // 2) 否则按旧行为：抓取当天所在周视为第 anchorWeek 周，回推第 1 周周一。
+        //    注意该兜底默认抓的是「当前教学周」，对一次提取整学期的适配器
+        //    （如江大，weeks 为绝对周次）会把当前周错当第 1 周 —— 上面的显式字段即为此而生。
+        val meta = root?.optJSONObject("meta")
+        val semesterLabel = meta?.optString("semester").orEmpty()
+        val explicitAnchor: LocalDate? = meta
+            ?.optString("firstWeekMonday")
+            ?.takeIf { it.isNotBlank() }
+            ?.let { s -> runCatching { LocalDate.parse(s) }.getOrNull() }
+            ?.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        val anchor = (explicitAnchor ?: monday.minusWeeks((anchorWeek - 1).toLong())).toEpochDay()
         SemesterSchedule(
-            semesterLabel = "",
+            semesterLabel = semesterLabel,
             anchorEpochDay = anchor,
             weeks = weekMap.mapValues { e -> e.value.sortedBy { it.startPeriod } },
             fetchedAtMillis = System.currentTimeMillis(),
@@ -378,7 +394,8 @@ object ScheduleParser {
         }
     }
 
-    private fun courseFromArrangedItem(o: JSONObject): Course? {        val day = o.optInt("dayOfWeek", 0)
+    private fun courseFromArrangedItem(o: JSONObject): Course? {
+        val day = o.optInt("dayOfWeek", 0)
         if (day !in 1..7) return null
         val start = o.optInt("beginSection", 0)
         // 校验用最大节数（24）：用户可能把节数调小，但不应因此丢弃课程数据

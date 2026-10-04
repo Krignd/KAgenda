@@ -137,6 +137,8 @@ data class WeekSchedule(
     fun coursesOnDate(date: LocalDate): List<Course> {
         val week = teachingWeekOf(date)
         if (week < 1 || week > 40) return emptyList()
+        // 法定节假日默认停课：课表按「周次 + 星期」排课，不会自动避开假日，统一在此扣除
+        if (HolidayTable.isHoliday(date)) return emptyList()
         return coursesOfDay(date.dayOfWeek.value).filter { it.occursInWeek(week) }
     }
 }

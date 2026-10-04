@@ -56,7 +56,8 @@ import java.util.Locale
 
 /**
  * 「开发者工具」页：独立页面打开（设置页仅保留一个入口）。
- * 包含：运行日志、诊断信息、通知测试（验证提醒链路）、提醒调度工具、重置（自设置页迁入）。
+ * 包含：内置浏览器（普通浏览器，带访问记录）、运行日志、诊断信息、
+ * 通知测试（验证提醒链路）、提醒调度工具、重置（自设置页迁入）。
  */
 @Composable
 fun DeveloperToolsScreen(vm: AppViewModel, onClose: () -> Unit) {
@@ -156,6 +157,17 @@ fun DeveloperToolsScreen(vm: AppViewModel, onClose: () -> Unit) {
                 .padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            // ---------------- 内置浏览器（普通浏览器 + 访问记录） ----------------
+            // 不注入任何脚本、不做自动跳转，只提供后退/前进/刷新/地址栏/访问记录，
+            // 便于手动浏览门户与教务系统的真实页面流程。
+            SectionCard(t.secDevBrowser, t.secDevBrowserSub) {
+                OutlinedButton(onClick = {
+                    context.startActivity(Intent(context, DevBrowserActivity::class.java))
+                }) {
+                    Text(t.btnOpenDevBrowser)
+                }
+            }
+
             // ---------------- 通知测试 ----------------
             SectionCard(t.secNotifTest, t.secNotifTestSub) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -254,6 +266,18 @@ fun DeveloperToolsScreen(vm: AppViewModel, onClose: () -> Unit) {
                 Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = { showClearCacheConfirm = true }) {
                     Text(t.resetClearCache)
+                }
+                Spacer(Modifier.height(12.dp))
+                // 退出登录：清账号 + 网页会话 + 内置浏览器状态（保留课表缓存）。
+                // 放在这里是为了配合「模拟刚装好」：先退出登录，再决定要不要整体重置。
+                Text(
+                    text = t.resetLogoutDesc,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedButton(onClick = { vm.logout() }) {
+                    Text(t.btnLogout)
                 }
                 Spacer(Modifier.height(12.dp))
                 Text(

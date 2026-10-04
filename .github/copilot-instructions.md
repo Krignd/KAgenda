@@ -26,6 +26,14 @@ cd KAgenda
 
 ## 硬性约定
 
+- **学校差异必须隔离（2026-10 新增，务必遵守）**：
+  - 通用引擎/界面里**不得**出现 `school.id == "xxx"` 这类学校分支，也不得把某校的假设
+    （节数、字段名、地址、文案）写进通用解析/流程；否则改 A 校会波及 B 校（如北航）
+  - 学校专属代码的落点：抓取流程 → `data/SchoolFlow<校>.kt`（并在 `data/SchoolFlow.kt` 的
+    `SchoolFlows.registry` 注册一行）；登录窗口引导 → `ui/SchoolLoginFlow<校>.kt`
+    （在 `SchoolLoginFlows.registry` 注册）；地址/回退候选 → `data/<校>Flow.kt`；
+    注入脚本 → `data/JsScripts.kt` 末尾「学校脚本区」；界面文案 → `i18n/SchoolTexts.kt`；
+    学校本身 → `model/Schools.ALL`（纯数据）+ `PeriodTimes`/补充课程等一律由插件提供
 - **版本号只在用户明确要求「发版 / 更新版本 / 打 tag / 归档」时改**；其余改动只改代码 + 构建 + 提交
 - 版本命名：`versionName = 年份.月份 v序号[.补丁]`（如 `2026.9 v2.0.5`）；`versionCode = 年×10000 + 月×100 + 序号`（补丁号在原序号上 +1）
 - **公开仓库文案不得出现学校名称**；README 里已有的那一句支持范围说明保持原样，不要新增

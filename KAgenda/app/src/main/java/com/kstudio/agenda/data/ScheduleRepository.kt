@@ -1,7 +1,6 @@
 package com.kstudio.agenda.data
 
 import android.content.Context
-import android.webkit.CookieManager
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.notif.ReminderScheduler
 import com.kstudio.agenda.util.AppLog
@@ -310,46 +309,76 @@ class ScheduleRepository private constructor(private val appContext: Context) {
         }
     }
 
-    /** 退出登录：清除网页会话 Cookie（保留本地课表缓存便于离线查看） */
+    /**
+     * 退出登录：清除网页会话与内置浏览器状态（保留本地课表缓存便于离线查看）。
+     *
+     * 注意用 [WebScheduleEngine.resetBrowserSession] 而不是只清 Cookie：教务系统是 SPA，
+     * 会话令牌还可能存在 localStorage 里，只清 Cookie 会出现“退出后一打开又自动登录”。
+     */
     fun logoutAndClearSession() {
         // 使在飞同步的写回失效并取消它：避免退出登录后又把“同步成功”状态写回来
         bumpGeneration()
         syncJob?.cancel()
         scope.launch {
-            withContext(Dispatchers.Main) {
-                runCatching {
-                    CookieManager.getInstance().removeAllCookies(null)
-                    CookieManager.getInstance().flush()
-                }
-            }
+            engine.resetBrowserSession()
             _sync.value = SyncUi.NeedLogin()
-            AppLog.i(TAG, "已退出登录并清除网页会话 Cookie")
+            AppLog.i(TAG, "已退出登录并清除网页会话与浏览器状态")
         }
     }
 
-    /** 恢复初始状态：清账号/设置/缓存/已排闹钟/网页会话/日志 */
-    fun resetAll() {
+    /**
+     * 恢复初始状态：清账号/设置/缓存/已排闹钟/网页会话/内置浏览器状态/日志。
+     *
+     * 目标是等价于「刚装好」：除上述数据外，还会清掉 WebView 的 Cookie、HTTP 缓存与
+     * 本地存储（localStorage 等），否则 SPA 的残留令牌会让重置看起来没生效。
+     *
+     * 【挂起函数】内部第一步就是 `AppLog.clear()`，调用方必须等它返回后再写自己的
+     * 收尾日志 —— 否则那条日志会被这里的清空动作抹掉（审计行本身也要在这之后写，
+     * 见方法内注释）。
+     *
+     * 文件类清理放在 IO 线程（调用方多半在主线程）；WebView/Cookie 相关由
+     * [WebScheduleEngine.resetBrowserSession] 自己切回主线程。
+     */
+    suspend fun resetAllNow() {
         // 取消在飞同步并使结果失效：防止重置后旧数据/旧状态被同步结果写回
         bumpGeneration()
         syncJob?.cancel()
-        scope.launch {
+
+        // 【顺序很重要】先把日志清空，再做其余清理 —— 这样下面每一步的审计信息
+        // 都会落到新的会话文件里。反过来（先清理、最后才 clear）会把刚写好的
+        // 审计行连同旧日志一起删掉，用户永远看不到「重置到底做了什么」。
+        AppLog.clear()
+
+        val before = SettingsStore.read(appContext)
+        AppLog.i(
+            TAG,
+            "重置开始：学号=${before.studentId.ifBlank { "(未设置)" }}，" +
+                "已存密码=${if (before.hasPassword) "是" else "否"}",
+        )
+
+        // 先清网页会话与内置浏览器状态：此时设置还没清，能拿到当前学校的审计域名
+        // （内部会打印逐域 Cookie 审计，见「重置审计」）；之后设置回到默认学校会看不出是谁的会话。
+        engine.resetBrowserSession()
+
+        withContext(Dispatchers.IO) {
+            val alarms = runCatching { ReminderScheduler.scheduledCount(appContext) }.getOrDefault(0)
             runCatching { ReminderScheduler.cancelAll(appContext) }
+            AppLog.i(TAG, "已取消提醒闹钟：$alarms 条")
+
             SettingsStore.clearAll(appContext)
+            AppLog.i(TAG, "已清空全部设置与账号（学号密码 / 学期锚点 / 上次同步时间 / 语言 / 界面风格等）")
+
             ScheduleCache.clear(appContext)
             ExtraCoursesStore.clear(appContext)
             CourseEditStore.clear(appContext)
-            _editConflicts.value = emptyList()
-            _semester.value = null
-            _sync.value = SyncUi.Idle
-            withContext(Dispatchers.Main) {
-                runCatching {
-                    CookieManager.getInstance().removeAllCookies(null)
-                    CookieManager.getInstance().flush()
-                }
-            }
-            AppLog.clear()
-            AppLog.i(TAG, "应用已重置为初始状态")
+            AppLog.i(TAG, "已清空课表缓存 / 导入课程 / 课程修改")
         }
+
+        _editConflicts.value = emptyList()
+        _semester.value = null
+        _sync.value = SyncUi.Idle
+
+        AppLog.i(TAG, "教务侧数据与网页会话已重置完毕")
     }
 
     fun clearCache() {

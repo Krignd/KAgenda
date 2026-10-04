@@ -45,6 +45,8 @@ import com.kstudio.agenda.data.JsScripts
 import com.kstudio.agenda.data.KebiaoBridge
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.WebScheduleEngine
+import com.kstudio.agenda.model.School
+import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.ui.theme.KAgendaTheme
 import com.kstudio.agenda.util.AppLog
 import kotlinx.coroutines.delay
@@ -90,18 +92,33 @@ class WebLoginActivity : ComponentActivity() {
     }
 }
 
-private data class LoginProbe(
+internal data class LoginProbe(
     val url: String = "",
     val login: Boolean = false,
     val captcha: Boolean = false,
     val grid: Boolean = false,
     val app: Boolean = false,
+    /** 页面已呈现“已登录后才会出现”的稳定特征（如正方课表页的查询按钮/课表容器） */
+    val ready: Boolean = false,
+    /**
+     * 已通过 WebVPN 门户、进入被代理的教务系统。
+     *
+     * 门户放行后地址形如 `…/http/<hex>/…`；未登录时会被 302 到 `/login`。
+     * 因此这是「登录确实成功了」的可靠标志（比课表是否渲染更早出现）。
+     */
+    val proxied: Boolean = false,
+    /** 页面是 404（如 xuanke 上不存在的路径，Apache 返回「Object not found!」） */
+    val notFound: Boolean = false,
     val netError: Boolean = false,
     val ssoError: Boolean = false,
     val error: String = "",
 ) {
     override fun toString(): String =
-        "login=$login captcha=$captcha grid=$grid app=$app netError=$netError" +
+        "login=$login captcha=$captcha grid=$grid app=$app" +
+            (if (ready) " ready=true" else "") +
+            (if (proxied) " proxied=true" else "") +
+            (if (notFound) " notFound=true" else "") +
+            " netError=$netError" +
             (if (ssoError) " ssoError=true" else "") +
             " url=${url.take(80)}"
 }
@@ -117,12 +134,33 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
     var homeReached by remember { mutableStateOf(false) }
     var webView by remember { mutableStateOf<WebView?>(null) }
     var statusText by remember { mutableStateOf("正在检测登录状态…") }
+    /** 探针原始输出（调试用，显示在提示下方一行） */
+    var probeText by remember { mutableStateOf("") }
     var lastProbe by remember { mutableStateOf<LoginProbe?>(null) }
     var pendingExit by remember { mutableStateOf<(() -> Unit)?>(null) }
     val context = LocalContext.current
 
+    // 当前学校（与「设置 → 学校」保持一致）；WebView 首屏地址、「去登录」跳转都按学校来。
+    // SettingsStore.read 是挂起函数，先在协程里解析出 schoolId，再建 WebView。
+    var schoolId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) { schoolId = SettingsStore.read(context).schoolId }
+    // 读设置是毫秒级的；未就绪时只渲一个空屏（不 return，保证下方所有
+    // BackHandler / DisposableEffect 在每次重组中都按同一顺序被调用）
+    val school = schoolId?.let { remember(it) { Schools.of(it) } }
+    if (school == null) {
+        androidx.compose.material3.Surface(Modifier.fillMaxSize()) {}
+        return
+    }
+    // 该学校是否有专属登录流程（需要多跳引导的门户型学校）。
+    // 有 → 整条自动流程与判定都交给它，通用流程完全不动；没有 → 走下面的通用流程。
+    // 这里按学校数据/注册表决定，**不出现任何学校名字**，新增学校无需改本文件。
+    val loginFlow = remember(school.id) { SchoolLoginFlows.of(school) }
+
+    // 「已登录」判定：有专属流程的学校由它自己判定（条件更严格，见 SchoolLoginFlowUjs），
+    // 其余学校用通用规则（课表已渲染即算已登录）。
     fun currentlyLoggedIn(): Boolean =
-        homeReached || lastProbe?.let { it.grid || it.app } == true
+        loginFlow?.isLoggedIn(lastProbe, homeReached)
+            ?: (homeReached || lastProbe?.let { it.grid || it.app || it.ready } == true)
 
     // 未登录时点击“返回/完成”先弹提示，避免用户在未完成登录时退出、导致课表无法同步
     val requestExit: (() -> Unit) -> Unit = { action ->
@@ -141,8 +179,30 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
     //   教务首页“网络异常”/长时间无课表 → 去统一身份认证
     //   统一认证页 → 自动填写（最多 3 次）
     //   离开统一认证 → 回教务系统首页验证会话
-    LaunchedEffect(webView) {
+    LaunchedEffect(webView, loginFlow) {
         val view = webView ?: return@LaunchedEffect
+        // 有专属流程的学校（如门户 + 统一认证多跳的学校）：整条自动流程交给它，
+        // 通用流程完全不动；这里只搭一个「改界面状态」的桥。
+        loginFlow?.let { flow ->
+            flow.run(object : LoginWindowHost {
+                override val view: WebView get() = view
+                override fun onProbe(probe: LoginProbe) {
+                    lastProbe = probe
+                    probeText = probe.toString()
+                }
+
+                override fun setStatus(text: String) {
+                    statusText = text
+                }
+
+                override fun markLoggedIn() {
+                    homeReached = true
+                }
+            })
+            return@LaunchedEffect
+        }
+        val ssoHost = hostOf(school.ssoUrl)
+        val schoolHost = school.host
         var lastAutoFillUrl = ""
         var autoFillCount = 0
         var homeStuckTicks = 0
@@ -169,7 +229,7 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
             // 页面即将关闭（用户点了“完成”/“返回”）时停止探测与跳转，避免退出瞬间残留自动导航
             val act = view.context as? Activity
             if (act == null || act.isFinishing || act.isDestroyed) break
-            val probe = probe(view) ?: continue
+            val probe = probe(view, school) ?: continue
             statusText = probe.toString()
             lastProbe = probe
             AppLog.d("WebLogin", "状态: $probe")
@@ -179,11 +239,11 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
 
             // 按主机名判断页面所属站点（不能用子串：SSO 地址的 service 参数里也含 "homeapp"）
             val host = hostOf(probe.url)
-            val onSso = host.endsWith("sso.buaa.edu.cn")
-            val onByxt = host.endsWith("byxt.buaa.edu.cn")
+            val onSso = ssoHost.isNotBlank() && host.endsWith(ssoHost)
+            val onSchool = schoolHost.isNotBlank() && host.endsWith(schoolHost)
             if (onSso && !probe.login) ssoNoFormTicks++ else ssoNoFormTicks = 0
 
-            if (probe.grid || probe.app) {
+            if (probe.grid || probe.app || probe.ready) {
                 if (!homeReached) {
                     AppLog.i("WebLogin", "已进入课表页面，可以点“完成”了")
                 }
@@ -192,6 +252,8 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                 continue
             }
 
+            // 手动登录学校（江苏大学）在上面的分派里已经走完各自的链路并 return，
+            // 不会到达这里；以下是通用（北航金智 jwapp 等）流程。
             when {
                 onSso && probe.login && probe.captcha -> {
                     if (probe.url != lastAutoFillUrl) {
@@ -230,20 +292,20 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                 onSso && !probe.login && urlStable && ssoNoFormTicks >= 3 ->
                     navigate(WebScheduleEngine.HOME_URL, "离开登录页回首页")
 
-                !onSso && !onByxt && urlStable ->
+                !onSso && !onSchool && urlStable ->
                     navigate(WebScheduleEngine.HOME_URL, "回到教务首页")
 
                 // CAS 带 ticket 跳回接口地址（后端已验证 ticket 并种下会话）→ 打开首页等待课表
-                onByxt && probe.url.contains("/api/") ->
+                onSchool && probe.url.contains("/api/") ->
                     navigate(WebScheduleEngine.HOME_URL, "ticket 已受理，打开首页")
 
                 // 教务首页出现“网络异常”或长时间没有课表 → 去统一认证（带 service，登录后自动跳回）
-                onByxt && (probe.netError || homeStuckTicks >= 6) -> {
+                onSchool && (probe.netError || homeStuckTicks >= 6) -> {
                     homeStuckTicks = 0
                     navigate(WebScheduleEngine.ssoUrlWithService(), "首页未登录，去统一认证")
                 }
 
-                onByxt -> homeStuckTicks++
+                onSchool -> homeStuckTicks++
             }
         }
     }
@@ -251,33 +313,61 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (homeReached) "已进入系统，点击“完成”即可同步" else "登录教务系统") },
+                title = {
+                    Text(
+                        loginFlow?.title(homeReached)
+                            ?: if (homeReached) "已进入系统，点击“完成”即可同步" else "登录教务系统"
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = { requestExit(onBack) }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
+                    // 顶栏快捷跳转：有专属流程的学校由它给出「去哪」与「叫什么」
+                    // （例如门户型学校没有固定的 SSO 入口，一键“去登录”只会帮倒忙，
+                    //  改为按当前进度跳「回入口页 / 去课表页」）；其余学校沿用通用「去登录」。
                     TextButton(onClick = {
-                        AppLog.i("WebLogin", "手动切换到统一身份认证（带 service）")
-                        webView?.loadUrl(WebScheduleEngine.ssoUrlWithService())
-                    }) { Text("去登录") }
+                        val jump = loginFlow?.jumpButton(currentlyLoggedIn())
+                        if (jump != null) {
+                            AppLog.i("WebLogin", "手动切换页面（${jump.label}）: ${jump.target.take(90)}")
+                            webView?.loadUrl(jump.target)
+                        } else {
+                            AppLog.i("WebLogin", "手动切换到统一身份认证（带 service）")
+                            webView?.loadUrl(WebScheduleEngine.ssoUrlWithService())
+                        }
+                    }) {
+                        Text(loginFlow?.jumpButton(currentlyLoggedIn())?.label ?: "去登录")
+                    }
                     TextButton(onClick = { requestExit { onDone(currentlyLoggedIn()) } }) { Text("完成") }
                 },
             )
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            // 阶段提示（醒目）：登录 WebVPN → 登录教务系统 → 点「完成」，随流程推进
             if (statusText.isNotBlank()) {
                 Text(
                     text = statusText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
+            // 探针原始输出（调试用，小字灰显）
+            if (probeText.isNotBlank()) {
+                Text(
+                    text = probeText,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                        .padding(horizontal = 12.dp, vertical = 2.dp),
                 )
             }
             AndroidView(
@@ -290,19 +380,43 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                         settings.useWideViewPort = true
                         settings.loadWithOverviewMode = true
                         CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+                        // ---------- 滑块兼容相关 ----------
+                        // 允许手势放大（部分拖动库依赖 touchmove 的 scale 信息），
+                        // 但禁用长按选中/震动反馈，避免拖动被“文字选择”抢占。
+                        settings.setSupportZoom(true)
+                        settings.builtInZoomControls = false
+                        settings.displayZoomControls = false
+                        isHapticFeedbackEnabled = false
+                        isLongClickable = false
+                        // 关闭 overscroll 效果：上滑超过边界会触发“回弹”，
+                        // 视觉上正是“滑块弹回”的观感来源之一。
+                        overScrollMode = android.view.View.OVER_SCROLL_NEVER
                         // 页面脚本会探测桥的存在，这里给一个空实现即可
                         addJavascriptInterface(KebiaoBridge { _, _ -> }, "KebiaoBridge")
                         webViewClient = object : WebViewClient() {
                             override fun onPageFinished(view: WebView, url: String?) {
                                 AppLog.d("WebLogin", "加载完成: ${url?.take(90)}")
                                 view.evaluateJavascript(JsScripts.HOOKS, null)
-                                // 兜底：统一认证外壳页的 iframe 由 init.js 的 onload 设置 src，
-                                // 若因任何原因未设置，整页会停留在空白——延迟补上
-                                if (url?.contains("sso.buaa.edu.cn") == true && url.contains("/login")) {
+                                // 滑块触摸修复：每个页面都注入一次（登录页/认证页都可能出现滑块）。
+                                // 幂等，重复加载不会叠加副作用。返回值记入日志，便于排查是否生效。
+                                view.evaluateJavascript(SLIDER_TOUCH_FIX_JS) { r ->
+                                    AppLog.i("WebLogin", "滑块触摸补丁注入: $r")
+                                }
+                                // 北航专用兜底：统一认证外壳页的 iframe 由 init.js 的 onload 设置 src，
+                                // 若因任何原因未设置，整页会停留在空白——延迟补上。
+                                // 其它学校（如江苏大学 WebVPN）没有这个外壳结构，跳过。
+                                val isBuaaSsoShell = url?.contains("sso.buaa.edu.cn") == true &&
+                                    url.contains("/login")
+                                if (isBuaaSsoShell) {
                                     view.postDelayed({
                                         runCatching { view.evaluateJavascript(SSO_FRAME_FIX, null) }
                                     }, 1_200L)
                                 }
+                                // 部分拖动库把 handler 绑在 iframe 内部的 document 上，
+                                // 外层注入不到；这里延迟补一次，覆盖渲染较慢的验证码容器。
+                                view.postDelayed({
+                                    runCatching { view.evaluateJavascript(SLIDER_TOUCH_FIX_JS, null) }
+                                }, 1_500L)
                             }
 
                             override fun shouldInterceptRequest(
@@ -324,11 +438,20 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                                 return null
                             }
                         }
-                        // 先加载“会话检测接口”：已有会话时直接返回数据；未登录时服务器会 302 到统一认证，
-                        // 避免先显示教务首页的“网络异常”白屏再跳转
-                        AppLog.i("WebLogin", "打开会话检测: ${WebScheduleEngine.SERVICE_API}")
-                        loadUrl(WebScheduleEngine.SERVICE_API)
+                        // 首屏地址：有专属流程的学校由流程给出（例如门户型学校打开
+                        // **入口页**而不是课表深链 —— 实测直接开深链时门户不给登录入口，
+                        // 页面空白，用户无处可登录）；其余学校沿用“会话检测接口”，
+                        // 已有会话时直接返回数据、未登录时 302 到 SSO。
+                        val entry = loginFlow?.jumpButton(false)?.target ?: WebScheduleEngine.SERVICE_API
+                        AppLog.i("WebLogin", "打开首屏: ${entry.take(120)}")
+                        loadUrl(entry)
                         webView = this
+                    }.also { wv ->
+                        // ---------- 滑块验证码兼容补丁 ----------
+                        // 现象：滑块“能按但立刻弹回”，即 touchstart 收到、touchmove 中途被截断。
+                        // 成因是 WebView 默认会对纵向拖动做“手势归属判定”，把它判给滚动容器，
+                        // 从而给 JS 的 touchmove 发 cancel。这里用原始触摸事件转发器绕开该判定。
+                        installSliderTouchFix(wv)
                     }
                 },
             )
@@ -370,11 +493,14 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
     }
 }
 
-private suspend fun probe(view: WebView): LoginProbe? =
+internal suspend fun probe(view: WebView, school: School?): LoginProbe? =
     withTimeoutOrNull(5_000L) {
         suspendCancellableCoroutine { cont ->
             try {
-                view.evaluateJavascript(JsScripts.DETECT) { value ->
+                // 探针脚本按学校数据选择（学校可用 probeJs 覆盖，适配表格型课表等）；
+                // 未提供时用通用 DETECT。这里**不看学校 id**，新增学校无需改本函数。
+                val script = school?.probeJs ?: JsScripts.DETECT
+                view.evaluateJavascript(script) { value ->
                     if (cont.isActive) cont.resume(parseProbe(value))
                 }
             } catch (_: Throwable) {
@@ -383,7 +509,7 @@ private suspend fun probe(view: WebView): LoginProbe? =
         }
     }
 
-private fun parseProbe(value: String?): LoginProbe? {
+internal fun parseProbe(value: String?): LoginProbe? {
     if (value == null || value == "null") return null
     return try {
         val json = JSONObject(JSONTokener(value).nextValue() as String)
@@ -393,6 +519,9 @@ private fun parseProbe(value: String?): LoginProbe? {
             captcha = json.optBoolean("captcha", false),
             grid = json.optBoolean("grid", false),
             app = json.optBoolean("app", false),
+            ready = json.optBoolean("ready", false),
+            proxied = json.optBoolean("proxied", false),
+            notFound = json.optBoolean("notFound", false),
             netError = json.optBoolean("netError", false),
             ssoError = json.optBoolean("ssoError", false),
             error = json.optString("error"),
@@ -403,5 +532,43 @@ private fun parseProbe(value: String?): LoginProbe? {
 }
 
 /** 解析 URL 主机名（不能用子串判断站点：SSO 的 service 参数里也会出现教务系统的域名/路径） */
-private fun hostOf(url: String): String =
+internal fun hostOf(url: String): String =
     runCatching { java.net.URI(url).host.orEmpty() }.getOrDefault("")
+
+/**
+ * 滑块验证码触摸兼容补丁。
+ *
+ * 【要解决的问题】WebVPN / 正方登录页的滑块在 WebView 里「能按下去，但一拖就弹回」。
+ *
+ * 【成因】WebView 默认会对触摸序列做「手势归属判定」：当手指在拖动过程中带上了纵向分量，
+ * WebView 会认为这是「滚动」，于是把手势判给父级滚动容器，并向页面 JS 发送
+ * `touchcancel` —— 页面的拖动 handler 因此中断，滑块回弹到起点。
+ *
+ * 【解法】分两层：
+ *  1. Android 层（本函数）：用 setOnTouchListener 接住原始事件并转发给 WebView 的
+ *     内置处理逻辑，同时对「单指按压」期间关闭父级滚动拦截，让 touchmove 能完整送达 JS。
+ *  2. JS 层（[JsScripts.SLIDER_TOUCH_FIX]，在每个页面加载完成后注入）：
+ *     在捕获阶段重绑 touch 事件，屏蔽页面或框架误加的 `touchcancel`，
+ *     并把拖动期间的 touchmove 强制 `preventDefault`，阻止浏览器把手势升级成滚动。
+ */
+private fun installSliderTouchFix(wv: WebView) {
+    wv.setOnTouchListener { view, event ->
+        when (event.actionMasked) {
+            android.view.MotionEvent.ACTION_DOWN -> {
+                // 单指按住时禁止父容器抢走手势（关键：这一步阻止纵向分量触发的滚动接管）
+                view.parent?.requestDisallowInterceptTouchEvent(true)
+            }
+            android.view.MotionEvent.ACTION_UP,
+            android.view.MotionEvent.ACTION_CANCEL,
+            -> {
+                view.parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        // 返回 false：不消费事件，交给 WebView 自己的处理管线
+        // （返回 true 会让页面完全收不到事件，滑块会彻底失效）
+        false
+    }
+}
+
+/** 页面加载完成后注入的触摸修复脚本（与 [installSliderTouchFix] 配合使用） */
+private val SLIDER_TOUCH_FIX_JS: String = JsScripts.SLIDER_TOUCH_FIX

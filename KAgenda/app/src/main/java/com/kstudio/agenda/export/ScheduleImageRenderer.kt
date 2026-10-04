@@ -11,6 +11,7 @@ import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.CoursePalette
 import com.kstudio.agenda.model.Course
+import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.model.WeekSchedule
@@ -308,7 +309,7 @@ object ScheduleImageRenderer {
         for (dayNum in 1..daysInMonth) {
             val date = monthStart.withDayOfMonth(dayNum)
             val bars = mutableListOf<Pair<String, Int>>()
-            if (semester != null) {
+            if (semester != null && !HolidayTable.isHoliday(date)) {
                 val weekNo = semester.teachingWeekOf(date)
                 semester.weeks[weekNo]
                     ?.filter { it.dayOfWeek == date.dayOfWeek.value }

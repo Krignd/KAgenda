@@ -15,6 +15,8 @@ import com.kstudio.agenda.data.CourseEditConflict
 import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.ExtraCoursesStore
 import com.kstudio.agenda.data.ScheduleRepository
+import com.kstudio.agenda.data.SchoolFlows
+import com.kstudio.agenda.data.SchoolToggleSpec
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.SyncUi
 import com.kstudio.agenda.data.WebScheduleEngine
@@ -25,6 +27,7 @@ import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.FuzzyTime
+import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.model.SemesterSchedule
@@ -134,7 +137,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val now = LocalDateTime.now()
         val live = semester.value?.let { sem ->
             val wn = sem.teachingWeekOf(now.toLocalDate())
-            if (wn in 1..40) {
+            // 法定节假日停课：不把当天的课当作「正在进行」
+            if (wn in 1..40 && !HolidayTable.isHoliday(now.toLocalDate())) {
                 sem.weeks[wn].orEmpty()
                     .filter { it.dayOfWeek == now.dayOfWeek.value && it.occursInWeek(wn) }
                     .firstOrNull { c ->
@@ -195,8 +199,15 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AppText.applySystemLocale(getApplication(), AppText.state.value)
 
             settings.collect { s ->
-                // 用户自定义课程时间：设置变化时立即生效（未自定义时回落默认作息）
-                PeriodTimes.applyCustom(PeriodTimes.decode(s.periodTimesRaw))
+                // 课程时间：用户自定义过就用自定义；否则套用当前学校的作息预设
+                // （无预设的学校回落内置默认）。学校切换时这里会跟着切过去。
+                val custom = PeriodTimes.decode(s.periodTimesRaw)
+                if (custom != null) {
+                    PeriodTimes.applyCustom(custom)
+                } else {
+                    val school = Schools.of(s.schoolId)
+                    PeriodTimes.applySchoolPreset(SchoolFlows.of(school).periodPreset(school))
+                }
                 // 打开 App 自动刷新：有账号且（无缓存 或 超过 6 小时）时静默同步一次。
                 // 阈值放宽 + 延后启动：减少不必要的全量重放，并避开首帧渲染与 WebView 首次创建的主线程开销叠加
                 if (!autoSyncTriggered && s.autoRefresh && s.hasPassword) {
@@ -363,21 +374,33 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 恢复初始状态（清账号/会话/缓存/日程/计划/提醒/日志/语言等设置） */
     fun resetApp() {
         viewModelScope.launch {
-            repo.resetAll()
-            AgendaStore.clear(getApplication())
+            // 先等仓储层的重置完成：它的第一步是清空日志，只有等它返回后再写收尾日志，
+            // 这些行才不会被清空动作抹掉（审计信息都在这一段里）。
+            repo.resetAllNow()
+
+            val events = agenda.value.size
+            // 文件 IO 放 IO 线程（本协程跑在主线程，避免重置时卡顿/ANR 风险）
+            withContext(Dispatchers.IO) { runCatching { AgendaStore.clear(getApplication()) } }
+            AppLog.i("设置", "已清空本地日程与计划：$events 条")
+
             // 悬浮球属于“开箱状态”：重置时一并关闭并停止前台服务，避免重置后悬浮球仍残留
             FloatingBallService.stop(getApplication())
+            AppLog.i("设置", "悬浮球服务已停止")
+
             _selectedWeekNo.value = Int.MIN_VALUE
             _selectedDate.value = LocalDate.now()
             autoSyncTriggered = false
             // 语言恢复为跟随系统
             AppText.state.value = AppLang.SYSTEM
             AppText.applySystemLocale(getApplication(), AppLang.SYSTEM)
+            AppLog.i("设置", "界面语言已恢复为跟随系统")
+
             // 立即刷新常驻通知与桌面小组件：避免重置后仍显示旧内容（最长可残留 6 小时）
             withContext(Dispatchers.IO) {
                 runCatching { StatusNotification.refresh(getApplication()) }
                 runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
             }
+            AppLog.i("设置", "应用已重置为初始状态（等价于刚安装）")
             message(t.msgResetDone)
         }
     }
@@ -467,6 +490,19 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             SettingsStore.setSchool(getApplication(), id)
             message(t.msgSchoolSwitched(Schools.of(id).name))
+        }
+    }
+
+    /**
+     * 写回「学校专属开关」（由学校流程插件提供描述，如江苏大学的「通过 WebVPN」）。
+     *
+     * 界面只负责渲染与回调，具体含义与存储位置完全由插件决定，
+     * 因此这里与设置界面都不含任何学校名字。
+     */
+    internal fun setSchoolToggle(spec: SchoolToggleSpec, enabled: Boolean) {
+        viewModelScope.launch {
+            spec.set(getApplication(), enabled)
+            AppLog.i("设置", "学校开关 ${spec.id} = $enabled")
         }
     }
 

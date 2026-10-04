@@ -555,4 +555,445 @@ $loginJs
   }
 })();
 """.trimIndent()
+
+/* ===========================================================================
+ * 【学校脚本区】以下为各学校专用的注入脚本（按学校分块，追加在文件末尾）。
+ *
+ * 约定（与「学校差异隔离」配套）：
+ *  - 上面的脚本是通用/北航（金智 jwapp）用的，**不要因为适配新学校而改动它们**；
+ *  - 新学校的脚本一律追加到这里，并只由该校的学校流程插件（data/SchoolFlow*.kt）引用；
+ *  - 这样改一所学校的脚本不会碰到其他学校的代码。
+ * =========================================================================== */
+
+/* ===========================================================================
+ * 江苏大学适配脚本（正方教务 V-9.0 + WebVPN 门户）
+ *
+ * 与上面金智 jwapp 那一套的根本差异：
+ *   1. 正方课表是「表格型」DOM（#table1 表格视图 / #table2 列表视图），
+ *      不是 7 列 flex 网格 —— 选择器完全不同；
+ *   2. 周次直接写在课程块文本里（「周数：4-11周」），
+ *      一次提取即可覆盖整学期，无需按周重放（fetchWeeksScript 用不上）；
+ *   3. 页面裹在 WebVPN 里，注入脚本不依赖 jQuery，只用原生 DOM API。
+ *
+ * 登录方式：WebVPN 门户有滑块验证码 + 短信二次认证，无法脚本化，
+ *          故走「手动登录 + 自动抓取」——见 WebScheduleEngine 的手动登录分支。
+ * =========================================================================== */
+
+/**
+ * 江苏大学 · 课表页探针。
+ * 判断「已进入课表页且课程已渲染」，供可见登录窗口与引擎共同使用。
+ * 返回 {ready, login, captcha, grid, app, error, netError}，字段名与 [JsScripts.DETECT] 保持一致。
+ */
+    /**
+     * 江苏大学 · 触发课表「查询」。
+     *
+     * 正方课表页（xskbcx_cxXskbcxIndex.html）首次打开时表格是空的：
+     * 页面提供了学年（#xnm）/ 学期（#xqm）下拉框 + 「查询」按钮（#search_go），
+     * 必须点一次才会异步拉取并渲染课程。
+     *
+     * 这里直接点按钮（不自己拼请求）：避免复刻 csrftoken 等参数，
+     * 交给页面自己的点击处理器完成，改版时也更稳。
+     * 若页面已渲染课程则不做任何事。
+     */
+    val UJS_TRIGGER_QUERY = """
+    (function(){
+      try {
+        if (document.querySelectorAll('.timetable_con').length > 0) {
+          return 'already-rendered';
+        }
+        var btn = document.querySelector('#search_go');
+        if (!btn) {
+          // 兜底：按文本找「查询」按钮
+          var all = document.querySelectorAll('button, a, input[type=button]');
+          for (var i = 0; i < all.length; i++) {
+            var t = (all[i].textContent || all[i].value || '').replace(/\s+/g, '');
+            if (t.indexOf('\u67e5\u8be2') >= 0) { btn = all[i]; break; }
+          }
+        }
+        if (!btn) return 'no-query-button';
+        btn.click();
+        return 'clicked';
+      } catch (e) {
+        return 'error:' + String(e && e.message ? e.message : e);
+      }
+    })();
+    """.trimIndent()
+
+    val UJS_DETECT = """
+    (function(){
+      try {
+        // 【关键】必须聚合顶层文档与同源 iframe。
+        // 统一身份认证的登录表单在 iframe（login-normal.html）里，只看顶层文档会
+        // 把「用户正在输密码」误判成「页面没有登录表单」，进而被当成「已登录」
+        // （实测：刚打开首屏就提示登录成功）。
+        function allDocs(){
+          var list = [document];
+          try {
+            var iframes = document.querySelectorAll('iframe');
+            for (var i = 0; i < iframes.length; i++) {
+              try { var d = iframes[i].contentDocument; if (d) { list.push(d); } } catch(e){}
+            }
+          } catch(e){}
+          return list;
+        }
+        var docs = allDocs();
+        var txt = '';
+        for (var i = 0; i < docs.length; i++) {
+          try {
+            if (docs[i].body) {
+              txt += ' ' + String(docs[i].body.innerText || docs[i].body.textContent || '');
+            }
+          } catch(e){}
+        }
+        if (!txt && document.body) { txt = String(document.body.innerText || ''); }
+
+        var hasPwd = false, hasGridTable = false, hasListTable = false, hasBlock = false;
+        for (var j = 0; j < docs.length; j++) {
+          try {
+            if (!hasPwd && docs[j].querySelectorAll('input[type=password]').length > 0) { hasPwd = true; }
+            if (!hasGridTable && docs[j].querySelectorAll('#kbgrid_table_0, table.timetable1').length > 0) { hasGridTable = true; }
+            if (!hasListTable && docs[j].querySelectorAll('#kblist_table').length > 0) { hasListTable = true; }
+            if (!hasBlock && docs[j].querySelectorAll('.timetable_con').length > 0) { hasBlock = true; }
+          } catch(e){}
+        }
+        var ready = (hasGridTable || hasListTable) && hasBlock;
+        // 是否已通过 WebVPN 门户：代理成功时地址形如 /http/<hex>/...
+        // （未登录会被门户 302 到 /login，地址里不含该片段）
+        var proxied = location.href.indexOf('/http/') >= 0 || location.href.indexOf('/https/') >= 0;
+        // 404 页特征（xuanke 的 Apache 直接返回「Object not found!」+「Error 404」）
+        var notFound = txt.indexOf('Object not found') >= 0 || txt.indexOf('Error 404') >= 0
+            || txt.indexOf('404 Not Found') >= 0;
+        return JSON.stringify({
+          url: location.href,
+          title: document.title || '',
+          login: hasPwd,
+          captcha: false,
+          grid: hasGridTable,
+          app: hasListTable || hasBlock,
+          ready: ready,
+          proxied: proxied,
+          notFound: notFound,
+          netError: txt.indexOf('网络异常') >= 0 || txt.indexOf('无法访问') >= 0,
+          error: '',
+          snippet: txt.replace(/\s+/g, ' ').slice(0, 200)
+        });
+      } catch (e) {
+        return JSON.stringify({ url: location.href, login: false, captcha: false, grid: false, app: false, ready: false, proxied: false, notFound: false, netError: false, error: String(e && e.message ? e.message : e) });
+      }
+    })();
+    """.trimIndent()
+
+    /**
+     * 江苏大学 · 课表提取脚本（正方教务）。
+     *
+     * 双视图解析：优先「列表视图」#table2（结构最规整），回退「表格视图」#table1。
+     * 输出符合 [ScheduleParser.fromCustomAdapter] 约定的 JSON：
+     *   { ok, meta:{semester,studentNo,studentName,url,fetchedAt},
+     *     courses:[{day,start,end,title,code,teacher,weeks,room,tag}], count, view }
+     *
+     * 已在真实的江大课表页存档上验证：16 条课程、周次/地点/教师零缺失。
+     */
+    val UJS_EXTRACT = """
+    (function(){
+      'use strict';
+      function norm(s){
+        return String(s == null ? '' : s).replace(/[\u00a0\u3000]/g, ' ').replace(/\s+/g, ' ').trim();
+      }
+      function textOf(el){ return el ? norm(el.textContent) : ''; }
+      function qsa(sel, root){
+        try { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+        catch (e) { return []; }
+      }
+      function qs(sel, root){
+        try { return (root || document).querySelector(sel); } catch (e) { return null; }
+      }
+      var DAYMAP = {'一':1,'二':2,'三':3,'四':4,'五':5,'六':6,'日':7,'天':7};
+      function parseWeeks(text){
+        var t = String(text || '');
+        var m = t.match(/周\s*数\s*[:：]?\s*([0-9][0-9,\-~\u2014\uff0d\s]*)/);
+        var body = m ? m[1] : null;
+        if (!body) {
+          m = t.match(/([0-9]{1,2}(?:\s*[-\u2014\uff0d~]\s*[0-9]{1,2})?(?:\s*[,\uff0c\u3001]\s*[0-9]{1,2}(?:\s*[-\u2014\uff0d~]\s*[0-9]{1,2})?)*)\s*周/);
+          body = m ? m[1] : null;
+        }
+        if (!body) return '';
+        return norm(body)
+          .replace(/[~\u2014\uff0d]/g, '-')
+          .replace(/[\uff0c\u3001]/g, ',')
+          .replace(/\s*-\s*/g, '-')
+          .replace(/\s*,\s*/g, ',')
+          .replace(/^-|-${'$'}/g, '');
+      }
+      function parseSection(text){
+        var m = String(text).match(/([0-9]{1,2})\s*[-\u2014\uff0d~]\s*([0-9]{1,2})\s*节?/);
+        if (m) {
+          var a = parseInt(m[1], 10), b = parseInt(m[2], 10);
+          if (a >= 1 && a <= 20 && b >= a && b <= 20) return { start: a, end: b };
+        }
+        m = String(text).match(/^第?\s*([0-9]{1,2})\s*节?${'$'}/);
+        if (m) { var v = parseInt(m[1], 10); if (v >= 1 && v <= 20) return { start: v, end: v }; }
+        return null;
+      }
+      function parseStudentName(text){
+        if (!text) return '';
+        var m = String(text).match(/\u7684?\u8bfe\u8868/);
+        var head = m ? String(text).slice(0, m.index) : String(text);
+        head = head.replace(/[0-9]{4}\s*-\s*[0-9]{4}\s*\u5b66\u5e74\s*\u7b2c\s*[12]\s*\u5b66\u671f/g, '');
+        head = head.replace(/\u7b2c?\s*[12]\s*\u5b66\u671f/g, '');
+        head = head.replace(/[0-9]{4}\s*-\s*[0-9]{4}\s*\u5b66\u5e74/g, '');
+        var nm = head.match(/([\u4e00-\u9fa5]{2,6})\s*${'$'}/);
+        return nm ? nm[1] : '';
+      }
+      function parseCourseBlock(block){
+        var full = textOf(block);
+        if (!full) return null;
+        var titleEl = qs('.title', block) || qs('font', block);
+        var title = textOf(titleEl);
+        if (!title) return null;
+        title = title.replace(/^[（(](本|研|专|硕|博)[)）]/, '').trim();
+        if (!title || title.length > 60) return null;
+        var weeks = parseWeeks(full);
+        var room = '';
+        var r = full.match(/\u4e0a\u8bfe\u5730\u70b9\s*[:：]\s*([^\s]+(?:\s*[^\s]+)*?)(?=\s*(?:\u6559\u5e08|\u6559\u5b66\u73ed|\u9009\u8bfe\u5907\u6ce8|\u5b66\u5206|\u8bfe\u7a0b\u6027\u8d28|${'$'}))/);
+        if (r) { room = norm(r[1]); }
+        else { r = full.match(/([^\s]*\u697c\s*[0-9A-Za-z]{2,6})/); if (r) room = norm(r[1]); }
+        room = room.replace(/^(\u672c\u90e8|\u4e1c\u6821\u533a?|\u897f\u6821\u533a?|\u5357\u6821\u533a?|\u5317\u6821\u533a?|\u65b0\u6821\u533a?)\s*/, '').trim();
+        var teacher = '';
+        var t = full.match(/\u6559\u5e08\s*[:：]?\s*([^\s]+(?:[,\uff0c\u3001][^\s]+)*)/);
+        if (t) teacher = norm(t[1]).replace(/[,\uff0c\u3001]+${'$'}/, '');
+        if (!teacher) {
+          var lines = qsa('p', block).map(textOf).filter(Boolean);
+          for (var i = 0; i < lines.length; i++) {
+            var ln = lines[i];
+            if (/\u8282|\u5468|\u697c|\u6821\u533a|\u6559\u5ba4/.test(ln)) continue;
+            if (/^[0-9,\uff0c\u3001;；\-\s]+${'$'}/.test(ln)) continue;
+            if (/\u5b66\u5206|\u8bfe\u7a0b\u6027\u8d28|\u6559\u5b66\u73ed|\u9009\u8bfe\u5907\u6ce8/.test(ln)) continue;
+            teacher = ln.replace(/^\u6559\u5e08\s*[:：]?\s*/, '').trim();
+            if (teacher) break;
+          }
+        }
+        teacher = teacher.replace(/\s*\u6559\u5e08\s*${'$'}/, '').trim();
+        var code = '';
+        var cd = full.match(/\u6559\u5b66\u73ed\s*[:：]?\s*([（(][^）)]*[)）]\s*-\s*[0-9A-Za-z\-]+)/);
+        if (cd) code = norm(cd[1]);
+        var tag = '';
+        var tg = full.match(/\u8bfe\u7a0b\u6027\u8d28\s*[:：]?\s*([^\s]+)/);
+        if (tg) tag = norm(tg[1]).slice(0, 4);
+        return { title: title, weeks: weeks, room: room, teacher: teacher, code: code, tag: tag };
+      }
+      function extractTable2(){
+        var courses = [], semester = '', studentNo = '', studentName = '';
+        var headBox = qs('#kblist_table .timetable_title');
+        if (headBox) {
+          var tt = textOf(headBox);
+          var ms = tt.match(/([0-9]{4}\s*-\s*[0-9]{4}\s*\u5b66\u5e74\s*\u7b2c\s*[12]\s*\u5b66\u671f)/);
+          if (ms) semester = norm(ms[1]);
+          var mn = tt.match(/\u5b66\u53f7\s*[:：]\s*([0-9A-Za-z]+)/);
+          if (mn) studentNo = mn[1];
+          studentName = parseStudentName(tt);
+        }
+        for (var day = 1; day <= 7; day++) {
+          var tbody = qs('#xq_' + day);
+          if (!tbody) continue;
+          qsa('tr', tbody).forEach(function(tr){
+            var sec = null;
+            qsa('[id^=jc_]', tr).forEach(function(td){
+              if (sec) return;
+              var m = (td.getAttribute('id') || '').match(/^jc_\d-(\d{1,2})-(\d{1,2})${'$'}/);
+              if (m) sec = { start: parseInt(m[1], 10), end: parseInt(m[2], 10) };
+            });
+            if (!sec) { var fest = qs('.festival', tr); if (fest) sec = parseSection(textOf(fest)); }
+            if (!sec) return;
+            qsa('.timetable_con', tr).forEach(function(blk){
+              var c = parseCourseBlock(blk);
+              if (!c) return;
+              courses.push({ day: day, start: sec.start, end: sec.end, title: c.title, code: c.code,
+                             teacher: c.teacher, weeks: c.weeks, room: c.room, tag: c.tag });
+            });
+          });
+        }
+        if (!courses.length) return null;
+        return { view: 'table2', semester: semester, studentNo: studentNo, studentName: studentName, courses: courses };
+      }
+      function extractTable1(){
+        var tb = null;
+        var cands = qsa('[id^=kbgrid_table_], table.timetable1');
+        for (var i = 0; i < cands.length; i++) { if (qsa('.timetable_con', cands[i]).length) { tb = cands[i]; break; } }
+        if (!tb) return null;
+        var semester = '', studentNo = '', studentName = '';
+        var titleBox = qs('.timetable_title', tb);
+        if (titleBox) {
+          var tt = textOf(titleBox);
+          var ms = tt.match(/([0-9]{4}\s*-\s*[0-9]{4}\s*\u5b66\u5e74\s*\u7b2c\s*[12]\s*\u5b66\u671f)/);
+          if (ms) semester = norm(ms[1]);
+          var mn = tt.match(/\u5b66\u53f7\s*[:：]\s*([0-9A-Za-z]+)/);
+          if (mn) studentNo = mn[1];
+          studentName = parseStudentName(tt);
+        }
+        var courses = [];
+        qsa('td[id]', tb).forEach(function(td){
+          var m = (td.getAttribute('id') || '').match(/^(\d)-(\d{1,2})${'$'}/);
+          if (!m) return;
+          var day = parseInt(m[1], 10);
+          var cellStart = parseInt(m[2], 10);
+          if (day < 1 || day > 7) return;
+          var rowspan = parseInt(td.getAttribute('rowspan') || '1', 10);
+          var blocks = qsa('.timetable_con', td);
+          if (!blocks.length) blocks = [td];
+          blocks.forEach(function(blk){
+            var c = parseCourseBlock(blk);
+            if (!c) return;
+            var sec = parseSection(textOf(blk));
+            var start, end;
+            if (sec) { start = sec.start; end = sec.end; }
+            else { start = cellStart; end = (rowspan > 1) ? cellStart + rowspan - 1 : cellStart; }
+            if (start < 1 || start > 20) return;
+            if (end < start) end = start;
+            if (end > 20) end = 20;
+            courses.push({ day: day, start: start, end: end, title: c.title, code: c.code,
+                           teacher: c.teacher, weeks: c.weeks, room: c.room, tag: c.tag });
+          });
+        });
+        if (!courses.length) return null;
+        return { view: 'table1', semester: semester, studentNo: studentNo, studentName: studentName, courses: courses };
+      }
+      try {
+        var result = extractTable2() || extractTable1();
+        var meta = { semester: '', weekNo: 0, weekRange: '', today: '', url: location.href, fetchedAt: Date.now() };
+        if (result) {
+          meta.semester = result.semester || '';
+          meta.studentNo = result.studentNo || '';
+          meta.studentName = result.studentName || '';
+        }
+        if (!meta.semester) {
+          var y = qs('#xnm'), q = qs('#xqm');
+          var yv = y ? y.value : '', qv = q ? q.value : '';
+          if (yv) {
+            var label = yv + '-' + (parseInt(yv, 10) + 1);
+            var term = (qv === '3') ? '1' : ((qv === '12') ? '2' : '');
+            meta.semester = term ? (label + '\u5b66\u5e74\u7b2c' + term + '\u5b66\u671f') : (label + '\u5b66\u5e74');
+          }
+        }
+        // 第 1 教学周周一（江大规则：秋季学期「含 9 月 1 日的一周」为第 1 周，
+        // 2026-2027学年第1学期 → 第1周周一 = 2026-08-31）。
+        // 解析器（ScheduleParser.fromCustomAdapter）优先用该字段作锚点；
+        // 春季学期的起始规则未知，留空走解析器兜底。
+        var ms = (meta.semester || '').match(/(\d{4})-(\d{4})\u5b66\u5e74\s*\u7b2c(\d)\u5b66\u671f/);
+        if (ms && ms[3] === '1') {
+          var d1 = new Date(Date.UTC(parseInt(ms[1], 10), 8, 1)); // 9 月 1 日
+          var wd = d1.getUTCDay(); if (wd === 0) wd = 7;          // 周日按 7
+          d1.setUTCDate(d1.getUTCDate() - (wd - 1));              // 回到所在周周一
+          meta.firstWeekMonday = d1.toISOString().slice(0, 10);
+        }
+        if (!result || !result.courses.length) {
+          var bodyTxt = textOf(document.body);
+          var hasTable = !!qs('#kblist_table, #kbgrid_table_0, table.timetable1');
+          return JSON.stringify({
+            ok: false,
+            reason: hasTable ? 'no-courses-parsed' : 'page-not-ready',
+            hint: hasTable ? '\u5df2\u6253\u5f00\u8bfe\u8868\u9875\u4f46\u672a\u89e3\u6790\u5230\u8bfe\u7a0b\uff0c\u8bf7\u786e\u8ba4\u5df2\u9009\u5b66\u5e74\u5b66\u671f\u5e76\u70b9\u51fb\u67e5\u8be2'
+                           : '\u8bfe\u8868\u9875\u9762\u5c1a\u672a\u51fa\u73b0\uff0c\u8bf7\u5148\u767b\u5f55\u5e76\u8fdb\u5165\u4e2a\u4eba\u8bfe\u8868',
+            meta: meta, courses: []
+          });
+        }
+        var seen = {}, unique = [];
+        result.courses.forEach(function(c){
+          var k = [c.title, c.day, c.start, c.end, c.weeks, c.room].join('|');
+          if (seen[k]) return;
+          seen[k] = 1; unique.push(c);
+        });
+        return JSON.stringify({ ok: true, meta: meta, courses: unique, count: unique.length, view: result.view });
+      } catch (e) {
+        return JSON.stringify({ ok: false, reason: 'exception', message: String(e && e.message ? e.message : e), courses: [] });
+      }
+    })();
+    """.trimIndent()
+
+    /**
+     * 滑块验证码触摸修复（幂等，可重复注入）。
+     *
+     * 【背景】WebVPN / 正方登录页的滑块在 Android WebView 里「能按但立刻弹回」。
+     * 根因：拖动带纵向分量时 WebView 把手势判给滚动容器，向页面派发 `touchcancel`，
+     * 拖动 handler 被中断 → 滑块回弹。
+     *
+     * 【做法】在捕获阶段挂一层事件闸门：
+     *  - 屏蔽页面/框架误加的 `touchcancel`（拖动过程中最常见的“弹回”触发器）；
+     *  - 拖动期间对 `touchmove` 强制 `preventDefault()`，阻止手势升级为滚动；
+     *  - 单指按压时对可滚动祖先置 `touch-action: none`；
+     *  - 只作用于疑似滑块元素（class/id 含 slider/verify/captcha/drag 等），
+     *    避免影响页面正常滚动与手写签名之类的其它交互。
+     *
+     * 【为什么不是“合成事件”】这里不伪造任何 touch 事件，只做转发与拦截，
+     * 因此不会触碰验证服务端的行为风控——用户依然是自己在拖。
+     */
+    val SLIDER_TOUCH_FIX = """
+    (function(){
+      try {
+        if (window.__kagendaSliderFix) { return 'already'; }
+        window.__kagendaSliderFix = 1;
+
+        // 是否为疑似滑块/验证码元素（含其祖先，兼容“手柄在容器里”的常见结构）
+        function isSliderEl(el) {
+          var n = 0, p = el;
+          while (p && p.nodeType === 1 && n < 6) {
+            var cls = (p.className && p.className.toString ? p.className.toString() : '') || '';
+            var id = p.id || '';
+            var tag = (p.tagName || '').toLowerCase();
+            var s = (cls + ' ' + id).toLowerCase();
+            if (tag === 'canvas') return true;
+            if (s.indexOf('slider') >= 0 || s.indexOf('verify') >= 0 ||
+                s.indexOf('captcha') >= 0 || s.indexOf('drag') >= 0 ||
+                s.indexOf('nc_') === 0 || s.indexOf('yidun') >= 0 ||
+                s.indexOf('geetest') >= 0 || s.indexOf('jigsaw') >= 0 ||
+                s.indexOf('puzzle') >= 0 || s.indexOf('滑块') >= 0) {
+              return true;
+            }
+            p = p.parentElement; n++;
+          }
+          return false;
+        }
+
+        var dragging = false;
+
+        // 捕获阶段先手：屏蔽拖动期间的 touchcancel
+        document.addEventListener('touchcancel', function(e){
+          if (dragging || isSliderEl(e.target)) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+
+        document.addEventListener('touchstart', function(e){
+          if (!isSliderEl(e.target)) return;
+          dragging = true;
+          // 让祖先滚动容器在这次手势期间不参与
+          var p = e.target;
+          while (p && p.nodeType === 1) {
+            try {
+              var st = window.getComputedStyle(p);
+              if (st && (st.overflowY === 'auto' || st.overflowY === 'scroll' ||
+                         st.overflow === 'auto' || st.overflow === 'scroll')) {
+                p.style.touchAction = 'none';
+              }
+            } catch (ignored) {}
+            p = p.parentElement;
+          }
+        }, true);
+
+        document.addEventListener('touchmove', function(e){
+          if (!dragging && !isSliderEl(e.target)) return;
+          // 关键：阻止浏览器把手势升级成页面滚动（否则会连带触发 touchcancel）
+          if (e.cancelable) e.preventDefault();
+        }, { capture: true, passive: false });
+
+        function endDrag(){ dragging = false; }
+        document.addEventListener('touchend', endDrag, true);
+        document.addEventListener('touchcancel', endDrag, true);
+
+        return 'ok';
+      } catch (e) {
+        return 'err:' + String(e && e.message ? e.message : e);
+      }
+    })();
+    """.trimIndent()
 }

@@ -1,5 +1,8 @@
 pluginManagement {
     repositories {
+        // 国内网络补充源（2026-09-30 本机新增）：plugins.gradle.org 在国内不可达，
+        // foojay-resolver-convention 等插件改由阿里云 Gradle 插件镜像解析
+        maven("https://maven.aliyun.com/repository/gradle-plugin")
         google {
             content {
                 includeGroupByRegex("com\\.android.*")

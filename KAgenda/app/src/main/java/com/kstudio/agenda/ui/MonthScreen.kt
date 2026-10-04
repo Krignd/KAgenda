@@ -279,6 +279,7 @@ private fun buildCourseMap(sem: SemesterSchedule?, monthStart: LocalDate): Map<L
     for (d in 1..days) {
         val date = monthStart.withDayOfMonth(d)
         val weekNo = sem.teachingWeekOf(date)
+        if (HolidayTable.isHoliday(date)) continue   // 法定节假日停课
         val weekCourses = sem.weeks[weekNo] ?: continue
         val list = weekCourses
             .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }

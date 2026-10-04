@@ -189,6 +189,10 @@ interface AppStrings {
 
     // ---------------- 设置 ----------------
     val secAccount: String
+    /**
+     * 「账号」卡片副标题。学校专属称呼统一放在 [SchoolTexts]（本接口的各语言实现里
+     * 不写 `schoolId == "xxx"` 分支，新增学校只改 SchoolTexts 一处）。
+     */
     fun secAccountSubOf(schoolId: String, schoolName: String): String
     val labelStudentId: String
     val labelPassword: String
@@ -202,6 +206,12 @@ interface AppStrings {
     fun lastSyncAt(time: String): String
     val neverSynced: String
     val accountFootnote: String
+    /**
+     * 江苏大学专用：是否「通过 WebVPN」访问教务系统。
+     * 勾选与不勾选对应 data/UjsFlow.kt 里两份完全隔离的链路实现。
+     */
+    val labelViaWebVpn: String
+    val labelViaWebVpnSub: String
     val askClearCredTitle: String
     val askClearCredBody: String
 
@@ -237,6 +247,9 @@ interface AppStrings {
     fun adapterAdded(name: String): String
     val adapterExtraLabel: String
     val adapterExtraHint: String
+    /** 「按 JSON 添加学校」功能可用性警告（入口保留，但如实提示可用性存疑） */
+    val adapterWarnTitle: String
+    val adapterWarnBody: String
     val adapterStageRequest: String
     val adapterStageParse: String
     val adapterStageDone: String
@@ -375,6 +388,22 @@ interface AppStrings {
     val secDev: String
     val secDevSub: String
     val openDevTools: String
+    /**
+     * 开发者工具：内置浏览器入口（打开应用内的网页窗口，用于模拟登录与抓取）。
+     */
+    val secDevBrowser: String
+    val secDevBrowserSub: String
+    val btnOpenDevBrowser: String
+    /** 内置浏览器界面（普通浏览器：地址栏 / 前进后退 / 刷新 / 访问记录） */
+    val devBrowserTitle: String
+    val devBrowserAddress: String
+    val devBrowserGo: String
+    val devBrowserForward: String
+    val devBrowserRefresh: String
+    val devBrowserHistory: String
+    val devBrowserClear: String
+    val devBrowserEmpty: String
+    val devBrowserClose: String
     val secNotifTest: String
     val secNotifTestSub: String
     val sendTestNotifBtn: String
@@ -394,6 +423,8 @@ interface AppStrings {
     val resetClearDataDesc: String
     val resetClearCache: String
     val resetClearCacheDesc: String
+    /** 重置区里的「退出登录」说明（开发者工具里用它模拟“装好后未登录”的状态） */
+    val resetLogoutDesc: String
     val resetAll: String
     val resetAllDesc: String
     val askResetTitle: String
@@ -763,9 +794,11 @@ object ZhStrings : AppStrings {
     }
 
     override val secAccount = "账号"
-    override fun secAccountSubOf(schoolId: String, schoolName: String) =
-        if (schoolId == "buaa") "登录北航本研教育管理系统（byxt.buaa.edu.cn）"
-        else "登录${schoolName}的教务系统"
+    override fun secAccountSubOf(schoolId: String, schoolName: String): String {
+        // 学校专属称呼（若有）统一放在 SchoolTexts，本处不含任何学校 id 分支
+        val sys = SchoolTexts.accountSystemName(schoolId, AppLang.ZH)
+        return if (sys != null) "登录$sys" else "登录${schoolName}的教务系统"
+    }
     override val labelStudentId = "学号"
     override val labelPassword = "密码"
     override val labelPasswordKeep = "密码（已保存，留空表示不修改）"
@@ -781,6 +814,9 @@ object ZhStrings : AppStrings {
         "账号密码仅保存在本机（Android Keystore 加密），用于在统一身份认证页面自动登录。" +
             "「删除保存的账密」只清除本机存的学号密码（保留网页会话与课表缓存）；" +
             "「退出登录」则连同网页会话一起清除；如遇验证码等无法自动完成的情况，请稍后重试。"
+    override val labelViaWebVpn = "通过 WebVPN"
+    override val labelViaWebVpnSub =
+        "勾选：通过 WebVPN 访问教务系统；取消：使用默认方式。两种方式各自独立实现，改动其一不影响另一。"
     override val askClearCredTitle = "删除保存的账密？"
     override val askClearCredBody = "将删除本机保存的学号与密码；网页登录会话与课表缓存保留。之后可随时重新输入保存。"
 
@@ -816,6 +852,10 @@ object ZhStrings : AppStrings {
     override fun adapterAdded(name: String) = "已添加学校：$name"
     override val adapterExtraLabel = "补充线索（可选）"
     override val adapterExtraHint = "可粘贴教务系统地址、接口说明或页面片段，帮助 AI 生成更准确的适配代码"
+    override val adapterWarnTitle = "该功能可用性存疑"
+    override val adapterWarnBody =
+        "不同教务系统的页面结构差异很大：通用适配器（含 AI 生成）往往无法直接可用，" +
+            "生成后可能还需要您自己改脚本、并反复真机调试。入口保留供自行尝试，不保证一定成功。"
     override val adapterStageRequest = "正在请求 DeepSeek 生成适配代码…"
     override val adapterStageParse = "正在解析生成结果…"
     override val adapterStageDone = "已生成适配代码，请核对后保存"
@@ -953,6 +993,18 @@ object ZhStrings : AppStrings {
     override val secDev = "开发者工具"
     override val secDevSub = "运行日志与诊断信息"
     override val openDevTools = "打开开发者工具"
+    override val secDevBrowser = "内置浏览器"
+    override val secDevBrowserSub = "普通浏览器（不注入脚本、不自动跳转），带访问记录，用于手动观察页面流程"
+    override val btnOpenDevBrowser = "打开内置浏览器"
+    override val devBrowserTitle = "内置浏览器"
+    override val devBrowserAddress = "地址"
+    override val devBrowserGo = "前往"
+    override val devBrowserForward = "前进"
+    override val devBrowserRefresh = "刷新"
+    override val devBrowserHistory = "访问记录"
+    override val devBrowserClear = "清空"
+    override val devBrowserEmpty = "暂无访问记录"
+    override val devBrowserClose = "关闭"
     override val secNotifTest = "通知测试"
     override val secNotifTestSub = "验证通知与提醒链路是否正常"
     override val sendTestNotifBtn = "立即发送测试通知"
@@ -972,8 +1024,9 @@ object ZhStrings : AppStrings {
     override val resetClearDataDesc = "删除全部本地日程与计划；课程缓存与账号保留。"
     override val resetClearCache = "清除缓存与日志"
     override val resetClearCacheDesc = "删除课表缓存与运行日志。"
+    override val resetLogoutDesc = "清除本机保存的学号密码、网页会话与内置浏览器状态；课表缓存与日程保留。"
     override val resetAll = "重置应用（恢复初始状态）"
-    override val resetAllDesc = "将清除账号、网页会话、课表缓存、日程与计划、提醒与闹钟、日志及语言等设置。"
+    override val resetAllDesc = "将清除账号、网页会话、内置浏览器的缓存与本地存储、课表缓存、日程与计划、提醒与闹钟、日志及语言等设置，等价于刚安装好的状态。"
     override val askResetTitle = "确认重置？"
     override val askResetBody = "所有数据与设置将被清除，应用回到初始状态。"
     override val askClearDataTitle = "清除全部日程与计划？"
@@ -1340,9 +1393,11 @@ object EnStrings : AppStrings {
     }
 
     override val secAccount = "Account"
-    override fun secAccountSubOf(schoolId: String, schoolName: String) =
-        if (schoolId == "buaa") "Sign in to BUAA's academic system (byxt.buaa.edu.cn)"
-        else "Sign in to $schoolName's academic system"
+    override fun secAccountSubOf(schoolId: String, schoolName: String): String {
+        // 学校专属称呼（若有）统一放在 SchoolTexts，本处不含任何学校 id 分支
+        val sys = SchoolTexts.accountSystemName(schoolId, AppLang.EN)
+        return if (sys != null) "Sign in to $sys" else "Sign in to $schoolName's academic system"
+    }
     override val labelStudentId = "Student ID"
     override val labelPassword = "Password"
     override val labelPasswordKeep = "Password (saved — leave blank to keep)"
@@ -1358,6 +1413,9 @@ object EnStrings : AppStrings {
         "Your credentials are stored only on this device (Android Keystore encrypted) and used to sign in automatically. " +
             "\"Delete saved credentials\" removes only the local ID & password (web session and cache are kept); " +
             "\"Sign out\" clears the web session as well. If a captcha blocks auto sign-in, please retry later."
+    override val labelViaWebVpn = "Via WebVPN"
+    override val labelViaWebVpnSub =
+        "Checked: reach the academic system through WebVPN. Unchecked: use the default route. The two routes are implemented separately and do not affect each other."
     override val askClearCredTitle = "Delete saved credentials?"
     override val askClearCredBody = "The local student ID and password will be deleted; web session and schedule cache are kept. You can save them again anytime."
 
@@ -1393,6 +1451,11 @@ object EnStrings : AppStrings {
     override fun adapterAdded(name: String) = "School added: $name"
     override val adapterExtraLabel = "Extra context (optional)"
     override val adapterExtraHint = "Paste the academic-system URL, API notes or page snippets to help the AI generate a better adapter"
+    override val adapterWarnTitle = "This feature may not work"
+    override val adapterWarnBody =
+        "Academic systems differ a lot in page structure: a generic adapter (including AI-generated ones) " +
+            "often does not work out of the box — you may still need to edit the scripts and debug on a real device. " +
+            "The entry is kept for you to try at your own risk; success is not guaranteed."
     override val adapterStageRequest = "Requesting DeepSeek to generate the adapter…"
     override val adapterStageParse = "Parsing the generated code…"
     override val adapterStageDone = "Adapter generated — review and save"
@@ -1533,6 +1596,19 @@ object EnStrings : AppStrings {
     override val secDev = "Developer tools"
     override val secDevSub = "Logs & diagnostics"
     override val openDevTools = "Open developer tools"
+    override val secDevBrowser = "Built-in browser"
+    override val secDevBrowserSub =
+        "A plain browser (no script injection, no auto-navigation) with history, for observing page flows manually"
+    override val btnOpenDevBrowser = "Open built-in browser"
+    override val devBrowserTitle = "Built-in browser"
+    override val devBrowserAddress = "Address"
+    override val devBrowserGo = "Go"
+    override val devBrowserForward = "Forward"
+    override val devBrowserRefresh = "Refresh"
+    override val devBrowserHistory = "History"
+    override val devBrowserClear = "Clear"
+    override val devBrowserEmpty = "No history yet"
+    override val devBrowserClose = "Close"
     override val secNotifTest = "Notification test"
     override val secNotifTestSub = "Verify the notification & reminder pipeline"
     override val sendTestNotifBtn = "Send test notification now"
@@ -1552,8 +1628,9 @@ object EnStrings : AppStrings {
     override val resetClearDataDesc = "Delete all local events and plans; schedule cache and account are kept."
     override val resetClearCache = "Clear cache & logs"
     override val resetClearCacheDesc = "Delete the schedule cache and runtime logs."
+    override val resetLogoutDesc = "Clears the saved student ID & password, the web session and the built-in browser state; schedule cache and events are kept."
     override val resetAll = "Reset app"
-    override val resetAllDesc = "Clears account, web session, schedule cache, events & plans, reminders, logs and language settings."
+    override val resetAllDesc = "Clears account, web session, built-in browser cache & local storage, schedule cache, events & plans, reminders, logs and language settings — equivalent to a freshly installed state."
     override val askResetTitle = "Reset the app?"
     override val askResetBody = "All data and settings will be cleared."
     override val askClearDataTitle = "Clear all events and plans?"
@@ -1927,9 +2004,11 @@ object FrStrings : AppStrings {
     }
 
     override val secAccount = "Compte"
-    override fun secAccountSubOf(schoolId: String, schoolName: String) =
-        if (schoolId == "buaa") "Connexion au système académique de BUAA (byxt.buaa.edu.cn)"
-        else "Connexion au système académique de $schoolName"
+    override fun secAccountSubOf(schoolId: String, schoolName: String): String {
+        // 学校专属称呼（若有）统一放在 SchoolTexts，本处不含任何学校 id 分支
+        val sys = SchoolTexts.accountSystemName(schoolId, AppLang.FR)
+        return if (sys != null) "Connexion à $sys" else "Connexion au système académique de $schoolName"
+    }
     override val labelStudentId = "Identifiant étudiant"
     override val labelPassword = "Mot de passe"
     override val labelPasswordKeep = "Mot de passe (enregistré — laisser vide pour conserver)"
@@ -1945,6 +2024,9 @@ object FrStrings : AppStrings {
         "Vos identifiants sont stockés uniquement sur cet appareil (chiffrés via Android Keystore) et servent à la connexion automatique. " +
             "« Supprimer les identifiants » n'efface que l'identifiant et le mot de passe locaux (session web et cache conservés) ; " +
             "« Se déconnecter » efface aussi la session web. En cas de captcha, réessayez plus tard."
+    override val labelViaWebVpn = "Via WebVPN"
+    override val labelViaWebVpnSub =
+        "Coché : accéder au système académique via WebVPN. Décoché : itinéraire par défaut. Les deux itinéraires sont implémentés séparément et n'affectent pas l'autre."
     override val askClearCredTitle = "Supprimer les identifiants ?"
     override val askClearCredBody = "L'identifiant et le mot de passe locaux seront supprimés ; la session web et le cache sont conservés."
 
@@ -1980,6 +2062,11 @@ object FrStrings : AppStrings {
     override fun adapterAdded(name: String) = "École ajoutée : $name"
     override val adapterExtraLabel = "Indices supplémentaires (facultatif)"
     override val adapterExtraHint = "Collez l'URL du système académique, des notes d'API ou des extraits de page pour aider l'IA"
+    override val adapterWarnTitle = "Fonction susceptibile de ne pas fonctionner"
+    override val adapterWarnBody =
+        "Les systèmes académiques diffèrent fortement : un adaptateur générique (y compris généré par l'IA) " +
+            "ne fonctionne souvent pas tel quel — il faudra peut-être modifier les scripts et déboguer sur un appareil réel. " +
+            "L'entrée reste disponible pour essayer, sans garantie de réussite."
     override val adapterStageRequest = "Demande d'adaptation à DeepSeek…"
     override val adapterStageParse = "Analyse du code généré…"
     override val adapterStageDone = "Adaptation générée — vérifiez puis enregistrez"
@@ -2121,6 +2208,19 @@ object FrStrings : AppStrings {
     override val secDev = "Outils développeur"
     override val secDevSub = "Journaux et diagnostics"
     override val openDevTools = "Ouvrir les outils développeur"
+    override val secDevBrowser = "Navigateur intégré"
+    override val secDevBrowserSub =
+        "Navigateur simple (sans injection de script ni navigation automatique) avec historique, pour observer les pages manuellement"
+    override val btnOpenDevBrowser = "Ouvrir le navigateur intégré"
+    override val devBrowserTitle = "Navigateur intégré"
+    override val devBrowserAddress = "Adresse"
+    override val devBrowserGo = "Aller"
+    override val devBrowserForward = "Avancer"
+    override val devBrowserRefresh = "Recharger"
+    override val devBrowserHistory = "Historique"
+    override val devBrowserClear = "Effacer"
+    override val devBrowserEmpty = "Aucun historique"
+    override val devBrowserClose = "Fermer"
     override val secNotifTest = "Test de notification"
     override val secNotifTestSub = "Vérifier le circuit notifications / rappels"
     override val sendTestNotifBtn = "Envoyer une notification de test"
@@ -2140,8 +2240,9 @@ object FrStrings : AppStrings {
     override val resetClearDataDesc = "Supprime tous les événements et plans locaux ; cache et compte conservés."
     override val resetClearCache = "Vider cache et journaux"
     override val resetClearCacheDesc = "Supprime le cache de l'emploi du temps et les journaux."
+    override val resetLogoutDesc = "Efface l'identifiant et le mot de passe enregistrés, la session web et l'état du navigateur intégré ; le cache et les événements sont conservés."
     override val resetAll = "Réinitialiser l'application"
-    override val resetAllDesc = "Efface compte, session web, cache, événements et plans, rappels, journaux et réglages de langue."
+    override val resetAllDesc = "Efface compte, session web, cache et stockage local du navigateur intégré, cache du planning, événements et plans, rappels, journaux et réglages de langue — équivaut à une installation neuve."
     override val askResetTitle = "Réinitialiser l'application ?"
     override val askResetBody = "Toutes les données et tous les réglages seront effacés."
     override val askClearDataTitle = "Effacer tous les événements et plans ?"

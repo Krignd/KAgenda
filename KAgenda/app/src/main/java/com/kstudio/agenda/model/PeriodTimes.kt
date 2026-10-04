@@ -170,4 +170,23 @@ object PeriodTimes {
         date.atTime(startOf(period)).atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     fun format(time: LocalTime): String = "%02d:%02d".format(time.hour, time.minute)
+
+    /**
+     * 套用「学校预设作息」（如江苏大学 11 节）。
+     *
+     * - [preset] 为 null/空 → 回落内置默认作息（北航等无预设的学校即走这一支，行为不变）；
+     * - 套用后 [isCustom] 仍为 **false**：设置页显示「默认」，且下次切换学校时会被新学校的
+     *   预设替换（用户自己改过的作息才叫自定义，保存到 `period_times` 后不会被覆盖）。
+     *
+     * 调用方：应用启动与设置变化时（见 `KebiaoApp` / `AppViewModel`），预设由
+     * 各校的学校流程插件提供（`SchoolFlow.periodPreset`）。
+     *
+     * @return 是否实际套用了非空预设
+     */
+    fun applySchoolPreset(preset: List<Pair<LocalTime, LocalTime>>?): Boolean {
+        val list = preset?.takeIf { it.isNotEmpty() }
+        applyCustom(list)
+        isCustom = false
+        return list != null
+    }
 }

@@ -25,6 +25,15 @@ object AppLog {
     private const val KEEP_FILES = 6
     private const val MAX_FILE_BYTES = 2 * 1024 * 1024L
 
+    /**
+     * logcat 镜像用的固定 tag。
+     *
+     * release 包的应用私有目录（`/data/data/<pkg>/files/logs`）无法被 adb 直接读取
+     * （非 debuggable，`run-as` 不可用），排查真机问题只能靠 logcat。
+     * 级别已写在行首，用一个固定 tag 便于 `adb logcat -s KAgenda` 一把捞到全部日志。
+     */
+    private const val LOGCAT_TAG = "KAgenda"
+
     private val timeFmt = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
     private val fileNameFmt = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
@@ -164,6 +173,17 @@ object AppLog {
         }
     }
 
+    /**
+     * 镜像到 logcat 时统一使用 ERROR 优先级。
+     *
+     * 实测（2026-10-02，荣耀 X30 / MagicOS）：系统的 logd 会**丢弃 I/W/D 级日志**
+     * （`log -p i/d/w` 写入的测试行均不可见，仅 E 级存活），若按真实级别镜像，
+     * 排查时 `adb logcat -s KAgenda` 只能看到 E 行、诊断信息全部丢失。
+     * 行首已带真实级别标记（如 `I/App: …`），统一 E 级不影响阅读。
+     */
+    private fun logcatPriority(@Suppress("UNUSED_PARAMETER") level: String): Int =
+        android.util.Log.ERROR
+
     fun d(tag: String, message: String) = write("D", tag, message)
 
     fun i(tag: String, message: String) = write("I", tag, message)
@@ -177,6 +197,9 @@ object AppLog {
         // 先遮蔽敏感串，再替换换行截断，避免密码意外落入日志文件
         val line = "${LocalDateTime.now().format(timeFmt)} $level/$tag: " +
             redact(message).replace('\n', ' ').take(MAX_LINE_LEN)
+        // 镜像一份到 logcat（内容与文件日志完全一致，已做敏感信息遮蔽）：
+        // 远程排查真机问题时，adb 读不到 release 包的私有日志目录，只能靠这里。
+        runCatching { android.util.Log.println(logcatPriority(level), LOGCAT_TAG, line) }
         synchronized(lock) {
             buffer.addLast(line)
             while (buffer.size > MAX_BUFFER_LINES) buffer.removeFirst()

@@ -17,6 +17,7 @@ import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
+import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.ui.MainActivity
@@ -339,6 +340,7 @@ object StatusNotification {
         val date = now.toLocalDate()
         val weekNo = sem.teachingWeekOf(date)
         if (weekNo < 1 || weekNo > 40) return null
+        if (HolidayTable.isHoliday(date)) return null   // 法定节假日停课
         for (c in sem.weeks[weekNo].orEmpty().filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }) {
             val start = date.atTime(PeriodTimes.startOf(c.startPeriod))
             val end = date.atTime(PeriodTimes.endOf(c.endPeriod))
@@ -352,6 +354,7 @@ object StatusNotification {
             val date = now.toLocalDate().plusDays(offset.toLong())
             val weekNo = sem.teachingWeekOf(date)
             if (weekNo < 1 || weekNo > 40) continue
+            if (HolidayTable.isHoliday(date)) continue   // 法定节假日停课
             val courses = sem.weeks[weekNo].orEmpty()
                 .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
                 .sortedBy { it.startPeriod }

@@ -14,6 +14,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebStorage
 import com.kstudio.agenda.BuildConfig
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.SemesterSchedule
@@ -108,6 +109,9 @@ class WebScheduleEngine(private val appContext: Context) {
         private const val LOGIN_PAGE_WAIT_MS = 25_000L    // 等待登录表单出现的时间
         private const val SUBMIT_JUMP_WAIT_MS = 15_000L   // 提交后等待 CAS 跳转的时间
         private const val HOME_RETRY_WAIT_MS = 45_000L    // 登录后等待课表的时间
+
+        /** 手动登录的学校：登录完成后导航到课表页，等待其渲染课程的时间 */
+        private const val MANUAL_SCHEDULE_WAIT_MS = 30_000L
 
         /** 账密被明确拒绝时的统一提示（此时重试同一份凭据无意义，立即终止登录流程） */
         private const val MSG_CREDENTIAL_ERROR =
@@ -259,25 +263,10 @@ class WebScheduleEngine(private val appContext: Context) {
         return created
     }
 
-    /** 页面状态探针结果 */
-    private data class PageProbe(
-        val url: String = "",
-        val hasLoginForm: Boolean = false,
-        val captcha: Boolean = false,
-        val hasGrid: Boolean = false,
-        val hasApp: Boolean = false,
-        val netError: Boolean = false,
-        val ssoError: Boolean = false,
-        val error: String = "",
-        val snippet: String = "",
-    ) {
-        fun summary(): String = buildString {
-            append("login=$hasLoginForm captcha=$captcha grid=$hasGrid app=$hasApp netError=$netError")
-            if (ssoError) append(" ssoError=true")
-            if (error.isNotBlank()) append(" error=").append(error)
-            append(" url=").append(url.removePrefix("https://").take(90))
-        }
-    }
+    /**
+     * 页面状态探针结果：定义见 SchoolFlow.kt 的 [PageProbe]
+     * （引擎与学校插件共用同一份，避免两边各写一套字段名与 summary 格式）。
+     */
 
     /**
      * 自定义适配：执行学校适配器提供的 extractJs，把其返回的 JSON 解析为课表。
@@ -308,8 +297,49 @@ class WebScheduleEngine(private val appContext: Context) {
         if (raw.isNullOrBlank()) return SyncResult.Failure("适配代码未返回数据（请检查 extractJs / waitSelector）")
         val sem = ScheduleParser.fromCustomAdapter(raw, java.time.LocalDate.now())
             ?: return SyncResult.Failure("适配代码返回的数据无法解析为课表")
-        AppLog.i(TAG, "自定义适配成功：${sem.weekNumbers}")
-        return SyncResult.Success(sem, 1)
+        AppLog.i(
+            TAG,
+            "自定义适配成功：${sem.weekNumbers}，" +
+                "锚点(第1周周一)=${java.time.LocalDate.ofEpochDay(sem.anchorEpochDay)}，" +
+                "学期=${sem.semesterLabel.ifBlank { "(空)" }}",
+        )
+        return SyncResult.Success(withSupplements(sem), 1)
+    }
+
+    /**
+     * 并入学校插件声明的「补充课程」（教务页面里没有、需要人工维护的条目，如江苏大学晚自习）。
+     *
+     * 未声明补充课程的学校（北航等）直接原样返回，**零影响**。
+     * 补充课程只在学期已抓取的周次内追加、按课程 id 去重，不会改变周次列表。
+     */
+    private fun withSupplements(sem: SemesterSchedule): SemesterSchedule {
+        val extra = SchoolFlows.of(school).supplements(school)
+        if (extra.isEmpty()) return sem
+        val merged = ExtraCoursesStore.mergeInto(sem, extra, null) ?: return sem
+        AppLog.i(TAG, "补充课程并入 ${extra.size} 条：" + extra.joinToString("；") {
+            "${it.title} 周${it.dayOfWeek} 第${it.startPeriod}-${it.endPeriod}节 ${it.weeksRaw}周 ${it.room}"
+        })
+        return merged
+    }
+
+    /**
+     * 学校插件可用的通用能力（见 [ManualSyncHost]）。
+     *
+     * 只转发本引擎的通用设施（探针 / 等待 / 执行 JS / 提取 / 计数），
+     * 插件拿不到引擎内部的可变状态，也无法绕开引擎直接改 WebView 生命周期。
+     */
+    private val syncHost: ManualSyncHost = object : ManualSyncHost {
+        override val school: School get() = this@WebScheduleEngine.school
+        override val appContext: Context get() = this@WebScheduleEngine.appContext
+        override suspend fun probePage(view: WebView): PageProbe? = this@WebScheduleEngine.probePage(view)
+        override suspend fun waitFor(view: WebView, timeoutMs: Long, predicate: (PageProbe) -> Boolean): PageProbe? =
+            this@WebScheduleEngine.waitFor(view, timeoutMs, predicate)
+        override suspend fun evaluateJs(view: WebView, script: String): String? =
+            this@WebScheduleEngine.evaluateJs(view, script)
+        override suspend fun customExtract(view: WebView, script: String): SyncResult =
+            this@WebScheduleEngine.customExtract(view, script)
+        override suspend fun countCourseBlocks(view: WebView): Int =
+            this@WebScheduleEngine.countCourseBlocks(view)
     }
 
     /**
@@ -403,6 +433,24 @@ class WebScheduleEngine(private val appContext: Context) {
             }
             val view = ensureWebView()
             AppLog.i(TAG, "===== 开始同步（凭据：${if (credentials != null) "已保存" else "未保存"}${if (verifyCredentials) "，校验新密码" else ""}）=====")
+
+            // ---------- 阶段 0：必须手动登录的学校 ----------
+            // 这类学校（如门户带滑块验证码 + 短信二次认证的）脚本无法代填账密，
+            // **绝不能**让它们走下面的阶段 1~3：那几阶段的地址拼法（ssoUrl + "?service="…）
+            // 只适用于「统一认证 + 教务接口」型学校，套到门户型学校上会导航到不存在的入口。
+            //
+            // 整条抓取流程由学校插件（[SchoolFlow.syncManually]）自己负责，引擎只做分派：
+            // 因此以后调试某所学校的抓取逻辑，改的是那所学校自己的文件，本文件不受影响，
+            // 也就不会波及其他学校。
+            if (school.manualLogin) {
+                val manual = SchoolFlows.of(school).syncManually(syncHost, view)
+                if (manual != null) return@withContext manual
+                return@withContext SyncResult.Failure(
+                    "${school.name} 需要手动登录，但当前版本还没有它的抓取流程；" +
+                        "请把日志发给开发者"
+                )
+            }
+
             ssoFormSeen = false
             expectedStudentId = credentials?.studentId.orEmpty()
             // 用户在设置页手动登录：先彻底清掉浏览器会话（统一认证 + 教务系统），
@@ -469,6 +517,7 @@ class WebScheduleEngine(private val appContext: Context) {
                 AppLog.i(TAG, "直接进入课表页面，无需登录")
                 return@withContext extract(view, "登录页直达课表", incrementalAgainstSemester)
             }
+
             if (loginProbe == null || !loginProbe.hasLoginForm) {
                 val p = loginProbe
                 return@withContext SyncResult.Failure(
@@ -629,12 +678,29 @@ class WebScheduleEngine(private val appContext: Context) {
         return null
     }
 
+    /** 统计页面上已渲染的课程块数量（用于判断正方课表是否已加载） */
+    private suspend fun countCourseBlocks(view: WebView): Int {
+        val raw = evaluateJs(
+            view,
+            "(function(){try{return String(document.querySelectorAll('.timetable_con').length);}catch(e){return '0';}})();"
+        ) ?: return 0
+        return raw.trim().toIntOrNull() ?: 0
+    }
+
     /** 从当前页面提取课表并解析（接口数据优先，DOM 兜底；再按周重放接口抓取整学期） */
     private suspend fun extract(
         view: WebView,
         phase: String,
         incrementalAgainstSemester: String? = null,
     ): SyncResult {
+        // 江苏大学：正常都已在阶段 0 由学校插件接管并直接返回，走不到这里；
+        // 若真的走到（例如插件未登记），给一句明确的提示，不要误入通用流程。
+        if (school.manualLogin) {
+            return SyncResult.Failure(
+                "${school.name} 需要手动登录，请从「设置 → 网页登录」进入并完成登录后再同步"
+            )
+        }
+
         // 自定义适配：学校注册了 extractJs 时，优先走适配器路径（返回值即课表 JSON）
         school.extractJs?.let { return customExtract(view, it) }
 
@@ -810,6 +876,71 @@ class WebScheduleEngine(private val appContext: Context) {
         Unit
     }
 
+    /**
+     * 把内置浏览器彻底清回「刚装好」的状态。
+     *
+     * 【为什么光清 Cookie 不够】教务系统与 WebVPN 门户都是 SPA：
+     * 会话令牌除了 Cookie，还可能放在 localStorage / IndexedDB，并连同整页 DOM
+     * 一起留在内存里。只清 Cookie 的话，重置后再次打开页面很可能又“自动登录”了，
+     * 看起来就像重置没生效。所以这里一并处理：
+     *  1. 关掉当前页面 + 清空历史 + 清 HTTP 缓存（丢弃内存中的页面与脚本状态）；
+     *  2. 清空 WebView 本地存储（localStorage / IndexedDB / WebSQL）；
+     *  3. 清空全部 Cookie；
+     *  4. 复位引擎本轮同步累积的内部状态（接口捕获、页面前进计数、登录表单标记等）。
+     *
+     * 必须在主线程执行（WebView / WebStorage 都要求）。重置应用与退出登录都会调用它。
+     */
+    suspend fun resetBrowserSession() = withContext(Dispatchers.Main) {
+        apiCaptures.clear()
+        lastStateKey = ""
+        pageReadyCount = 0
+        ssoFormSeen = false
+        expectedStudentId = ""
+        runCatching {
+            webView?.let { view ->
+                view.stopLoading()
+                view.clearHistory()
+                view.clearCache(true)
+                // 换到空白页，丢掉当前页面与其中脚本持有的会话状态
+                view.loadUrl("about:blank")
+            }
+            WebStorage.getInstance().deleteAllData()
+
+            // Cookie 清除是**异步**的：直接 flush() 可能在删除完成前就落盘，
+            // 结果「重置了但下次启动仍是登录态」。这里等回调确认后再 flush。
+            val cm = CookieManager.getInstance()
+            val removed = withTimeoutOrNull(3_000L) {
+                suspendCancellableCoroutine { cont ->
+                    cm.removeAllCookies { if (cont.isActive) cont.resume(Unit) }
+                }
+            } != null
+            cm.flush()
+            AppLog.i(TAG, "已清除全部 Cookie（回调${if (removed) "已确认" else "超时未返回"}）")
+        }
+        // 审计：记下关键域**剩余 Cookie 的名字**（不记值），用于确认「重置后确实回到未登录」。
+        // 需要审计哪些域由学校插件声明（通用引擎里不含任何学校专属域名）。
+        runCatching {
+            val cm = CookieManager.getInstance()
+            val schoolId = SettingsStore.read(appContext).schoolId
+            SchoolFlows.of(schoolId).cookieAuditOrigins(Schools.of(schoolId)).forEach { origin ->
+                val raw = cm.getCookie(origin).orEmpty()
+                val names = raw.split(';')
+                    .mapNotNull { it.trim().split('=').firstOrNull()?.takeIf(String::isNotBlank) }
+                AppLog.i(
+                    TAG,
+                    "重置审计 · ${origin.substringAfter("://")} 剩余 Cookie：" +
+                        if (names.isEmpty()) "0 个（已清空）"
+                        else "${names.size} 个（${names.joinToString(",")}）",
+                )
+            }
+        }
+        AppLog.i(TAG, "已清空内置浏览器状态（页面 / 缓存 / 本地存储 / Cookie）")
+    }
+
+    /**
+     * 选择页面探针脚本：学校可用 `School.probeJs` 覆盖（不同教务系统的就绪/登录判定差别很大），
+     * 未提供时用通用 [JsScripts.DETECT]。这里**只看数据、不看学校 id**，新增学校无需改本函数。
+     */
     private suspend fun probePage(view: WebView): PageProbe? {
         // 自定义学校可提供 probeJs 探针（不同教务系统的就绪/登录判定差异很大）
         val raw = evaluateJs(view, school.probeJs ?: JsScripts.DETECT) ?: return null
@@ -821,6 +952,7 @@ class WebScheduleEngine(private val appContext: Context) {
                 captcha = json.optBoolean("captcha", false),
                 hasGrid = json.optBoolean("grid", false) || json.optBoolean("ready", false),
                 hasApp = json.optBoolean("app", false),
+                notFound = json.optBoolean("notFound", false),
                 netError = json.optBoolean("netError", false),
                 ssoError = json.optBoolean("ssoError", false),
                 error = json.optString("error"),

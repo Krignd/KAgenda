@@ -42,6 +42,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:localeConfig="@xml/locales_config"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.KAgenda"
@@ -97,6 +98,13 @@
             android:name=".ui.WebLoginActivity"
             android:exported="false"
             android:label="@string/web_login_title" />
+
+        <!-- 开发者工具里的「内置浏览器」：普通浏览器（不注入脚本、不自动跳转），带访问记录。
+             入口在「设置 → 开发者工具 → 内置浏览器」。 -->
+        <activity
+            android:name=".ui.DevBrowserActivity"
+            android:exported="false"
+            android:label="@string/dev_browser_title" />
 
         <!-- 分享运行日志：把生成的日志文件（txt/md）以附件形式分享给其他应用 -->
         <provider

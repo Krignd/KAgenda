@@ -81,6 +81,7 @@ import androidx.core.content.ContextCompat
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
+import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.SyncUi
 import com.kstudio.agenda.i18n.LocalStrings
@@ -106,8 +107,15 @@ import java.util.Locale
  * 按需求暂时隐藏「网页登录」入口，界面仅展示账密登录。
  * 相关代码（本文件按钮、MainScreen 的启动器、WebLoginActivity、AndroidManifest 注册等）
  * 全部保留在项目中，未删除；需要恢复入口时把此常量改为 true 即可。
+ *
+ * 例外：对「必须手动登录」的学校（数据字段 `School.manualLogin`，如门户带滑块验证码 +
+ * 短信二次认证的学校，脚本无法代填），此入口**始终显示**——否则用户没有任何途径完成登录。
  */
 private const val SHOW_WEB_LOGIN_ENTRY = false
+
+/** 该学校是否必须由用户手动完成登录（此时强制显示「网页登录」入口） */
+private fun requiresManualLogin(schoolId: String?): Boolean =
+    com.kstudio.agenda.model.Schools.of(schoolId).manualLogin
 
 @Composable
 fun SettingsScreen(
@@ -355,6 +363,24 @@ fun SettingsScreen(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                     modifier = Modifier.fillMaxWidth(),
                 )
+                // 学校专属开关（由学校流程插件提供描述，如「通过 WebVPN」）。
+                // 本处不含任何学校名字：新增学校只要在插件里声明开关就会自动出现。
+                SchoolFlows.of(settings.schoolId).schoolToggle?.let { spec ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = spec.valueOf(settings),
+                            onCheckedChange = { vm.setSchoolToggle(spec, it) },
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(spec.title(t))
+                            Text(
+                                text = spec.subtitle(t),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Button(onClick = {
@@ -366,7 +392,8 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.padding(horizontal = 4.dp))
                     // 【已隐藏保留】网页登录入口（当前隐藏，仅保留账密登录；代码未删除）
-                    if (SHOW_WEB_LOGIN_ENTRY) {
+                    // 对必须手动登录的学校（如江苏大学）强制显示：这是唯一的登录途径
+                    if (SHOW_WEB_LOGIN_ENTRY || requiresManualLogin(settings.schoolId)) {
                         OutlinedButton(onClick = onWebLogin) {
                             Text("网页登录")
                         }
@@ -1251,9 +1278,12 @@ fun SettingsScreen(
         )
     }
 
-    // 课程时间自定义（14 节起止时间；保存后立即生效）
+    // 课程时间自定义（节数与起止时间；保存后立即生效）
     if (showPeriodTimes) {
+        // 「恢复默认」= 当前学校的作息预设（无预设的学校即内置默认作息，行为与以前一致）
+        val school = com.kstudio.agenda.model.Schools.of(settings.schoolId)
         PeriodTimesDialog(
+            restoreDefaults = SchoolFlows.of(school).periodPreset(school) ?: PeriodTimes.defaults,
             onDismiss = { showPeriodTimes = false },
             onSave = { list ->
                 vm.setPeriodTimes(list)
@@ -1298,6 +1328,13 @@ fun SettingsScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(t.schoolAdd) }
+                    // 入口保留（不隐藏），但如实提示可用性存疑（详见对话框内的说明）
+                    Text(
+                        text = t.adapterWarnTitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
                 }
             },
             confirmButton = {
@@ -1311,7 +1348,7 @@ fun SettingsScreen(
     }
 }
 
-/** 「添加学校」对话框：粘贴/生成适配代码（KagendaSchoolAdapter/1），校验后注册 */
+/** 「添加学校」对话框：粘贴/生成适配代码（KagendaSchoolAdapter/2），校验后注册 */
 @Composable
 private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     val t = LocalStrings.current
@@ -1348,6 +1385,18 @@ private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.verticalScroll(rememberScrollState()),
             ) {
+                // 【可用性存疑，但不隐藏入口】通用/AI 生成的适配器依赖各校教务页面的
+                // DOM 结构，实际往往无法直接可用；这里如实提示，用户可自行尝试。
+                Text(
+                    text = t.adapterWarnTitle,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Text(
+                    text = t.adapterWarnBody,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
@@ -1464,14 +1513,27 @@ private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     )
 }
 
-/** 学校图标：北航用内置 logo，其余用名称首字圆标 */
+/**
+ * 学校图标：北航（school_buaa）、江苏大学（school_ujs）用内置校徽，
+ * 其余学校用名称首字圆标。
+ *
+ * 两张校徽都是「白底 + 圆形徽标」的方形图，这里统一裁成圆形 ——
+ * 与首字圆标的观感一致，也避免在深色/玻璃背景下露出白色方角。
+ */
 @Composable
 private fun SchoolLogo(school: School, size: Dp) {
-    if (school.id == "buaa") {
+    val res = when (school.id) {
+        "buaa" -> R.drawable.school_buaa
+        "ujs" -> R.drawable.school_ujs
+        else -> null
+    }
+    if (res != null) {
         Image(
-            painter = painterResource(R.drawable.school_buaa),
+            painter = painterResource(res),
             contentDescription = school.name,
-            modifier = Modifier.size(size),
+            modifier = Modifier
+                .size(size)
+                .clip(CircleShape),
         )
     } else {
         Box(
@@ -1617,11 +1679,15 @@ private fun UiStyleOption(
 }
 
 /**
- * 课程时间自定义对话框：逐节编辑 14 节的上课起止时间。
+ * 课程时间自定义对话框：逐节编辑上课起止时间（节数可增删）。
  * 支持 "HH:mm"、"H:mm"、"HHmm" 三种写法；任一项无法解析时提示且不关闭对话框。
+ *
+ * @param restoreDefaults 「恢复默认」按钮要恢复到的作息：由调用方给出
+ *        （当前学校的作息预设；无预设的学校为内置默认作息）。
  */
 @Composable
 private fun PeriodTimesDialog(
+    restoreDefaults: List<Pair<LocalTime, LocalTime>>,
     onDismiss: () -> Unit,
     onSave: (List<Pair<LocalTime, LocalTime>>) -> Unit,
     onInvalid: () -> Unit,
@@ -1721,10 +1787,10 @@ private fun PeriodTimesDialog(
         dismissButton = {
             Row {
                 TextButton(onClick = {
-                    // 恢复默认：回到内置的 14 节作息
+                    // 恢复默认：回到当前学校的作息预设（无预设则内置默认作息）
                     starts.clear()
                     ends.clear()
-                    PeriodTimes.defaults.forEach { p ->
+                    restoreDefaults.forEach { p ->
                         starts.add(PeriodTimes.format(p.first))
                         ends.add(PeriodTimes.format(p.second))
                     }

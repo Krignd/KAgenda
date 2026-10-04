@@ -3,6 +3,7 @@
     <!-- 默认（英文）；中文与法语见 values-zh / values-fr -->
     <string name="app_name">K Agenda</string>
     <string name="web_login_title">Web login</string>
+    <string name="dev_browser_title">Built-in browser</string>
 
     <!-- 桌面小组件 -->
     <string name="widget_2x1">Next class · 2×1</string>

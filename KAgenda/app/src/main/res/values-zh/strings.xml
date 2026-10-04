@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">K日程</string>
     <string name="web_login_title">网页登录</string>
+    <string name="dev_browser_title">内置浏览器</string>
 
     <!-- 桌面小组件 -->
     <string name="widget_2x1">下一节课 · 2×1</string>

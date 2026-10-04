@@ -2,8 +2,10 @@ package com.kstudio.agenda
 
 import android.app.Application
 import com.kstudio.agenda.data.ScheduleRepository
+import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.model.PeriodTimes
+import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.notif.Notifier
 import com.kstudio.agenda.notif.SyncWorker
 import com.kstudio.agenda.util.AppLog
@@ -27,12 +29,19 @@ class KebiaoApp : Application() {
         SyncWorker.enqueuePeriodic(this)
         // 加载本地缓存的课表 + 恢复提醒
         ScheduleRepository.get(this).bootstrap()
-        // 用户自定义的课程时间（异步读设置；未自定义 / 读取失败时保持默认作息）。
-        // 小组件、常驻通知等后台入口也会用到，所以放在 Application 层加载
+        // 课程时间：用户自定义过就用自定义；否则套用当前学校的作息预设
+        // （如江苏大学 11 节；无预设的学校回落内置默认，行为与以前一致）。
+        // 小组件、常驻通知等后台入口也会用到，所以放在 Application 层加载。
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
-                val raw = SettingsStore.read(this@KebiaoApp).periodTimesRaw
-                PeriodTimes.applyCustom(PeriodTimes.decode(raw))
+                val settings = SettingsStore.read(this@KebiaoApp)
+                val custom = PeriodTimes.decode(settings.periodTimesRaw)
+                if (custom != null) {
+                    PeriodTimes.applyCustom(custom)
+                } else {
+                    val school = Schools.of(settings.schoolId)
+                    PeriodTimes.applySchoolPreset(SchoolFlows.of(school).periodPreset(school))
+                }
             }
         }
     }

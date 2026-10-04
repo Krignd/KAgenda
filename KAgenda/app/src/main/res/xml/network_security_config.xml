@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  网络安全配置：默认继续禁止明文流量（与 application 的 usesCleartextTraffic="false" 一致），
+  仅对江大校内主机放行 http。
+
+  原因：开发者工具里的「内置浏览器」是普通浏览器，访问校内站点时可能会用到
+  http:// 地址（例如 http://xuanke.ujs.edu.cn/、http://jwxt.ujs.edu.cn/）；
+  若全局禁止明文，这类地址会直接被系统拦截成 ERR_CLEARTEXT_NOT_PERMITTED，
+  不利于排查。放行范围严格限定在 ujs.edu.cn 及其子域，不影响其它站点。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">ujs.edu.cn</domain>
+    </domain-config>
+</network-security-config>

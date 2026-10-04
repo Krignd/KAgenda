@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">K Agenda</string>
     <string name="web_login_title">Connexion web</string>
+    <string name="dev_browser_title">Navigateur intégré</string>
 
     <!-- Widgets d'écran d'accueil -->
     <string name="widget_2x1">Prochain cours · 2×1</string>

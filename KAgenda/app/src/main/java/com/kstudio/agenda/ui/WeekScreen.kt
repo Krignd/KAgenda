@@ -442,7 +442,7 @@ private fun WeekGrid(
                 for (d in 1..7) {
                     val dayDate = week.dateOfWeekday(d)
                     DayColumn(
-                        courses = week.coursesOfDay(d),
+                        courses = week.coursesOnDate(dayDate),
                         width = dayWidth,
                         rowHeight = rowHeight,
                         flashTitle = if (flashDate == dayDate) flashTitle else "",
@@ -647,7 +647,7 @@ private fun WeekTimelineGrid(
                 for (d in 1..7) {
                     val dayDate = week.dateOfWeekday(d)
                     TimelineDayColumn(
-                        courses = week.coursesOfDay(d),
+                        courses = week.coursesOnDate(dayDate),
                         width = dayWidth,
                         height = totalH,
                         startMin = startMin,
