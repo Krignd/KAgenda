@@ -1,6 +1,7 @@
 package com.kstudio.agenda.data
 
 import android.content.Context
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
@@ -69,7 +70,29 @@ data class AppSettings(
      * （[UjsWebVpnFlow] / [UjsDefaultFlow]），见 WebScheduleEngine 与 WebLoginActivity 的分派。
      */
     val ujsWebVpn: Boolean = true,
+    /**
+     * 法定节假日是否照常显示课表（默认 false = 节假日停课，与既有行为一致）。
+     * 只影响「展示 / 提醒 / 小组件 / 导出」是否跳过节假日当天的课程。
+     */
+    val showHolidayCourses: Boolean = false,
+    /**
+     * AI 身份预设：学院 / 专业 / 年级 / 班级（都可留空）。
+     *
+     * 用途：很多通知/公告会同时列出多个班级或多个时间分支（如「1、2班周三；3、4班周四」），
+     * 填了身份后 AI 助手只挑与本人相符的那一条，而不是把所有分支都加成日程。
+     */
+    val profileCollege: String = "",
+    val profileMajor: String = "",
+    val profileGrade: String = "",
+    val profileClazz: String = "",
 ) {
+
+    /** 身份预设的展示文本（形如「计算机学院 软件工程 2024级 4班」；未填写时为空串） */
+    val profileText: String
+        get() = listOf(profileCollege, profileMajor, profileGrade, profileClazz)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(" ")
 
     /** 是否使用液态玻璃界面风格 */
     val glassUi: Boolean get() = uiStyle == UI_STYLE_GLASS
@@ -140,6 +163,11 @@ object SettingsStore {
     private val KEY_STATUS_LOCK_SCREEN = booleanPreferencesKey("status_on_lock_screen")
     private val KEY_UI_STYLE = stringPreferencesKey("ui_style")
     private val KEY_UJS_WEB_VPN = booleanPreferencesKey("ujs_webvpn")
+    private val KEY_SHOW_HOLIDAY_COURSES = booleanPreferencesKey("show_holiday_courses")
+    private val KEY_PROFILE_COLLEGE = stringPreferencesKey("profile_college")
+    private val KEY_PROFILE_MAJOR = stringPreferencesKey("profile_major")
+    private val KEY_PROFILE_GRADE = stringPreferencesKey("profile_grade")
+    private val KEY_PROFILE_CLAZZ = stringPreferencesKey("profile_clazz")
 
     fun settingsFlow(context: Context): Flow<AppSettings> = context.settingsDataStore.data.map { p ->
         AppSettings(
@@ -174,6 +202,11 @@ object SettingsStore {
             statusOnLockScreen = p[KEY_STATUS_LOCK_SCREEN] ?: true,
             uiStyle = p[KEY_UI_STYLE] ?: UI_STYLE_DEFAULT,
             ujsWebVpn = p[KEY_UJS_WEB_VPN] ?: true,
+            showHolidayCourses = p[KEY_SHOW_HOLIDAY_COURSES] ?: false,
+            profileCollege = p[KEY_PROFILE_COLLEGE] ?: "",
+            profileMajor = p[KEY_PROFILE_MAJOR] ?: "",
+            profileGrade = p[KEY_PROFILE_GRADE] ?: "",
+            profileClazz = p[KEY_PROFILE_CLAZZ] ?: "",
         )
     }
 
@@ -275,6 +308,14 @@ object SettingsStore {
         }
     }
 
+    /** 清空已保存的学期锚点（切换学校后旧学校的锚点不再适用，避免显示错误的教学周） */
+    suspend fun clearSemesterAnchor(context: Context) {
+        context.settingsDataStore.edit { p ->
+            p.remove(KEY_SEMESTER)
+            p.remove(KEY_ANCHOR)
+        }
+    }
+
     suspend fun setSchool(context: Context, id: String) {
         context.settingsDataStore.edit { it[KEY_SCHOOL] = id }
     }
@@ -366,5 +407,96 @@ object SettingsStore {
      */
     suspend fun setUjsWebVpn(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_UJS_WEB_VPN] = enabled }
+    }
+
+    /** 法定节假日是否照常显示课表（默认 false=停课） */
+    suspend fun setShowHolidayCourses(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_SHOW_HOLIDAY_COURSES] = enabled }
+    }
+
+    // ------------------------------------------------------------ 备份 / 恢复
+
+    /**
+     * 导出全部设置为可序列化的键值（值只有 Boolean / Int / Long / String）。
+     *
+     * 按**已知键名**逐个取值（不用 `Preferences.asMap()`——那是 datastore 内部扩展，
+     * 本项目的 datastore 版本没有）：这样导出内容可控，不会把以后的临时键带出去。
+     * 密码与 AI Key 的密文包含在内，由备份层（[BackupManager]）决定是否剔除。
+     */
+    /** 身份预设（学院/专业/年级/班级）：空串=清除该项 */
+    suspend fun setProfile(context: Context, college: String, major: String, grade: String, clazz: String) {
+        context.settingsDataStore.edit { p ->
+            fun put(key: Preferences.Key<String>, value: String) {
+                if (value.isBlank()) p.remove(key) else p[key] = value.trim()
+            }
+            put(KEY_PROFILE_COLLEGE, college)
+            put(KEY_PROFILE_MAJOR, major)
+            put(KEY_PROFILE_GRADE, grade)
+            put(KEY_PROFILE_CLAZZ, clazz)
+        }
+    }
+
+    suspend fun exportPreferences(context: Context): Map<String, Any> {
+        val p = context.settingsDataStore.data.first()
+        val out = LinkedHashMap<String, Any>()
+        fun put(key: Preferences.Key<*>, name: String) {
+            when (val v = p[key]) {
+                is Boolean, is Int, is Long, is String -> out[name] = v
+                else -> Unit
+            }
+        }
+        put(KEY_STUDENT_ID, "student_id")
+        put(KEY_PASSWORD_ENC, "password_enc")
+        put(KEY_REMINDER_ENABLED, "reminder_enabled")
+        put(KEY_LEAD_MINUTES, "lead_minutes")
+        put(KEY_AUTO_REFRESH, "auto_refresh")
+        put(KEY_LAST_SYNC, "last_sync_at")
+        put(KEY_SEMESTER, "semester_label")
+        put(KEY_ANCHOR, "anchor_epoch_day")
+        put(KEY_TIMETABLE_MODE, "timetable_mode")
+        put(KEY_APP_LANGUAGE, "app_language")
+        put(KEY_SCHOOL, "school_id")
+        put(KEY_AI_KEY_ENC, "ai_key_enc")
+        put(KEY_AI_MODEL, "ai_model")
+        put(KEY_USE_DEV_AI_KEY, "use_dev_ai_key")
+        put(KEY_STATUS_ENABLED, "status_notif_enabled")
+        put(KEY_STATUS_SOURCES, "status_notif_sources")
+        put(KEY_STATUS_AI_ENTRY, "status_ai_entry")
+        put(KEY_FLOATING_BALL, "floating_ball")
+        put(KEY_TIMELINE_START, "timeline_start_minutes")
+        put(KEY_TIMELINE_END, "timeline_end_minutes")
+        put(KEY_WIDGET_REFRESH_CUSTOM, "widget_refresh_custom")
+        put(KEY_WIDGET_REFRESH_NEAR, "widget_refresh_near_minutes")
+        put(KEY_WIDGET_REFRESH_SOON, "widget_refresh_soon_minutes")
+        put(KEY_WIDGET_REFRESH_FAR, "widget_refresh_far_minutes")
+        put(KEY_PERIOD_TIMES, "period_times")
+        put(KEY_STATUS_LOCK_SCREEN, "status_on_lock_screen")
+        put(KEY_UI_STYLE, "ui_style")
+        put(KEY_UJS_WEB_VPN, "ujs_webvpn")
+        put(KEY_SHOW_HOLIDAY_COURSES, "show_holiday_courses")
+        put(KEY_PROFILE_COLLEGE, "profile_college")
+        put(KEY_PROFILE_MAJOR, "profile_major")
+        put(KEY_PROFILE_GRADE, "profile_grade")
+        put(KEY_PROFILE_CLAZZ, "profile_clazz")
+        return out
+    }
+
+    /**
+     * 导入设置：按键覆盖写入。
+     * **不清空**现有设置——备份里不含密码/AI Key 的密文（换机后本就解不开），
+     * 直接 clear 会把本机还能用的登录状态抹掉。
+     */
+    suspend fun importPreferences(context: Context, prefs: Map<String, Any>) {
+        if (prefs.isEmpty()) return
+        context.settingsDataStore.edit { p ->
+            prefs.forEach { (key, value) ->
+                when (value) {
+                    is Boolean -> p[booleanPreferencesKey(key)] = value
+                    is Int -> p[intPreferencesKey(key)] = value
+                    is Long -> p[longPreferencesKey(key)] = value
+                    is String -> p[stringPreferencesKey(key)] = value
+                }
+            }
+        }
     }
 }

@@ -26,7 +26,7 @@ import java.time.temporal.ChronoUnit
  */
 object ExtraCoursesStore {
 
-    private const val FILE_NAME = "extra_courses.json"
+    internal const val FILE_NAME = "extra_courses.json"
 
     private val _courses = MutableStateFlow<List<Course>>(emptyList())
     val courses: StateFlow<List<Course>> = _courses.asStateFlow()
@@ -150,6 +150,15 @@ object ExtraCoursesStore {
         }
     }
 
+    /** 丢弃内存状态，下次 [ensureLoaded] 重新读盘（备份导入后使用） */
+    fun invalidateMemory() {
+        synchronized(this) {
+            loaded = false
+            _courses.value = emptyList()
+            _anchorEpochDay.value = null
+        }
+    }
+
     private fun persist(context: Context) {
         runCatching {
             val o = JSONObject().apply {
@@ -169,6 +178,7 @@ object ExtraCoursesStore {
                                     put("endPeriod", c.endPeriod)
                                     put("dayOfWeek", c.dayOfWeek)
                                     put("tag", c.tag)
+                                    if (c.extraInfo.isNotBlank()) put("extra", c.extraInfo)
                                 }
                             )
                         }
@@ -200,6 +210,7 @@ object ExtraCoursesStore {
                     endPeriod = ep.coerceAtMost(PeriodTimes.MAX_COUNT),
                     dayOfWeek = day,
                     tag = o.optString("tag"),
+                    extraInfo = o.optString("extra"),
                 )
             )
         }

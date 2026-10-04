@@ -511,7 +511,7 @@ object NextClassWidgetUpdater {
         val date = now.toLocalDate()
         val weekNo = sem.teachingWeekOf(date)
         if (weekNo < 1 || weekNo > 40) return null
-        if (HolidayTable.isHoliday(date)) return null   // 法定节假日停课
+        if (HolidayTable.hidesCourses(date)) return null   // 法定节假日停课（可在设置里改）
         val courses = sem.weeks[weekNo].orEmpty()
             .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
         for (c in courses) {
@@ -529,7 +529,7 @@ object NextClassWidgetUpdater {
             val date = now.toLocalDate().plusDays(offset.toLong())
             val weekNo = sem.teachingWeekOf(date)
             if (weekNo < 1 || weekNo > 40) continue
-            if (HolidayTable.isHoliday(date)) continue   // 法定节假日停课
+            if (HolidayTable.hidesCourses(date)) continue   // 法定节假日停课（可在设置里改）
             val courses = sem.weeks[weekNo].orEmpty()
                 .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
                 .sortedBy { it.startPeriod }

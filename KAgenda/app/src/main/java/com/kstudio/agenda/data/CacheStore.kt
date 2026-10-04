@@ -2,6 +2,7 @@ package com.kstudio.agenda.data
 
 import android.content.Context
 import com.kstudio.agenda.model.Course
+import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.model.SemesterSchedule
 import org.json.JSONArray
 import org.json.JSONObject
@@ -14,7 +15,7 @@ import java.io.File
  */
 object ScheduleCache {
 
-    private const val SCHEDULE_FILE = "schedule_cache.json"
+    internal const val SCHEDULE_FILE = "schedule_cache.json"
     private const val RAW_DIR = "raw_capture"
     private const val RAW_KEEP = 5
 
@@ -42,13 +43,27 @@ object ScheduleCache {
         synchronized(memLock) {
             if (memLoaded) return memValue
         }
+        var foreignSchool = false
         val parsed = try {
             val file = File(context.filesDir, SCHEDULE_FILE)
-            if (!file.exists()) null
-            else fromJson(JSONObject(file.readText(Charsets.UTF_8)))
+            if (!file.exists()) {
+                null
+            } else {
+                val root = JSONObject(file.readText(Charsets.UTF_8))
+                val school = root.optString("school")
+                // 缓存属于另一所学校（刚切换学校、还没重新同步）：当作没有缓存，
+                // 并且**不写入内存缓存** —— 用户切回原学校时这份缓存还能直接用
+                if (school.isNotBlank() && school != Schools.currentId) {
+                    foreignSchool = true
+                    null
+                } else {
+                    fromJson(root)
+                }
+            }
         } catch (_: Throwable) {
             null
         }
+        if (foreignSchool) return null
         synchronized(memLock) {
             if (!memLoaded) {
                 memValue = parsed
@@ -70,6 +85,14 @@ object ScheduleCache {
         }
     }
 
+    /** 丢弃内存缓存（下次 [load] 重新读盘；**不删文件**）——备份导入后使用 */
+    fun invalidateMemory() {
+        synchronized(memLock) {
+            memValue = null
+            memLoaded = false
+        }
+    }
+
     /** 保存网页接口原始响应片段（按时间戳命名，超过数量上限自动清理） */
     fun saveRawCapture(context: Context, url: String, body: String) {
         try {
@@ -87,6 +110,8 @@ object ScheduleCache {
         root.put("semester", semester.semesterLabel)
         root.put("anchorEpochDay", semester.anchorEpochDay)
         root.put("fetchedAt", semester.fetchedAtMillis)
+        // 记录缓存属于哪所学校：切学校后另一所学校的课表不能再拿来展示（见 load）
+        root.put("school", Schools.currentId)
         val weeksObj = JSONObject()
         semester.weeks.forEach { (weekNo, courses) ->
             val arr = JSONArray()
@@ -148,6 +173,7 @@ object ScheduleCache {
         put("end", c.endPeriod)
         put("day", c.dayOfWeek)
         put("tag", c.tag)
+        if (c.extraInfo.isNotBlank()) put("extra", c.extraInfo)
     }
 
     private fun courseFromJson(o: JSONObject): Course = Course(
@@ -160,5 +186,6 @@ object ScheduleCache {
         endPeriod = o.optInt("end", o.optInt("start", 1)),
         dayOfWeek = o.optInt("day", 1),
         tag = o.optString("tag"),
+        extraInfo = o.optString("extra"),
     )
 }

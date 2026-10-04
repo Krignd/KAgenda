@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- FileProvider 可分享目录：日志分享生成的 txt/md 文件存放在 cacheDir/share -->
+<!-- FileProvider 可分享目录：
+     · share/   日志分享生成的 txt/md 文件
+     · updates/ 应用内更新下载的 APK（交给系统安装器安装） -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <cache-path
         name="shared_logs"
         path="share/" />
+    <files-path
+        name="updates"
+        path="updates/" />
 </paths>

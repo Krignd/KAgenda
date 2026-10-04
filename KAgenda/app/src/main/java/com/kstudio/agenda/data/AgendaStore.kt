@@ -20,7 +20,7 @@ import java.io.File
  */
 object AgendaStore {
 
-    private const val FILE_NAME = "agenda.json"
+    internal const val FILE_NAME = "agenda.json"
 
     private val _events = MutableStateFlow<List<AgendaEvent>>(emptyList())
     val events: StateFlow<List<AgendaEvent>> = _events.asStateFlow()
@@ -96,6 +96,14 @@ object AgendaStore {
         synchronized(this) {
             _events.value = emptyList()
             runCatching { File(context.filesDir, FILE_NAME).delete() }
+        }
+    }
+
+    /** 丢弃内存状态，下次 [ensureLoaded] 重新读盘（备份导入后使用） */
+    fun invalidateMemory() {
+        synchronized(this) {
+            loaded = false
+            _events.value = emptyList()
         }
     }
 

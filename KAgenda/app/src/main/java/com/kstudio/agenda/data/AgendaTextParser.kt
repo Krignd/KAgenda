@@ -85,8 +85,27 @@ object AgendaTextParser {
             }
         }
 
-        // 星期：本周日 / 这周日 / 下周五 / 周三
-        val weekdayRegex = Regex("(本周|这周|下周|周|星期|礼拜)([一二三四五六日天])")
+        // “相对日 + 时段”连写（通知里很常见）：今早/今晚/明早/明晚/明下午…
+        for ((kw, offset) in listOf(
+            "明早" to 1L, "明晚" to 1L, "明上午" to 1L, "明下午" to 1L,
+            "今早" to 0L, "今晚" to 0L, "今上午" to 0L, "今下午" to 0L,
+        )) {
+            val idx = norm.indexOf(kw)
+            if (idx >= 0) found.add(idx to base.plusDays(offset))
+        }
+
+        // 周末（通知里常写“周末”）：按周六处理
+        val weekendIdx = norm.indexOf("周末")
+        if (weekendIdx >= 0) {
+            val monday = base.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            var d = monday.plusDays(5)
+            if (d.isBefore(base)) d = d.plusWeeks(1)
+            found.add(weekendIdx to d)
+        }
+
+        // 星期：本周日 / 这周日 / 下周五 / 下下周三 / 上周二 / 周三
+        val weekdayRegex =
+            Regex("(下下周|下下星期|上周|本周|这周|下周|周|星期|礼拜)([一二三四五六日天])")
         for (m in weekdayRegex.findAll(norm)) {
             val prefix = m.groupValues[1]
             val cn = m.groupValues[2]
@@ -97,6 +116,8 @@ object AgendaTextParser {
             var date = monday.plusDays((dow - 1).toLong())
             when (prefix) {
                 "下周" -> date = date.plusWeeks(1)
+                "下下周", "下下星期" -> date = date.plusWeeks(2)
+                "上周" -> date = date.minusWeeks(1)
                 "本周", "这周" -> Unit
                 else -> if (date.isBefore(base)) date = date.plusWeeks(1)   // 裸“周三”：取最近的将来
             }
@@ -133,7 +154,7 @@ object AgendaTextParser {
     // ------------------------------------------------------------ 时间
 
     private val timeToken = Regex(
-        "(上午|下午|晚上|傍晚|中午|早上|早晨|凌晨|晚)?\\s*(\\d{1,2}|[一二两三四五六七八九十]{1,3})\\s*[点时:]\\s*(半|\\d{1,2}\\s*分?)?"
+        "(上午|下午|晚上|傍晚|中午|早上|早晨|清晨|凌晨|晚)?\\s*(\\d{1,2}|[一二两三四五六七八九十]{1,3})\\s*[点时:]\\s*(半|\\d{1,2}\\s*分?)?"
     )
 
     private fun findTime(norm: String, dateIndex: Int): Pair<LocalTime, LocalTime?>? {
@@ -175,6 +196,30 @@ object AgendaTextParser {
                 if (bumped.hour in 12..23) end = bumped
             }
             if (end.isAfter(first.time)) return first.time to end
+        }
+
+        // 未写结束时间但写了时长（“约2小时/两个小时/1个半小时/半小时”）→ 推算结束时间
+        val durationRegex = Regex(
+            "(\\d{1,2}|[一二两三四五六七八九十]|半)\\s*个?\\s*(半)?\\s*小时" +
+                "(?:\\s*(\\d{1,2}|[一二两三四五六七八九十]|半)\\s*分?)?"
+        )
+        for (m in durationRegex.findAll(tail)) {
+            val between = m.value
+            if (between.contains('。') || between.contains('\n')) continue
+            val hRaw = m.groupValues[1]
+            val hours = if (hRaw == "半") 0.5 else parseHour(hRaw)?.toDouble() ?: continue
+            // “1个半小时” = 1 小时 + 半小时；“两个小时” = 2 小时
+            val halfHour = if (m.groupValues[2] == "半") 30 else 0
+            val extraMin = when (val mr = m.groupValues[3]) {
+                "" -> 0
+                "半" -> 30
+                else -> parseHour(mr) ?: 0
+            }
+            val total = (hours * 60).toInt() + halfHour + extraMin
+            if (total in 5..24 * 60) {
+                val end = first.time.plusMinutes(total.toLong())
+                if (end.isAfter(first.time)) return first.time to end
+            }
         }
         return first.time to null
     }
@@ -258,10 +303,21 @@ object AgendaTextParser {
     /** 泛化抬头：这类括号标题不单独作为标题，回退到正文首句 */
     private val genericBrackets = setOf("通知", "公告", "温馨提示", "提醒", "重要提醒", "重要通知", "紧急通知")
 
+    /**
+     * 机构名抬头：`【教务处】关于…的通知` 里的方括号是“发文单位”而不是标题，
+     * 不能拿它当标题（否则标题会变成「教务处」）。命中则继续看正文。
+     */
+    private fun looksLikeOrg(v: String): Boolean {
+        if (v.length !in 2..12) return false
+        if (listOf("教务", "学工", "团委", "委员会", "办公室", "研究生院", "学生会").any { v.contains(it) }) return true
+        return listOf("处", "部", "院", "系", "办", "中心", "协会", "学会", "科", "馆", "组")
+            .any { v.endsWith(it) }
+    }
+
     private fun findTitle(text: String): String {
         for (m in Regex("【([^】]{2,30})】").findAll(text)) {
             val v = m.groupValues[1].trim()
-            if (v !in genericBrackets) return v
+            if (v !in genericBrackets && !looksLikeOrg(v)) return v
         }
 
         val firstLine = text.trim().lines().firstOrNull { it.isNotBlank() }?.trim().orEmpty()

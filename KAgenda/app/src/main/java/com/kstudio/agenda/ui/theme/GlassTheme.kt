@@ -54,8 +54,9 @@ private val GlassLight = lightColorScheme(
     surfaceContainerHighest = Color(0xCCFFFFFF),
     // 通透风格不需要色调叠加（否则半透明表面会被染上一层主色雾感）
     surfaceTint = Color.Transparent,
-    outline = Color(0x66FFFFFF),
-    outlineVariant = Color(0x40FFFFFF),
+    // 描边用中性灰（此前用过主色蓝微调，会在卡片/输入框上出现“异常的蓝色描边”）
+    outline = Color(0x26000000),
+    outlineVariant = Color(0x14000000),
     error = Color(0xFFDC2626),
 )
 
@@ -81,8 +82,9 @@ private val GlassDark = darkColorScheme(
     surfaceContainerHigh = Color(0x991F2D49),
     surfaceContainerHighest = Color(0xA6243355),
     surfaceTint = Color.Transparent,
-    outline = Color(0x40FFFFFF),
-    outlineVariant = Color(0x26FFFFFF),
+    // 深色玻璃：不用纯白描边（黑色卡片上一圈白线很生硬），改用低透明度中性白作“玻璃边缘”
+    outline = Color(0x2EFFFFFF),
+    outlineVariant = Color(0x14FFFFFF),
     error = Color(0xFFF87171),
 )
 
@@ -106,8 +108,10 @@ fun GlassBackdrop(modifier: Modifier = Modifier, content: @Composable () -> Unit
             listOf(Color(0xFFE7EEFB), Color(0xFFF2ECFB), Color(0xFFE4F5F1)),
         )
     }
-    val glow1 = if (dark) Color(0x4D3B82F6) else Color(0x594C8DF6)
-    val glow2 = if (dark) Color(0x4222D3EE) else Color(0x4D8B5CF6)
+    val glow1 = if (dark) Color(0x663B82F6) else Color(0x664C8DF6)
+    val glow2 = if (dark) Color(0x5522D3EE) else Color(0x598B5CF6)
+    // 第三团柔光（右下偏暖）：让半透明表面在多个区域都能看得到“透光”，避免大片像素级平色
+    val glow3 = if (dark) Color(0x3DF472B6) else Color(0x40FBBF24)
 
     Box(modifier.fillMaxSize().background(base)) {
         Canvas(Modifier.fillMaxSize()) {
@@ -132,6 +136,17 @@ fun GlassBackdrop(modifier: Modifier = Modifier, content: @Composable () -> Unit
                 ),
                 radius = r2,
                 center = c2,
+            )
+            val r3 = size.minDimension * 0.44f
+            val c3 = Offset(size.width * 0.16f, size.height * 0.99f)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(glow3, Color.Transparent),
+                    center = c3,
+                    radius = r3,
+                ),
+                radius = r3,
+                center = c3,
             )
         }
         CompositionLocalProvider(LocalGlassEnabled provides true) { content() }

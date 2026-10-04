@@ -170,6 +170,20 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     }
 
     /**
+     * 备份导入后调用：丢掉内存缓存、重新从缓存文件加载课表（不联网），
+     * 并重排提醒 / 刷新小组件与常驻通知。
+     */
+    fun reloadFromCache() {
+        scope.launch {
+            ScheduleCache.invalidateMemory()
+            _semester.value = ScheduleCache.load(appContext)
+            runCatching { ReminderScheduler.reschedule(appContext) }
+            runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
+            runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
+        }
+    }
+
+    /**
      * 执行一次同步。
      * @param silent true 时不把失败暴露为错误状态（用于打开 App 时的后台自动刷新）
      * @param verifyCredentials 用户在设置页手动登录时为 true：清掉旧认证会话、用新密码真实登录一次，

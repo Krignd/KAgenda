@@ -37,7 +37,7 @@ object AiSkills {
     val assistantSystemPrompt: String = """
         你是日程助手。用户会输入一段文字，可能是新日程/计划的描述，也可能是要求修改或删除已有日程/计划的指令。请解析为一个 json 对象（只输出 json，无其他文字）：
         {"ops":[
-          {"op":"add","tg":"agenda|plan","t":"标题≤20字","tp":"interview|contest|lecture|exam|meeting|other 或空","d":"YYYY-MM-DD 或空","s":"时间或空","e":"时间或空","l":"地点或空","n":"备注≤24字或空","rp":"重复规则或空"},
+          {"op":"add","tg":"agenda|plan","t":"标题≤20字","tp":"interview|contest|lecture|exam|meeting|other 或空","d":"YYYY-MM-DD 或空","s":"时间或空","e":"时间或空","l":"地点或空","n":"备注≤24字或空","rp":"重复规则或空","lg":"是否长日程/长计划(true/false)","ed":"YYYY-MM-DD 结束日期或空"},
           {"op":"update","match":{"t":"已有条目标题","d":"YYYY-MM-DD 或空"},"set":{"t":"新标题或空","d":"新日期或空","s":"新开始或空","e":"新结束或空","l":"新地点或空","n":"新备注或空","rp":"新重复规则或空"}},
           {"op":"delete","match":{"t":"已有条目标题","d":"YYYY-MM-DD 或空"}}
         ]}
@@ -50,6 +50,14 @@ object AiSkills {
         6. 重复规则 rp（短日程与短计划同样支持，长日程不用）：用户描述“每周二/四/六”→weekly:2,4,6（1=周一…7=周日）；“隔周周二/双周二”→biweekly:2；“每3天”→daily:3；“每天”→daily:1；“每月X日”→monthly；不重复留空串。
            凡是出现“每周…/每周几/隔周/双周/每N天/每天/每月”这类周期性说法，rp 必须填写，不能只给日期；
         7. 修改重复（如“改成每周一三五”）用 update，set.rp 填新规则；“不再重复”时 set.rp 填 "none"。
+        8. 跨天 / 持续多天的内容（如“3月1日到3月5日”“为期一周”“寒假1月20日至2月10日”“项目从今天开始到下周五”）
+           必须用长条目表示：lg=true、d=开始日期、ed=结束日期（ed ≥ d）、s/e 留空或只填每天的时间；
+           只占一天的普通日程/计划 lg 留空串或填 false，ed 留空串。千万不要把跨天的内容缩成一天。
+        9. 条件分支（重要）：通知里出现「多个班级/多个专业/多个时间/多个地点」等分支时（如「1班周三；2班周四」、
+           「一班9点、二班10点」），不要把所有分支都加成多条日程。若提供了「用户身份预设」，
+           只保留与用户身份相符的那一个分支（班级/专业/年级/学院任一相符即可），其余分支忽略；
+           若没有任何分支与预设相符，或用户未填身份，则只取第一个分支，原样保留它已有的信息
+           （不要自己编造班级或时间），并在备注 n 里追加「（多分支，请确认）」。
     """.trimIndent()
 
     /** 学校适配代码生成（KagendaSchoolAdapter/2：可容纳不同学校的登录/探测/提取逻辑） */
@@ -89,8 +97,18 @@ object AiSkills {
         "基准日期：$baseDate（${weekdayCn(baseDate)}）\n用户输入：\n$text"
 
     /** AI 助手用户提示词：附上现有条目清单，便于匹配“修改/删除”目标 */
-    fun assistantUserPrompt(text: String, baseDate: LocalDate, existingLines: List<String>): String = buildString {
+    fun assistantUserPrompt(
+        text: String,
+        baseDate: LocalDate,
+        existingLines: List<String>,
+        profile: String = "",
+    ): String = buildString {
         append("基准日期：$baseDate（${weekdayCn(baseDate)}）\n")
+        if (profile.isNotBlank()) {
+            append("用户身份预设（遇到多班级/多分支通知时按此选择，只保留相符的一条）：")
+                .append(profile)
+                .append('\n')
+        }
         if (existingLines.isNotEmpty()) {
             append("现有日程/计划（供修改/删除匹配）：\n")
             existingLines.take(60).forEach { append("- ").append(it).append('\n') }
@@ -132,6 +150,9 @@ object AiSkills {
         val note: String,
         /** 重复规则 token（见 RepeatRules；空串=不重复） */
         val repeat: String = "",
+        /** 长日程 / 长计划（跨天）及其结束日期 */
+        val isLong: Boolean = false,
+        val endDate: LocalDate? = null,
     )
 
     /** update 的“仅修改字段”（null=不变） */
@@ -201,7 +222,14 @@ object AiSkills {
         val title = o.optString("t").trim()
         if (title.isBlank()) return null
         val (s, e) = normalizeTimePair(o.optString("s"), o.optString("e"))
+        val start = parseAiDate(o.optString("d"))
+        val long = o.optString("lg").trim().lowercase()
+        val isLong = long == "true" || long == "1" || long == "yes" || o.optBoolean("lg", false)
+        val end = parseAiDate(o.optString("ed"))
         return AiItem(
+            // 长条目：只有明确跨天才置 isLong，并且结束日期不能早于开始日期
+            isLong = isLong && end != null && (start == null || !end.isBefore(start)),
+            endDate = end,
             isPlan = o.optString("tg").trim() == "plan",
             title = title,
             type = o.optString("tp").trim().lowercase(),

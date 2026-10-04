@@ -139,16 +139,22 @@ fun DeveloperToolsScreen(vm: AppViewModel, onClose: () -> Unit) {
 
     Column(Modifier.fillMaxSize()) {
         // 标题行紧贴「K日程」标题下方（不再用独立 Scaffold/AppBar，避免上下两个标题间距过大）
+        // 标题样式与设置页二级页保持一致（titleMedium + SemiBold、同样的内边距），
+        // 之前用的是 titleLarge 且左右内边距不同，导致「开发者工具」比上一级标题还大、位置偏。
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 4.dp, end = 12.dp),
+                .padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onClose) {
                 Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = t.back)
             }
-            Text(t.secDev, style = MaterialTheme.typography.titleLarge)
+            Text(
+                text = t.secDev,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+            )
         }
         Column(
             Modifier

@@ -744,6 +744,104 @@ $loginJs
         var nm = head.match(/([\u4e00-\u9fa5]{2,6})\s*${'$'}/);
         return nm ? nm[1] : '';
       }
+      // ---------- 【2026-10-04 优化】按「标签 / tooltip」取字段 ----------
+      // 表格视图(#kbgrid_table_0)：<p><span title="教师">…</span><font color="blue"> 刘宏</font></p>
+      //   → 值在 <p> 的文本里，标签只在 tooltip 的 title 属性上（纯文本启发式很容易取错）；
+      // 列表视图(#kblist_table)：<font>教师 ：刘宏</font> → 显式「标签：值」。
+      // 两个视图都先收集成 fields，再由调用方按优先级覆盖启发式结果。
+      var FIELD_LABELS = ['教学班组成','教学班名称','教学班类型','教学班','校区','上课地点','地点',
+                          '教师','老师','课程性质','选课备注','周数','节/周','学分','班型',
+                          '开课学院','学院','课程类别'];
+      // 按长度降序：生成正则时「长的标签先匹配」（教学班组成 先于 教学班、选课备注 先于 备注）
+      var LABELS_BY_LEN = FIELD_LABELS.slice().sort(function(a, b){ return b.length - a.length; });
+      function fieldKey(label){
+        var l = norm(label).replace(/\s/g, '').replace(/[:：]+${'$'}/, '');
+        if (!l) return '';
+        if (l.indexOf('节') >= 0 && l.indexOf('周') >= 0) return 'weeks';
+        if (l.indexOf('周数') >= 0 || l.indexOf('周次') >= 0) return 'weeks';
+        if (l.indexOf('教学班组成') >= 0 || l.indexOf('班级组成') >= 0) return 'classNames';
+        if (l.indexOf('教学班') >= 0 && l.indexOf('类型') >= 0) return 'classType';
+        if (l.indexOf('班型') >= 0) return 'classType';
+        if (l.indexOf('教学班') >= 0) return 'clazz';
+        if (l.indexOf('上课地点') >= 0 || l.indexOf('教室') >= 0 || l === '地点') return 'room';
+        if (l.indexOf('校区') >= 0) return 'campus';
+        if (l.indexOf('教师') >= 0 || l.indexOf('老师') >= 0) return 'teacher';
+        if (l.indexOf('课程性质') >= 0 || l === '性质') return 'nature';
+        if (l.indexOf('选课备注') >= 0 || l.indexOf('备注') >= 0) return 'note';
+        if (l.indexOf('学分') >= 0) return 'credits';
+        if (l.indexOf('课程类别') >= 0 || l.indexOf('类别') >= 0) return 'nature';
+        if (l.indexOf('学院') >= 0) return 'college';
+        return '';
+      }
+      /** tooltip 所在的 <p>（值就写在这个 <p> 里） */
+      function nearestP(el){
+        var node = el;
+        for (var i = 0; i < 4 && node; i++) {
+          if (node.tagName && String(node.tagName).toLowerCase() === 'p') return node;
+          node = node.parentElement;
+        }
+        return el.parentElement || el;
+      }
+      function collectFields(block){
+        var fields = {};
+        function put(label, value){
+          var k = fieldKey(label);
+          var v = norm(value);
+          if (k && v && !fields[k]) fields[k] = v;
+        }
+        /**
+         * 列表视图里「值」会一直取到下一个冒号，尾部可能粘着下一个字段的标签
+         * （如 校区:本部 上课地点：三江楼0802 → 校区值会带出「上课地点」），这里剥掉。
+         */
+        function stripTrailingLabel(v){
+          var s = norm(v);
+          for (var round = 0; round < 3; round++) {
+            var changed = false;
+            for (var i = 0; i < LABELS_BY_LEN.length; i++) {
+              var lb = LABELS_BY_LEN[i];
+              if (s.length >= lb.length && s.slice(-lb.length) === lb) {
+                s = norm(s.slice(0, -lb.length));
+                changed = true;
+                break;
+              }
+            }
+            if (!changed) break;
+          }
+          return s;
+        }
+        // 1) tooltip（表格视图）
+        qsa('[title]', block).forEach(function(el){
+          var title = el.getAttribute('title') || '';
+          if (!fieldKey(title)) return;
+          var box = nearestP(el);
+          var val = norm(box.textContent);
+          var own = norm(el.textContent);
+          if (own && val.indexOf(own) === 0) val = norm(val.substring(own.length));
+          put(title, val);
+        });
+        // 2) 文本标签（列表视图）："教师 ：刘宏"
+        //    长的标签先匹配（教学班组成 先于 教学班、选课备注 先于 备注），避免被短标签截胡
+        var text = textOf(block);
+        LABELS_BY_LEN.forEach(function(lb){
+          var re = new RegExp(lb.replace(/[.*+?^${'$'}()|[\]\\\/]/g, '\\${'$'}&') + '\\s*[:：]\\s*([^:：]*)');
+          var m = text.match(re);
+          if (m) put(lb, stripTrailingLabel(m[1]));
+        });
+        return fields;
+      }
+      /** 教学班名称 → {term, code, classNo}，如 "(2026-2027-1)-03620003-04" */
+      function parseClazz(clazz){
+        var out = { term: '', code: '', classNo: '' };
+        var s = norm(clazz).replace(/\s/g, '');
+        if (!s) return out;
+        var m = s.match(/^[（(]([0-9]{4}-[0-9]{4}-[0-9])[)）]-?([0-9A-Za-z]+)(?:-([0-9A-Za-z]+))?/);
+        if (m) { out.term = m[1]; out.code = m[2]; out.classNo = m[3] || ''; return out; }
+        m = s.match(/^([0-9]{4}-[0-9]{4}-[0-9])-([0-9A-Za-z]+)(?:-([0-9A-Za-z]+))?/);
+        if (m) { out.term = m[1]; out.code = m[2]; out.classNo = m[3] || ''; return out; }
+        m = s.match(/([0-9A-Za-z]{4,})/);
+        if (m) out.code = m[1];
+        return out;
+      }
       function parseCourseBlock(block){
         var full = textOf(block);
         if (!full) return null;
@@ -779,7 +877,33 @@ $loginJs
         var tag = '';
         var tg = full.match(/\u8bfe\u7a0b\u6027\u8d28\s*[:：]?\s*([^\s]+)/);
         if (tg) tag = norm(tg[1]).slice(0, 4);
-        return { title: title, weeks: weeks, room: room, teacher: teacher, code: code, tag: tag };
+        // ---------- 【2026-10-04 优化】用「标签 / tooltip」的精确值覆盖上面的启发式结果 ----------
+        var f = collectFields(block);
+        if (f.weeks) { var wk = parseWeeks(f.weeks); if (wk) weeks = wk; }
+        if (f.room) room = f.room;
+        var campus = f.campus || '';
+        if (!campus) {
+          // 表格视图里「本部 三江楼0802」是连在一起的，把校区拆出来单独记
+          var cm = norm(room).match(/^(本部|东校区?|西校区?|南校区?|北校区?|新校区?|京江校区?|梦溪校区?|中校区?)\s+/);
+          if (cm) { campus = cm[1]; room = norm(room.substring(cm[0].length)); }
+        }
+        if (f.teacher) teacher = f.teacher.replace(/^教师\s*[:：]?\s*/, '').trim();
+        if (f.nature) tag = norm(f.nature).slice(0, 6);
+        var clz = parseClazz(f.clazz || '');
+        if (clz.code) code = clz.code;   // 课程代码（不带教学班号，同一门课的多个班才能归为同一系列）
+        var extra = {
+          term: clz.term || '',        // 开设学年学期，如 2026-2027-1
+          classNo: clz.classNo || '',  // 教学班号
+          clazz: f.clazz || '',        // 教学班名称原文
+          classNames: f.classNames || '',  // 教学班组成（开设班级）
+          credits: f.credits || '',    // 学分
+          nature: f.nature || '',      // 课程性质
+          classType: f.classType || '',// 班型 / 教学班类型（页面上有就取）
+          college: f.college || '',    // 开课学院
+          campus: campus || '',        // 校区
+          note: f.note || ''           // 选课备注
+        };
+        return { title: title, weeks: weeks, room: room, teacher: teacher, code: code, tag: tag, extra: extra };
       }
       function extractTable2(){
         var courses = [], semester = '', studentNo = '', studentName = '';
@@ -808,7 +932,8 @@ $loginJs
               var c = parseCourseBlock(blk);
               if (!c) return;
               courses.push({ day: day, start: sec.start, end: sec.end, title: c.title, code: c.code,
-                             teacher: c.teacher, weeks: c.weeks, room: c.room, tag: c.tag });
+                             teacher: c.teacher, weeks: c.weeks, room: c.room, tag: c.tag,
+                             extra: c.extra });
             });
           });
         }
@@ -851,7 +976,8 @@ $loginJs
             if (end < start) end = start;
             if (end > 20) end = 20;
             courses.push({ day: day, start: start, end: end, title: c.title, code: c.code,
-                           teacher: c.teacher, weeks: c.weeks, room: c.room, tag: c.tag });
+                           teacher: c.teacher, weeks: c.weeks, room: c.room, tag: c.tag,
+                           extra: c.extra });
           });
         });
         if (!courses.length) return null;
@@ -898,7 +1024,7 @@ $loginJs
         }
         var seen = {}, unique = [];
         result.courses.forEach(function(c){
-          var k = [c.title, c.day, c.start, c.end, c.weeks, c.room].join('|');
+          var k = [c.title, c.code, c.day, c.start, c.end, c.weeks, c.room].join('|');
           if (seen[k]) return;
           seen[k] = 1; unique.push(c);
         });

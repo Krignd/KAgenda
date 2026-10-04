@@ -9,11 +9,14 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.AiAssistant
+import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.AppSettings
+import com.kstudio.agenda.data.BackupManager
 import com.kstudio.agenda.data.CourseEditConflict
 import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.ExtraCoursesStore
+import com.kstudio.agenda.data.LocalSmartParser
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SchoolToggleSpec
@@ -32,10 +35,12 @@ import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.model.WeekSchedule
+import com.kstudio.agenda.notif.Notifier
 import com.kstudio.agenda.notif.StatusNotification
 import com.kstudio.agenda.overlay.FloatingBallService
 import com.kstudio.agenda.util.AppLog
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -95,7 +100,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 课程修改：已修改的课程数 + 同步后待用户确认的冲突 */
     val courseEditCount: StateFlow<Int> =
-        CourseEditStore.edits.map { it.size }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+        combine(CourseEditStore.edits, repo.settings) { edits, s ->
+            // 只统计当前学校的修正记录（切换学校后旧学校的记录仍保留，但不计入）
+            edits.count { it.schoolId.isBlank() || it.schoolId == s.schoolId }
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     val editConflicts: StateFlow<List<CourseEditConflict>> = repo.editConflicts
 
     /** 导入课程的「第 1 教学周周一」 */
@@ -137,8 +145,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val now = LocalDateTime.now()
         val live = semester.value?.let { sem ->
             val wn = sem.teachingWeekOf(now.toLocalDate())
-            // 法定节假日停课：不把当天的课当作「正在进行」
-            if (wn in 1..40 && !HolidayTable.isHoliday(now.toLocalDate())) {
+            // 法定节假日停课：不把当天的课当作「正在进行」（用户开启「节假日显示课表」时照常判定）
+            if (wn in 1..40 && !HolidayTable.hidesCourses(now.toLocalDate())) {
                 sem.weeks[wn].orEmpty()
                     .filter { it.dayOfWeek == now.dayOfWeek.value && it.occursInWeek(wn) }
                     .firstOrNull { c ->
@@ -208,6 +216,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     val school = Schools.of(s.schoolId)
                     PeriodTimes.applySchoolPreset(SchoolFlows.of(school).periodPreset(school))
                 }
+                // 法定节假日是否照常显示课表（默认停课）
+                HolidayTable.setShowCoursesOnHoliday(s.showHolidayCourses)
+                // 当前学校：课表缓存归属 + 课程修正记录归属都依赖它
+                Schools.setCurrent(s.schoolId)
                 // 打开 App 自动刷新：有账号且（无缓存 或 超过 6 小时）时静默同步一次。
                 // 阈值放宽 + 延后启动：减少不必要的全量重放，并避开首帧渲染与 WebView 首次创建的主线程开销叠加
                 if (!autoSyncTriggered && s.autoRefresh && s.hasPassword) {
@@ -457,6 +469,123 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** AI 助手：执行“新增/修改/删除”操作并汇总反馈 */
+    /** AI 助手识别的运行状态（跑在 viewModelScope 里，离开界面也会继续） */
+    data class AiRunState(
+        val busy: Boolean = false,
+        val msg: String = "",
+        /** 识别出的可执行操作（预览里改动过的话以这里为准） */
+        val ops: List<AiSkills.AiOp> = emptyList(),
+        /** 本次识别用的原文（重新打开界面时回填输入框） */
+        val src: String = "",
+        /** 有结果但用户还没查看（顶栏显示「!」角标） */
+        val unread: Boolean = false,
+    )
+
+    private val _aiRun = MutableStateFlow(AiRunState())
+    val aiRun: StateFlow<AiRunState> = _aiRun.asStateFlow()
+
+    /**
+     * 后台识别（本地优先 + DeepSeek 兜底）。
+     *
+     * 与旧行为的关键区别：识别跑在 [viewModelScope] 而不是界面作用域，所以用户可以离开 AI 界面，
+     * 识别完成后：1) 发一条 IMPORTANCE_HIGH 浮动通知（Heads-up 横幅）；
+     * 2) 顶栏 DeepSeek 图标左侧亮起「!」角标；3) 点进去直接看到这次识别的结果。
+     */
+    fun recognizeAi(text: String, offlineOnly: Boolean = false) {
+        val asked = text.trim()
+        if (asked.isEmpty() || _aiRun.value.busy) return
+        val t = AppText.current
+        _aiRun.value = AiRunState(busy = true, msg = t.aiRunning, src = text)
+        viewModelScope.launch {
+            var result: List<AiSkills.AiOp> = emptyList()
+            var note = ""
+            var failed = false
+            try {
+                val local = runCatching { LocalSmartParser.parseEvents(asked, LocalDate.now()) }
+                    .getOrDefault(emptyList())
+                if (offlineOnly) {
+                    if (local.isEmpty()) {
+                        note = t.qaNothing
+                    } else {
+                        result = local
+                        note = t.aiOfflineDone(local.size)
+                    }
+                } else {
+                    val key = SettingsStore.effectiveAiKey(getApplication())
+                    if (key.isNullOrBlank()) {
+                        // 没有可用 Key：直接用本地识别结果
+                        if (local.isEmpty()) {
+                            note = t.aiNeedKey
+                        } else {
+                            result = local
+                            note = t.aiOfflineDone(local.size)
+                        }
+                    } else {
+                        val reply = AiClient.chat(
+                            apiKey = key,
+                            model = SettingsStore.effectiveAiModel(getApplication()),
+                            systemPrompt = AiSkills.assistantSystemPrompt,
+                            userPrompt = AiSkills.assistantUserPrompt(
+                                asked,
+                                LocalDate.now(),
+                                AiAssistant.contextLines(agenda.value),
+                                settings.value.profileText,
+                            ),
+                        )
+                        val list = AiSkills.parseOpsReply(reply)
+                        when {
+                            list.isNotEmpty() -> result = list
+                            local.isNotEmpty() -> {
+                                result = local
+                                note = t.aiOfflineDone(local.size)
+                            }
+                            else -> note = t.qaNothing
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Throwable) {
+                failed = true
+                note = (e.message ?: t.parseFail).take(60)
+            }
+            _aiRun.value = AiRunState(
+                busy = false,
+                msg = note,
+                ops = result,
+                src = text,
+                unread = result.isNotEmpty(),
+            )
+            if (result.isNotEmpty()) {
+                runCatching { Notifier.showAiDone(getApplication(), result.size) }
+            } else if (failed) {
+                runCatching { Notifier.showAiFailed(getApplication(), note) }
+            }
+        }
+    }
+
+    /** 预览里逐条删除/修改后写回（再次打开界面时保持一致） */
+    fun updateAiRunOps(ops: List<AiSkills.AiOp>) {
+        _aiRun.value = _aiRun.value.copy(ops = ops, unread = ops.isNotEmpty())
+    }
+
+    /** 用户已看到结果：熄灭顶栏「!」角标（结果本身保留，直到执行或清空） */
+    fun markAiResultSeen() {
+        _aiRun.value = _aiRun.value.copy(unread = false)
+    }
+
+    /** 执行完/放弃后清空本次识别结果 */
+    fun clearAiRun() {
+        _aiRun.value = AiRunState()
+    }
+
+    /** 身份预设（学院/专业/年级/班级）：供 AI 在条件分支时按本人身份选择 */
+    fun setProfile(college: String, major: String, grade: String, clazz: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            SettingsStore.setProfile(getApplication(), college, major, grade, clazz)
+        }
+    }
+
     fun applyAiOps(ops: List<AiSkills.AiOp>) {
         if (ops.isEmpty()) return
         viewModelScope.launch(Dispatchers.IO) {
@@ -488,7 +617,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 切换学校（见 Schools.ALL）；未适配学校仅切换展示，同步时会给出提示 */
     fun setSchool(id: String) {
         viewModelScope.launch {
+            val previous = settings.value.schoolId
             SettingsStore.setSchool(getApplication(), id)
+            Schools.setCurrent(id)
+            if (previous != id) {
+                // 切换学校：旧学校的课表缓存/学期锚点都不再适用
+                // （缓存里有学校归属校验，不清理就只会读不到；锚点需主动清，否则会显示错误的教学周）
+                SettingsStore.clearSemesterAnchor(getApplication())
+                _selectedWeekNo.value = Int.MIN_VALUE
+                if (settings.value.hasPassword && settings.value.autoRefresh) {
+                    repo.syncNow(silent = true)
+                }
+            }
             message(t.msgSchoolSwitched(Schools.of(id).name))
         }
     }
@@ -644,6 +784,211 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             // 导入课程走导入链路刷新；教务课程走课程修改链路（重排提醒 + 刷新小组件/常驻通知）
             if (imported) repo.onImportedCoursesChanged() else repo.onCourseEditsChanged()
             message(if (imported) t.msgImportedCourseEdited else t.msgCourseEditSaved)
+        }
+    }
+
+    // ------------------------------------------------------------ 手动改课表：删除 / 新增 / 调休（调课）
+
+    /** 某天「原本要上的课」（不受节假日停课影响）：调休/调课要能看到节假日当天的课 */
+    fun coursesRawOnDate(date: LocalDate): List<Course> =
+        semester.value?.rawCoursesOnDate(date).orEmpty().sortedBy { it.startPeriod }
+
+    /** 删除课程：选中的周次里不再显示（选全部周次 = 整门课隐藏） */
+    fun deleteCourse(source: Course, weeks: Set<Int>, applyAll: Boolean) {
+        if (weeks.isEmpty()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch {
+            val imported = importedCourses.value.any { it.id == source.id }
+            withContext(Dispatchers.IO) {
+                if (imported) {
+                    val remain = source.weeksSet() - weeks
+                    if (remain.isEmpty()) {
+                        ExtraCoursesStore.delete(app, source.id)
+                    } else {
+                        ExtraCoursesStore.replace(
+                            app,
+                            source.id,
+                            source.copy(weeksRaw = Course.encodeWeeks(remain)),
+                        )
+                    }
+                } else {
+                    CourseEditStore.saveDelete(app, source, weeks, applyAll)
+                }
+            }
+            if (imported) repo.onImportedCoursesChanged() else repo.onCourseEditsChanged()
+            message(t.msgCourseDeleted)
+        }
+    }
+
+    /** 新增本地课程（教务系统里没有的课，只在本地显示） */
+    fun addCourse(course: Course) {
+        if (course.title.isBlank()) return
+        val app = getApplication<Application>()
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { CourseEditStore.saveAdd(app, course) }
+            repo.onCourseEditsChanged()
+            message(t.msgCourseAdded)
+        }
+    }
+
+    /**
+     * 调休 / 调课：把 [sourceDate] 当天的 [courses] 迁到 [targetDate]。
+     *
+     * 导入课程直接改本地记录；教务课程走 [CourseEditStore.reschedule]，
+     * 与「修改课程」完全同一套存档/比对/冲突逻辑。
+     */
+    fun moveCourses(sourceDate: LocalDate, courses: List<Course>, targetDate: LocalDate) {
+        if (courses.isEmpty()) return
+        if (sourceDate == targetDate) {
+            message(t.msgMoveSameDay)
+            return
+        }
+        val sem = semester.value
+        val sourceWeek = sem?.teachingWeekOf(sourceDate) ?: teachingWeekOf(sourceDate)
+        val targetWeek = sem?.teachingWeekOf(targetDate) ?: teachingWeekOf(targetDate)
+        if (sourceWeek == null || targetWeek == null) {
+            message(t.msgMoveNoWeek)
+            return
+        }
+        val app = getApplication<Application>()
+        viewModelScope.launch {
+            val importedIds = importedCourses.value.map { it.id }.toSet()
+            val academic = courses.filterNot { it.id in importedIds }
+            val locals = courses.filter { it.id in importedIds }
+            val moved = withContext(Dispatchers.IO) {
+                var n = 0
+                if (academic.isNotEmpty()) {
+                    n += CourseEditStore.reschedule(app, sourceDate, sourceWeek, academic, targetDate, targetWeek)
+                }
+                if (locals.isNotEmpty()) {
+                    for (c in locals) {
+                        val remain = c.weeksSet() - sourceWeek
+                        if (remain.isEmpty()) {
+                            ExtraCoursesStore.delete(app, c.id)
+                        } else {
+                            ExtraCoursesStore.replace(
+                                app,
+                                c.id,
+                                c.copy(weeksRaw = Course.encodeWeeks(remain)),
+                            )
+                        }
+                    }
+                    ExtraCoursesStore.addAll(
+                        app,
+                        locals.map {
+                            it.copy(
+                                dayOfWeek = targetDate.dayOfWeek.value,
+                                weeksRaw = Course.encodeWeeks(setOf(targetWeek)),
+                            )
+                        },
+                        null,
+                    )
+                    n += locals.size
+                }
+                n
+            }
+            repo.onCourseEditsChanged()
+            repo.onImportedCoursesChanged()
+            message(t.msgCourseMoved(moved, targetDate.monthValue, targetDate.dayOfMonth))
+        }
+    }
+
+    /** 节假日是否照常显示课表（默认停课） */
+    fun setShowHolidayCourses(enabled: Boolean) {
+        viewModelScope.launch {
+            SettingsStore.setShowHolidayCourses(getApplication(), enabled)
+            HolidayTable.setShowCoursesOnHoliday(enabled)
+            repo.rescheduleReminders()
+            withContext(Dispatchers.IO) {
+                runCatching { StatusNotification.refresh(getApplication()) }
+                runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            }
+        }
+    }
+
+    // ------------------------------------------------------------ 数据备份 / 导入
+    /**
+     * 提交用户反馈。
+     * 只发送：主题 + 用户写的内容 + 联系方式（可空）+ 应用版本 / 系统版本 / 当前学校；
+     * 不发学号、密码、课表内容。
+     */
+    fun sendFeedback(topic: String, text: String, contact: String) {
+        if (text.isBlank()) {
+            message(t.feedbackEmpty)
+            return
+        }
+        viewModelScope.launch {
+            val err = withContext(Dispatchers.IO) {
+                com.kstudio.agenda.data.FeedbackClient.send(
+                    com.kstudio.agenda.data.FeedbackClient.Payload(
+                        topic = topic,
+                        text = text,
+                        contact = contact,
+                        appVersion = com.kstudio.agenda.BuildConfig.VERSION_NAME,
+                        school = settings.value.schoolId,
+                        android = android.os.Build.VERSION.RELEASE ?: "",
+                    )
+                )
+            }
+            message(if (err == null) t.msgFeedbackSent else t.msgFeedbackFailed)
+        }
+    }
+
+    /** 导出备份到默认位置（下载/KAgenda）；API 26–28 需要存储权限，按「用到才申请」处理 */
+    fun exportBackupToDefault() {
+        withExportPermission {
+            viewModelScope.launch {
+                val entry = withContext(Dispatchers.IO) {
+                    val json = com.kstudio.agenda.data.BackupManager.buildJson(
+                        getApplication(),
+                        com.kstudio.agenda.BuildConfig.VERSION_NAME,
+                        SettingsStore.exportPreferences(getApplication()),
+                    )
+                    com.kstudio.agenda.data.BackupStore.writeToDefault(getApplication(), json)
+                }
+                message(
+                    if (entry != null) {
+                        t.msgBackupExportedDefault(
+                            com.kstudio.agenda.data.BackupStore.defaultLocationLabel(),
+                            entry.name,
+                        )
+                    } else {
+                        t.msgBackupExportFailed
+                    }
+                )
+            }
+        }
+    }
+
+    /** 默认位置（下载/KAgenda）已有的备份，按时间倒序；界面据此决定是直接选文件还是先问用户 */
+    fun defaultBackups(): List<com.kstudio.agenda.data.BackupStore.Entry> =
+        com.kstudio.agenda.data.BackupStore.listDefault(getApplication())
+
+    /** 导出备份到用户选的文件 */
+    fun exportBackup(uri: android.net.Uri) {
+        viewModelScope.launch {
+            val size = BackupManager.exportTo(getApplication(), uri, com.kstudio.agenda.BuildConfig.VERSION_NAME)
+            message(
+                if (size > 0) t.msgBackupExported(com.kstudio.agenda.data.AppUpdater.formatBytes(size))
+                else t.msgBackupExportFailed
+            )
+        }
+    }
+
+    /** 导入备份（覆盖本地数据文件；密码与 AI Key 保留） */
+    fun importBackup(uri: android.net.Uri) {
+        viewModelScope.launch {
+            when (val r = BackupManager.importFrom(getApplication(), uri)) {
+                is BackupManager.ImportResult.Success -> {
+                    repo.reloadFromCache()
+                    repo.onCourseEditsChanged()
+                    repo.onImportedCoursesChanged()
+                    message(t.msgBackupImported(r.agenda, r.edits, r.courses))
+                }
+                BackupManager.ImportResult.NotABackup -> message(t.msgBackupInvalid)
+                is BackupManager.ImportResult.NewerVersion -> message(t.msgBackupNewer(r.version))
+                is BackupManager.ImportResult.Failed -> message(t.msgBackupFailed(r.detail))
+            }
         }
     }
 

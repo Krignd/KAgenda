@@ -52,8 +52,8 @@ object ReminderScheduler {
             val date = today.plusDays(offset.toLong())
             val weekNo = semester.teachingWeekOf(date)
             if (weekNo < 1 || weekNo > 40) continue
-            // 法定节假日停课：不排课，也就不提醒
-            if (HolidayTable.isHoliday(date)) continue
+            // 法定节假日停课：不排课，也就不提醒（用户开启「节假日显示课表」时照常排）
+            if (HolidayTable.hidesCourses(date)) continue
             val courses = semester.weeks[weekNo].orEmpty()
                 .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
             for (course in courses) {

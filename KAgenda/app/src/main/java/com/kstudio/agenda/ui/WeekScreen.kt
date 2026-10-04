@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -113,6 +114,10 @@ fun WeekScreen(
     var selected by remember { mutableStateOf<Course?>(null) }
     // 正在修改的课程（详情 → 「修改课程」）
     var editingCourse by remember { mutableStateOf<Course?>(null) }
+    // 长按日期 → 调整至…（整天/多节调休）
+    var rescheduleSource by remember { mutableStateOf<LocalDate?>(null) }
+    // 复制课程（用原课程信息预填新增页面）
+    var copyFrom by remember { mutableStateOf<Course?>(null) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
     // 双指缩放（0.7x~2x）；默认列宽：课程表模式一屏显示周一到周五，时间线模式一屏显示周一至周日
@@ -194,6 +199,10 @@ fun WeekScreen(
                             zoom = zoom,
                             flashDate = flashDate,
                             flashTitle = flashTitle,
+                            onLongPressDate = { d ->
+                                if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday)
+                                else rescheduleSource = d
+                            },
                         ) { selected = it }
                     } else {
                         // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
@@ -207,6 +216,10 @@ fun WeekScreen(
                             endMin = timelineEndMin,
                             flashDate = flashDate,
                             flashTitle = flashTitle,
+                            onLongPressDate = { d ->
+                                if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday)
+                                else rescheduleSource = d
+                            },
                         ) { selected = it }
                     }
                 }
@@ -275,21 +288,67 @@ fun WeekScreen(
                 selected = null
             },
             onDismiss = { selected = null },
+            onCopy = {
+                copyFrom = course
+                selected = null
+            },
         )
     }
 
-    // 修改课程（教务系统没更新时的本地修正）
+    // 复制课程：打开新增课程页面（预填原课程信息）
+    copyFrom?.let { base ->
+        val date = currentWeek?.dateOfWeekday(base.dayOfWeek) ?: selDate
+        CourseAddDialog(
+            defaultDay = base.dayOfWeek,
+            defaultWeek = vm.teachingWeekOf(date) ?: 1,
+            initial = base,
+            onDismiss = { copyFrom = null },
+            onSave = { c ->
+                vm.addCourse(c)
+                copyFrom = null
+            },
+            onInvalid = { vm.message(t.editNoChange) },
+        )
+    }
+
+    // 修改 / 删除 / 调课（教务系统没更新时的本地修正）
     editingCourse?.let { course ->
+        val courseDate = currentWeek?.dateOfWeekday(course.dayOfWeek) ?: selDate
         CourseEditDialog(
             initial = course,
+            sourceDate = courseDate,
+            dayCourseCount = vm.coursesRawOnDate(courseDate).size,
             onDismiss = { editingCourse = null },
             onSave = { edited, applyAll ->
                 vm.saveCourseEdit(course, edited, applyAll)
                 editingCourse = null
             },
+            onDelete = { weeks, applyAll ->
+                vm.deleteCourse(course, weeks, applyAll)
+                editingCourse = null
+            },
+            onMove = { wholeDay, target ->
+                val day = vm.coursesRawOnDate(courseDate)
+                vm.moveCourses(courseDate, if (wholeDay) day else listOf(course), target)
+                editingCourse = null
+            },
             onNoChange = {
                 vm.message(t.editNoChange)
                 editingCourse = null
+            },
+        )
+    }
+
+    // 长按日期 → 调整至…（整天/单节调休）
+    rescheduleSource?.let { src ->
+        val dayCourses = remember(src, currentWeek) { vm.coursesRawOnDate(src) }
+        RescheduleDialog(
+            sourceDate = src,
+            dayCourses = dayCourses,
+            onDismiss = { rescheduleSource = null },
+            onConfirm = { courses, target ->
+                vm.moveCourses(src, courses, target)
+                rescheduleSource = null
             },
         )
     }
@@ -330,8 +389,15 @@ private fun segmentsOf(courses: List<Course>): List<GridSegment> {
 }
 
 /** 周视图表头（含节假日/周末标注）：今天高亮为主色，法定节假日为红色并显示名称，周末为三级色；[flashDate] 命中时闪烁 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
-private fun WeekHeaderRow(week: WeekSchedule, timeColWidth: Dp, dayWidth: Dp, flashDate: LocalDate? = null) {
+private fun WeekHeaderRow(
+    week: WeekSchedule,
+    timeColWidth: Dp,
+    dayWidth: Dp,
+    flashDate: LocalDate? = null,
+    onLongPressDate: ((LocalDate) -> Unit)? = null,
+) {
     val today = LocalDate.now()
     val t = LocalStrings.current
     Row {
@@ -353,6 +419,10 @@ private fun WeekHeaderRow(week: WeekSchedule, timeColWidth: Dp, dayWidth: Dp, fl
                 modifier = Modifier
                     .width(dayWidth)
                     .height(58.dp)
+                    .combinedClickable(
+                        onClick = {},
+                        onLongClick = onLongPressDate?.let { lp -> { lp(date) } },
+                    )
                     .then(
                         if (flashing) Modifier.background(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.08f + 0.42f * pulse),
@@ -393,6 +463,7 @@ private fun WeekGrid(
     zoom: Float,
     flashDate: LocalDate? = null,
     flashTitle: String = "",
+    onLongPressDate: ((LocalDate) -> Unit)? = null,
     onSelect: (Course) -> Unit,
 ) {
     // 默认：课程表模式按“手机宽度刚好显示周一到周五”计算列宽；双指缩放可调整（0.7x~2x）
@@ -406,8 +477,14 @@ private fun WeekGrid(
             .fillMaxWidth()
             .horizontalScroll(hScroll)
     ) {
-        // 星期表头（含节假日/周末标注）
-        WeekHeaderRow(week, timeColWidth, dayWidth, flashDate = flashDate)
+        // 星期表头（含节假日/周末标注；长按日期可「调整至…」）
+        WeekHeaderRow(
+            week = week,
+            timeColWidth = timeColWidth,
+            dayWidth = dayWidth,
+            flashDate = flashDate,
+            onLongPressDate = onLongPressDate,
+        )
 
         Box {
             Row {
@@ -610,6 +687,7 @@ private fun WeekTimelineGrid(
     endMin: Int,
     flashDate: LocalDate? = null,
     flashTitle: String = "",
+    onLongPressDate: ((LocalDate) -> Unit)? = null,
     onSelect: (Course) -> Unit,
 ) {
     // 默认：时间线模式按“手机宽度刚好显示周一至周日”计算列宽；双指缩放只横向缩放（竖向保持 0.85dp/分）
@@ -624,8 +702,14 @@ private fun WeekTimelineGrid(
             .fillMaxWidth()
             .horizontalScroll(hScroll)
     ) {
-        // 星期表头（含节假日/周末标注）
-        WeekHeaderRow(week, timeColWidth, dayWidth, flashDate = flashDate)
+        // 星期表头（含节假日/周末标注；长按日期可「调整至…」）
+        WeekHeaderRow(
+            week = week,
+            timeColWidth = timeColWidth,
+            dayWidth = dayWidth,
+            flashDate = flashDate,
+            onLongPressDate = onLongPressDate,
+        )
 
         Box {
             Row {

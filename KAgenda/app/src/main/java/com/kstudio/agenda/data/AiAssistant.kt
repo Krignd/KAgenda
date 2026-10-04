@@ -46,6 +46,9 @@ object AiAssistant {
         note = item.note,
         type = item.type.takeIf { key -> key in AgendaTypes.ORDER } ?: "",
         isPlan = item.isPlan,
+        // 长日程 / 长计划：AI 解析出的跨天区间必须带上，否则会被压成一天
+        isLong = item.isLong,
+        endDateEpochDay = if (item.isLong) item.endDate?.toEpochDay() else null,
         // 重复规则：日程与计划同样支持（“每周二四六”这类周期性描述不能丢）
         repeatRule = item.repeat,
     )

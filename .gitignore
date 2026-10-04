@@ -10,6 +10,11 @@ captures/
 # ---- 本机专属配置 ----
 local.properties
 
+# ---- 签名文件（私钥！绝不入库、绝不上传）----
+*.jks
+*.keystore
+keystore.properties
+
 # ---- 其他 ----
 *.log
 *.hprof

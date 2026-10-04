@@ -34,3 +34,17 @@ applyTo: "**/app/build.gradle.kts"
   - 「日程表」模块的改动必须同时评估并同步「计划」模块。
 - 归档：APK 复制到**仓库外**的归档目录，命名 `KAgenda_版本_日期.apk`，并更新该目录的 `归档清单.md`（追加一行并更新"推荐安装"备注）
 - **构建产物禁止入库**：`app/release/`、`app/build/`、`*.apk` 一律留在 .gitignore 之外（历史上曾误提交 `app/release/`，需 `git rm -r --cached` 修正）
+
+## release 签名（2026-10-04 起）
+
+- 私钥：`<仓库根>/krignd-release-key.jks`；**口令不进代码、不进 Git、不进聊天**，写在 `KAgenda/local.properties`（已被 .gitignore）里的四个键：
+  `KAGENDA_STORE_FILE` / `KAGENDA_STORE_PASSWORD` / `KAGENDA_KEY_ALIAS` / `KAGENDA_KEY_PASSWORD`
+- 四项齐全 → release 用正式签名；一项都没有 → 退回 debug 签名（保证别人克隆公开仓库能直接构建）；
+  **只填一半 → 构建直接报错**（这条是故意的，防止把 debug 签名包当正式包发出去）
+- `.gitignore` 必须始终包含 `*.jks` / `*.keystore` / `keystore.properties`；新增任何私钥文件后先 `git check-ignore -v <文件>` 确认
+- 校验签名：
+  `apksigner verify --print-certs app/build/outputs/apk/release/app-release.apk`
+  并与 `keytool -list -v -keystore krignd-release-key.jks` 的 SHA-256 指纹比对
+- **换签名 = 一次性断层**：签名变化的包无法覆盖安装（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`），老用户必须先卸载（本地数据会清空）。
+  换签名的那次发版要在 Release 说明里写明"需先卸载旧版再安装"。
+- **私钥务必备份**（仓库外，如密码管理器 + 离线副本）：丢失后所有已安装用户都无法再收到升级

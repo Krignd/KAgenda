@@ -4,6 +4,7 @@ import android.app.Application
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SettingsStore
+import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.notif.Notifier
@@ -42,6 +43,10 @@ class KebiaoApp : Application() {
                     val school = Schools.of(settings.schoolId)
                     PeriodTimes.applySchoolPreset(SchoolFlows.of(school).periodPreset(school))
                 }
+                // 法定节假日是否照常显示课表（默认停课）——小组件/常驻通知/提醒也在用，所以放 Application 层
+                HolidayTable.setShowCoursesOnHoliday(settings.showHolidayCourses)
+                // 当前学校：课表缓存与课程修正记录都按学校归属，后台入口也靠它判定
+                Schools.setCurrent(settings.schoolId)
             }
         }
     }

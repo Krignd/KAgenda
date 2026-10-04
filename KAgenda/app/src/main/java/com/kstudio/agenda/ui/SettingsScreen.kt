@@ -40,9 +40,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -70,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -78,12 +81,16 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.kstudio.agenda.BuildConfig
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
+import com.kstudio.agenda.data.AppUpdater
+import com.kstudio.agenda.data.InstallStart
 import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.SyncUi
+import com.kstudio.agenda.data.UpdateUi
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.PeriodTimes
 import com.kstudio.agenda.model.School
@@ -117,6 +124,10 @@ private const val SHOW_WEB_LOGIN_ENTRY = false
 private fun requiresManualLogin(schoolId: String?): Boolean =
     com.kstudio.agenda.model.Schools.of(schoolId).manualLogin
 
+/** 更新包大小文案（拿不到大小时显示「大小未知」） */
+private fun sizeLabel(bytes: Long, unknown: String): String =
+    com.kstudio.agenda.data.AppUpdater.formatBytes(bytes).ifBlank { unknown }
+
 @Composable
 fun SettingsScreen(
     vm: AppViewModel,
@@ -147,6 +158,9 @@ fun SettingsScreen(
     var timelinePick by remember { mutableStateOf("") }
     // 课程时间自定义对话框
     var showPeriodTimes by remember { mutableStateOf(false) }
+    // 应用内更新：状态 + 安装权限弹窗
+    val updateState by AppUpdater.state.collectAsState()
+    var showInstallPermDialog by remember { mutableStateOf(false) }
     // 课程修改：卡片展开与两个入口的确认弹窗
     var expCourseEdits by rememberSaveable { mutableStateOf(true) }
     var showRestoreEditsConfirm by remember { mutableStateOf(false) }
@@ -158,6 +172,8 @@ fun SettingsScreen(
     LaunchedEffect(settings.aiModel) {
         if (aiModel.isBlank()) aiModel = settings.aiModel
     }
+
+    // 进入「关于」页时静默检查一次更新（内部按 6 小时节流；手动点右上角刷新图标则强制请求）
 
     LaunchedEffect(settings.studentId) {
         if (studentId.isBlank()) studentId = settings.studentId
@@ -178,20 +194,35 @@ fun SettingsScreen(
     var expPeriodTimes by rememberSaveable { mutableStateOf(true) }
     var expUiStyle by rememberSaveable { mutableStateOf(true) }
     var expData by rememberSaveable { mutableStateOf(true) }
+    var expHoliday by rememberSaveable { mutableStateOf(true) }
+    var expBackup by rememberSaveable { mutableStateOf(true) }
     var expDocs by rememberSaveable { mutableStateOf(true) }
     var expLang by rememberSaveable { mutableStateOf(true) }
     var expSchool by rememberSaveable { mutableStateOf(true) }
     // 关于：默认折叠（折叠时右侧显示 K日程 + 版本号）
     var expAbout by rememberSaveable { mutableStateOf(false) }
+    var expFeedback by rememberSaveable { mutableStateOf(true) }
+    // 用户反馈表单
+    var feedbackTopic by rememberSaveable { mutableStateOf(0) }
+    var feedbackText by rememberSaveable { mutableStateOf("") }
+    var feedbackContact by rememberSaveable { mutableStateOf("") }
     // 账号：未登录默认展开、已登录默认折叠；用户手动切过之后不再跟随登录状态
     val loggedIn = settings.hasPassword || syncState is SyncUi.Success
     var expAccount by rememberSaveable { mutableStateOf(false) }
+    var expProfile by rememberSaveable { mutableStateOf(false) }
+    // 身份预设（学院/专业/年级/班级）：初值取设置；保存后 DataStore 回流刷新
+    var profCollege by remember(settings.profileCollege) { mutableStateOf(settings.profileCollege) }
+    var profMajor by remember(settings.profileMajor) { mutableStateOf(settings.profileMajor) }
+    var profGrade by remember(settings.profileGrade) { mutableStateOf(settings.profileGrade) }
+    var profClazz by remember(settings.profileClazz) { mutableStateOf(settings.profileClazz) }
     var accountToggled by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(loggedIn) { if (!accountToggled) expAccount = !loggedIn }
     // 滚动状态提升到「开发者工具」早退之前：进出开发者工具 / 日志页后不会跳回顶部
     val listState = rememberLazyListState()
     LaunchedEffect(settingsTab) {
         runCatching { listState.scrollToItem(0) }
+        // 进入「关于」页时静默检查一次更新（内部按 6 小时节流；手动点刷新图标则强制请求）
+        if (settingsTab == 5) AppUpdater.check(context, auto = true)
     }
 
     // 分类标题/说明（分类菜单与二级页顶栏共用）
@@ -201,7 +232,7 @@ fun SettingsScreen(
         t.settingsTabCustom,
         t.secData,
         t.secLang,
-        t.secAbout,
+        t.settingsTabAboutFeedback,
     )
     val categorySubs = listOf(
         t.settingsTabAccountSub,
@@ -266,9 +297,32 @@ fun SettingsScreen(
         ActivityResultContracts.RequestPermission()
     ) { storageAllowed = it }
 
+    // 安装未知应用（应用内更新安装新版 APK 需要）：跳系统页后回来刷新状态
+    var installAllowed by remember { mutableStateOf(AppUpdater.canInstallPackages(context)) }
+    val installPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { installAllowed = AppUpdater.canInstallPackages(context) }
+
+    // 数据备份与导入（系统文件选择器，不需要任何权限；另有「下载/KAgenda」默认位置）
+    var pendingImport by remember { mutableStateOf<Uri?>(null) }
+    var showExportChoice by remember { mutableStateOf(false) }
+    var importChoices by remember { mutableStateOf<List<com.kstudio.agenda.data.BackupStore.Entry>>(emptyList()) }
+    var showImportChoice by remember { mutableStateOf(false) }
+    val backupExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri -> uri?.let { vm.exportBackup(it) } }
+    val backupImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri -> if (uri != null) pendingImport = uri }
+
     // 未授予的权限数量（折叠时显示在权限卡片右侧）
-    val missingPermCount = listOf(!notifAllowed, !overlayAllowed, !exactAllowed, !batteryExempt)
-        .count { it } + if (storageNeeded && !storageAllowed) 1 else 0
+    val missingPermCount = listOf(
+        !notifAllowed,
+        !overlayAllowed,
+        !exactAllowed,
+        !batteryExempt,
+        !installAllowed,
+    ).count { it } + if (storageNeeded && !storageAllowed) 1 else 0
 
     if (showDevTools) {
         DeveloperToolsScreen(vm, onClose = { showDevTools = false })
@@ -325,6 +379,53 @@ fun SettingsScreen(
                         modifier = Modifier.weight(1f),
                     )
                     TrailingChevron()
+                }
+            }
+        }
+        // ---------------------------------------------------------- 【选项卡 0】学校&账号：身份预设
+        // 用途：很多通知会同时列出多个班级/多个时间分支，填了身份后 AI 助手只挑与本人相符的那一条
+        if (settingsTab == 0) item {
+            CollapsibleSectionCard(
+                t.secProfile,
+                t.secProfileSub,
+                expanded = expProfile,
+                onToggle = { expProfile = !expProfile },
+                trailing = settings.profileText.takeIf { it.isNotBlank() },
+            ) {
+                OutlinedTextField(
+                    value = profCollege,
+                    onValueChange = { profCollege = it },
+                    label = { Text(t.labelCollege) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = profMajor,
+                    onValueChange = { profMajor = it },
+                    label = { Text(t.labelMajor) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = profGrade,
+                    onValueChange = { profGrade = it },
+                    label = { Text(t.labelGrade) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = profClazz,
+                    onValueChange = { profClazz = it },
+                    label = { Text(t.labelClazz) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(12.dp))
+                Button(onClick = { vm.setProfile(profCollege, profMajor, profGrade, profClazz) }) {
+                    Text(t.btnSaveProfile)
                 }
             }
         }
@@ -496,6 +597,23 @@ fun SettingsScreen(
                         },
                     )
                 }
+                // 安装未知应用：应用内「检查更新 → 下载并安装」需要它；不开启也不影响其他功能
+                PermissionRow(
+                    name = t.permInstallName,
+                    why = t.permInstallWhy,
+                    granted = installAllowed,
+                    actionLabel = t.gotoGrant,
+                    onAction = {
+                        runCatching {
+                            installPermLauncher.launch(
+                                Intent(
+                                    Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                                    Uri.parse("package:${context.packageName}"),
+                                )
+                            )
+                        }
+                    },
+                )
             }
         }
 
@@ -677,6 +795,31 @@ fun SettingsScreen(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = t.courseEditsHint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：节假日显示课表
+        // 默认停课（与既有行为一致）；开启后节假日当天的课照常显示、提醒照常触发
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secHolidayCourses,
+                t.secHolidayCoursesSub,
+                expanded = expHoliday,
+                onToggle = { expHoliday = !expHoliday },
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(t.holidayCoursesSwitch, modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = settings.showHolidayCourses,
+                        onCheckedChange = { vm.setShowHolidayCourses(it) },
+                    )
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = t.holidayCoursesNote,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1037,6 +1180,55 @@ fun SettingsScreen(
             }
         }
 
+        // ---------------------------------------------------------- 【选项卡 3】数据与图片：数据备份与导入
+        // 换机 / 重装前导出一份；导入为「按键覆盖」，本机密码与 AI Key 不受影响
+        if (settingsTab == 3) item {
+            CollapsibleSectionCard(
+                t.secBackup,
+                t.secBackupSub,
+                expanded = expBackup,
+                onToggle = { expBackup = !expBackup },
+            ) {
+                Text(
+                    text = t.backupIntro,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { showExportChoice = true }) {
+                        Text(t.btnBackupExport)
+                    }
+                    OutlinedButton(onClick = {
+                        // 导入：先看默认位置（下载/KAgenda）有没有备份，有就让用户选，没有就直接开文件选择器
+                        val found = vm.defaultBackups()
+                        if (found.isEmpty()) {
+                            runCatching {
+                                backupImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                            }
+                        } else {
+                            importChoices = found
+                            showImportChoice = true
+                        }
+                    }) {
+                        Text(t.btnBackupImport)
+                    }
+                }
+                Spacer(Modifier.height(6.dp))
+                Text(
+                    text = t.backupDefaultDirNote(com.kstudio.agenda.data.BackupStore.defaultLocationLabel()),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = t.backupIncludes,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         // ---------------------------------------------------------- 【选项卡 3】数据与图片：文档导入
         if (settingsTab == 3) item {
             CollapsibleSectionCard(
@@ -1161,6 +1353,101 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                Spacer(Modifier.height(10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                // 官方入口：应用下载/介绍页 + 公开仓库（可点开浏览器）
+                val uriHandler = LocalUriHandler.current
+                listOf(
+                    t.aboutOfficialSite to "https://20071009.xyz/KAgenda/",
+                    t.aboutGithubRepo to "https://github.com/Krignd/KAgenda",
+                ).forEach { (label, url) ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { runCatching { uriHandler.openUri(url) } }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            text = url.removePrefix("https://").removeSuffix("/"),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+            }
+        }
+        // ---------------------------------------------------------- 【选项卡 5】关于：用户反馈
+        // 主题 + 内容 + 联系方式（选填）→ POST 到开发者站点（接口见部署指南）
+        if (settingsTab == 5) item {
+            CollapsibleSectionCard(
+                t.secFeedback,
+                t.secFeedbackSub,
+                expanded = expFeedback,
+                onToggle = { expFeedback = !expFeedback },
+            ) {
+                Text(
+                    text = t.feedbackIntro,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = t.feedbackTopic,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    val topics = listOf(t.topicBug, t.topicFeature, t.topicSchool, t.topicOther)
+                    topics.forEachIndexed { idx, label ->
+                        ChoiceChip(
+                            label = label,
+                            selected = feedbackTopic == idx,
+                            onClick = { feedbackTopic = idx },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = feedbackText,
+                    onValueChange = { feedbackText = it },
+                    placeholder = { Text(t.feedbackPlaceholder) },
+                    maxLines = 8,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 96.dp),
+                )
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = feedbackContact,
+                    onValueChange = { feedbackContact = it },
+                    label = { Text(t.feedbackContact) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedButton(onClick = {
+                        val key = listOf("bug", "feature", "school", "other")
+                            .getOrElse(feedbackTopic) { "other" }
+                        vm.sendFeedback(key, feedbackText, feedbackContact)
+                    }) { Text(t.btnFeedbackSend) }
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        text = t.feedbackIncludeNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         }
         // ---------------------------------------------------------- 【选项卡 5】关于：开发者工具入口（整行可点，行尾尖角符）
@@ -1199,6 +1486,84 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.width(8.dp))
                     TrailingChevron()
+                }
+            }
+        }
+        // ---------------------------------------------------------- 【选项卡 5】关于：检查更新
+        // 右侧动作随状态变化：
+        //   刷新图标（点一下检查） → 「下载并安装」 → 「安装」（已下载但未安装）
+        if (settingsTab == 5) item {
+            val u = updateState
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .border(
+                        1.dp,
+                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                        RoundedCornerShape(20.dp),
+                    ),
+                shape = RoundedCornerShape(20.dp),
+                color = com.kstudio.agenda.ui.components.cardBaseColor(),
+                tonalElevation = com.kstudio.agenda.ui.components.cardTonalElevation(),
+                shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = t.updateCheck,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        val sub = when (u) {
+                            is UpdateUi.Checking -> t.updateChecking
+                            is UpdateUi.UpToDate -> t.updateLatest
+                            is UpdateUi.Available -> t.updateAvailable(
+                                u.info.versionName,
+                                sizeLabel(u.info.sizeBytes, t.updateSizeUnknown),
+                            )
+                            is UpdateUi.Downloading -> t.updateDownloading(u.percent)
+                            is UpdateUi.Downloaded ->
+                                t.updateDownloaded(sizeLabel(u.fileBytes, t.updateSizeUnknown))
+                            is UpdateUi.Error -> t.updateFailed(u.message)
+                            UpdateUi.Idle -> t.updateCurrent(BuildConfig.VERSION_NAME)
+                        }
+                        Text(
+                            text = sub,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (u is UpdateUi.Error) MaterialTheme.colorScheme.error
+                            else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    when (u) {
+                        is UpdateUi.Checking -> CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                        )
+                        is UpdateUi.Downloading -> Text(
+                            text = "${u.percent}%",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        is UpdateUi.Available -> TextButton(onClick = { AppUpdater.download(context) }) {
+                            Text(t.updateDownloadAndInstall)
+                        }
+                        is UpdateUi.Downloaded -> TextButton(onClick = {
+                            when (AppUpdater.install(context)) {
+                                InstallStart.NeedPermission -> showInstallPermDialog = true
+                                InstallStart.Unavailable -> vm.message(t.updatePackageInvalid)
+                                InstallStart.Launched -> Unit
+                            }
+                        }) { Text(t.updateInstall) }
+                        else -> IconButton(onClick = { AppUpdater.check(context, auto = false) }) {
+                            Icon(Icons.Filled.Refresh, contentDescription = t.updateCheck)
+                        }
+                    }
                 }
             }
         }
@@ -1345,6 +1710,146 @@ fun SettingsScreen(
 
     if (showAdapterDialog) {
         SchoolAdapterDialog(vm) { showAdapterDialog = false }
+    }
+
+    // 导出备份：选默认位置或自选位置
+    if (showExportChoice) {
+        AlertDialog(
+            onDismissRequest = { showExportChoice = false },
+            title = { Text(t.backupExportTitle) },
+            text = {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showExportChoice = false
+                                vm.exportBackupToDefault()
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(t.backupExportDefault, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = com.kstudio.agenda.data.BackupStore.defaultLocationLabel(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                showExportChoice = false
+                                runCatching {
+                                    backupExportLauncher.launch(
+                                        t.backupFileName + "_" + java.time.LocalDate.now() + ".json"
+                                    )
+                                }
+                            }
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(t.backupExportCustom, style = MaterialTheme.typography.bodyMedium)
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showExportChoice = false }) { Text(t.cancel) }
+            },
+        )
+    }
+
+    // 导入备份：默认位置已有备份 → 列出让用户挑；也可改选其他文件
+    if (showImportChoice) {
+        AlertDialog(
+            onDismissRequest = { showImportChoice = false },
+            title = { Text(t.backupImportTitle) },
+            text = {
+                Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+                    Text(
+                        text = t.backupImportFound(
+                            importChoices.size,
+                            com.kstudio.agenda.data.BackupStore.defaultLocationLabel(),
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    for (e in importChoices) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    showImportChoice = false
+                                    pendingImport = e.uri
+                                }
+                                .padding(vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text(e.name, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    text = sizeLabel(e.sizeBytes, t.updateSizeUnknown) + " · " +
+                                        java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                                            .format(java.util.Date(e.modifiedAtMillis)),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(onClick = {
+                        showImportChoice = false
+                        runCatching {
+                            backupImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                        }
+                    }) { Text(t.backupImportPickOther) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showImportChoice = false }) { Text(t.cancel) }
+            },
+        )
+    }
+
+    // 导入备份：二次确认（会覆盖课表/日程/设置）
+    if (pendingImport != null) {
+        AlertDialog(
+            onDismissRequest = { pendingImport = null },
+            title = { Text(t.backupAskImportTitle) },
+            text = { Text(t.backupAskImportBody) },
+            confirmButton = {
+                TextButton(onClick = {
+                    val uri = pendingImport
+                    pendingImport = null
+                    uri?.let { vm.importBackup(it) }
+                }) { Text(t.confirm) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingImport = null }) { Text(t.cancel) }
+            },
+        )
+    }
+
+    // 安装更新但系统未允许本应用「安装未知应用」：引导用户去系统设置开启
+    if (showInstallPermDialog) {
+        AlertDialog(
+            onDismissRequest = { showInstallPermDialog = false },
+            title = { Text(t.updatePermissionTitle) },
+            text = { Text(t.updatePermissionBody) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showInstallPermDialog = false
+                    AppUpdater.openInstallPermissionSettings(context)
+                }) { Text(t.updateOpenSettings) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showInstallPermDialog = false }) { Text(t.cancel) }
+            },
+        )
     }
 }
 

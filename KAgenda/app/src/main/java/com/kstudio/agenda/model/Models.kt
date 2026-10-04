@@ -9,6 +9,8 @@ import java.time.LocalDate
  * @param dayOfWeek 1=周一 ... 7=周日
  * @param edited 该课程由用户手动修改过（本地修改，尚未与教务系统一致）；
  *   只在展示层由 [com.kstudio.agenda.data.CourseEditStore] 置位，缓存文件里始终是教务原始数据
+ * @param extraInfo 教务页面里的额外信息（如开设班级、开课学期、教学班号、学分、课程性质、选课备注），
+ *   多行「标签：值」文本；没抓到就是空串。不参与课程对比与提醒计算，只用于详情展示。
  */
 data class Course(
     val title: String,
@@ -21,6 +23,7 @@ data class Course(
     val dayOfWeek: Int,
     val tag: String = "",
     val edited: Boolean = false,
+    val extraInfo: String = "",
 ) {
     /** 稳定标识：用于提醒的 requestCode / 图片配色 */
     val id: String
@@ -68,7 +71,36 @@ data class Course(
         return ranges.any { weekNo in it }
     }
 
+    /** 周次集合（解析结果展开；周次为空表示“每周”，此时返回 1..MAX_WEEK） */
+    fun weeksSet(): Set<Int> =
+        weeksRanges.flatMapTo(LinkedHashSet()) { it.toList() }.ifEmpty { (1..MAX_WEEK).toSet() }
     companion object {
+        /** 一门课最多支持的周次（与 [parseWeeks] 上限一致） */
+        const val MAX_WEEK = 40
+
+        /** 
+         * 把周次集合写成课表使用的原文（相邻周合并成区间，如 [1,3,4,5] → "1,3-5"）。
+         * 空集合返回 ""（注意：课表里 "" 表示“每周”，不要用它表示“不上课”）。
+         */
+        fun encodeWeeks(weeks: Iterable<Int>): String {
+            val sorted = weeks.filter { it in 1..MAX_WEEK }.toSortedSet()
+            if (sorted.isEmpty()) return ""
+            val parts = mutableListOf<String>()
+            var start = -1
+            var prev = -1
+            for (w in sorted) {
+                if (start < 0) {
+                    start = w
+                } else if (w != prev + 1) {
+                    parts.add(if (start == prev) "$start" else "$start-$prev")
+                    start = w
+                }
+                prev = w
+            }
+            if (start > 0) parts.add(if (start == prev) "$start" else "$start-$prev")
+            return parts.joinToString(",")
+        }
+
         /** 解析 "2-17" / "2" / "2-9,11-17" 形式的周次 */
         fun parseWeeks(raw: String): List<IntRange> {
             if (raw.isBlank()) return emptyList()
@@ -138,7 +170,19 @@ data class WeekSchedule(
         val week = teachingWeekOf(date)
         if (week < 1 || week > 40) return emptyList()
         // 法定节假日默认停课：课表按「周次 + 星期」排课，不会自动避开假日，统一在此扣除
-        if (HolidayTable.isHoliday(date)) return emptyList()
+        // （用户可在设置里开启「节假日显示课表」，开启后照常返回当天课程）
+        if (HolidayTable.hidesCourses(date)) return emptyList()
+        return coursesOfDay(date.dayOfWeek.value).filter { it.occursInWeek(week) }
+    }
+
+    /**
+     * 指定日期「原本要上的课」，**不扣除法定节假日**。
+     *
+     * 调休 / 调课需要看到节假日当天的课（否则节日当天课表是空的，没东西可调）。
+     */
+    fun rawCoursesOnDate(date: LocalDate): List<Course> {
+        val week = teachingWeekOf(date)
+        if (week < 1 || week > 40) return emptyList()
         return coursesOfDay(date.dayOfWeek.value).filter { it.occursInWeek(week) }
     }
 }
@@ -167,9 +211,22 @@ data class SemesterSchedule(
     fun teachingWeekOf(date: LocalDate): Int =
         Math.floorDiv(date.toEpochDay() - anchorEpochDay, 7L).toInt() + 1
 
+    /** 指定日期要上的课程（含节假日停课判定，与 [WeekSchedule.coursesOnDate] 一致） */
+    fun coursesOnDate(date: LocalDate): List<Course> = week(teachingWeekOf(date)).coursesOnDate(date)
+
+    /**
+     * 指定日期「原本要上的课」，**不扣除法定节假日**（调休/调课需要看到节假日当天的课）。
+     * 日期不在本学期范围内时返回空列表。
+     */
+    fun rawCoursesOnDate(date: LocalDate): List<Course> {
+        val weekNo = teachingWeekOf(date)
+        if (weekNo < 1 || weekNo > 40) return emptyList()
+        return weeks[weekNo].orEmpty()
+            .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
+    }
+
     /** 转换为单周模型（供日/周视图、图片导出、提醒等复用原有逻辑） */
-    fun week(weekNo: Int): WeekSchedule = WeekSchedule(
-        semesterLabel = semesterLabel,
+    fun week(weekNo: Int): WeekSchedule = WeekSchedule(        semesterLabel = semesterLabel,
         weekNo = weekNo,
         weekRangeLabel = rangeLabelOf(weekNo),
         anchorEpochDay = anchorEpochDay,

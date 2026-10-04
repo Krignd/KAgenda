@@ -195,6 +195,21 @@ interface AppStrings {
      */
     fun secAccountSubOf(schoolId: String, schoolName: String): String
     val labelStudentId: String
+    // ---------- 身份预设（AI 条件分支时按身份选择，见 SettingsStore profile*） ----------
+    val secProfile: String
+    val secProfileSub: String
+    val labelCollege: String
+    val labelMajor: String
+    val labelGrade: String
+    val labelClazz: String
+    val btnSaveProfile: String
+    // ---------- AI 后台识别完成后的浮动通知 / 顶栏角标 ----------
+    val aiDoneTitle: String
+    fun aiDoneBody(n: Int): String
+    val aiFailedTitle: String
+    val channelAiName: String
+    val channelAiDesc: String
+    val aiBadgeDesc: String
     val labelPassword: String
     val labelPasswordKeep: String
     val btnSaveAndSync: String
@@ -379,6 +394,9 @@ interface AppStrings {
     val permBatteryWhy: String
     val permStorageName: String
     val permStorageWhy: String
+    /** 安装未知应用（应用内更新安装新版 APK 需要；属特殊权限，需用户去系统设置开启） */
+    val permInstallName: String
+    val permInstallWhy: String
     fun permMissingCount(n: Int): String
     val imgDirNote: String
 
@@ -435,10 +453,34 @@ interface AppStrings {
     val askClearCacheBody: String
 
     val secAbout: String
+    val settingsTabAboutFeedback: String
     val aboutSub: String
     val aboutBody: String
     val aboutTip: String
     val aboutPeriods: String
+
+    // ---------------- 应用内更新（检查 / 下载 / 安装） ----------------
+    /** 「设置 → 关于」里的检查更新卡片标题 */
+    val updateCheck: String
+    fun updateCurrent(name: String): String
+    val updateChecking: String
+    val updateLatest: String
+    fun updateAvailable(name: String, size: String): String
+    val updateDownloadAndInstall: String
+    val updateInstall: String
+    fun updateDownloading(percent: Int): String
+    fun updateDownloaded(size: String): String
+    fun updateStartDownload(size: String): String
+    fun updateFailed(msg: String): String
+    /** 顶栏「K日程」右侧的小字提示 */
+    val updateHintAvailable: String
+    fun updateHintDownloading(percent: Int): String
+    val updateHintInstall: String
+    val updateSizeUnknown: String
+    val updatePermissionTitle: String
+    val updatePermissionBody: String
+    val updateOpenSettings: String
+    val updatePackageInvalid: String
 
     // ---------------- 日志 / 开发者工具 ----------------
     val logTitle: String
@@ -610,6 +652,86 @@ interface AppStrings {
     val btnFollowAll: String
     val btnKeepAll: String
     val editConflictLater: String
+
+    // ---------------- 手动改课表：删除 / 新增 / 调课（调休） ----------------
+    val editActionModify: String
+    val editActionDelete: String
+    val editActionMove: String
+    val editDeleteIntro: String
+    val editDeleteWeeksHint: String
+    fun editMoveIntro(n: Int): String
+    val editMoveWholeDay: String
+    fun editMoveWholeDayHint(n: Int): String
+    val editMoveSingle: String
+    val editMoveSingleHint: String
+    val editMoveTarget: String
+    val editMovePickDate: String
+    val weeksAll: String
+    val weeksNone: String
+    val courseAddTitle: String
+    val courseAddIntro: String
+    val btnAddCourse: String
+    val btnCopyCourse: String
+    val aboutOfficialSite: String
+    val aboutGithubRepo: String
+
+    // ---------------- 用户反馈 ----------------
+    val secFeedback: String
+    val secFeedbackSub: String
+    val feedbackIntro: String
+    val feedbackTopic: String
+    val topicBug: String
+    val topicFeature: String
+    val topicSchool: String
+    val topicOther: String
+    val feedbackPlaceholder: String
+    val feedbackContact: String
+    val btnFeedbackSend: String
+    val msgFeedbackSent: String
+    val msgFeedbackFailed: String
+    val feedbackEmpty: String
+    val feedbackIncludeNote: String
+    val btnRescheduleDate: String
+    val longPressHint: String
+    val rescheduleTitle: String
+    fun rescheduleIntro(month: Int, day: Int, n: Int): String
+    val rescheduleSingleHint: String
+    val msgCourseDeleted: String
+    val msgCourseAdded: String
+    fun msgCourseMoved(n: Int, month: Int, day: Int): String
+    val msgMoveSameDay: String
+    val msgMoveNoWeek: String
+
+    // ---------------- 节假日显示课表 ----------------
+    val secHolidayCourses: String
+    val secHolidayCoursesSub: String
+    val holidayCoursesSwitch: String
+    val holidayCoursesNote: String
+
+    // ---------------- 数据备份与导入 ----------------
+    val secBackup: String
+    val secBackupSub: String
+    val backupIntro: String
+    val backupIncludes: String
+    val btnBackupExport: String
+    val btnBackupImport: String
+    val backupAskImportTitle: String
+    val backupAskImportBody: String
+    val backupFileName: String
+    val backupExportTitle: String
+    val backupExportDefault: String
+    val backupExportCustom: String
+    fun msgBackupExportedDefault(dir: String, name: String): String
+    val backupImportTitle: String
+    fun backupImportFound(n: Int, dir: String): String
+    val backupImportPickOther: String
+    fun backupDefaultDirNote(dir: String): String
+    fun msgBackupExported(size: String): String
+    val msgBackupExportFailed: String
+    fun msgBackupImported(agenda: Int, edits: Int, courses: Int): String
+    val msgBackupInvalid: String
+    fun msgBackupNewer(version: Int): String
+    fun msgBackupFailed(detail: String): String
 }
 
 // ==================================================================== 中文
@@ -800,6 +922,20 @@ object ZhStrings : AppStrings {
         return if (sys != null) "登录$sys" else "登录${schoolName}的教务系统"
     }
     override val labelStudentId = "学号"
+    override val secProfile = "身份预设"
+    override val secProfileSub =
+        "填写学院/专业/年级/班级后，AI 助手遇到「多个班级 / 多个时间分支」的通知时，只添加与你相符的那一条"
+    override val labelCollege = "学院"
+    override val labelMajor = "专业"
+    override val labelGrade = "年级"
+    override val labelClazz = "班级"
+    override val btnSaveProfile = "保存身份预设"
+    override val aiDoneTitle = "AI 识别完成"
+    override fun aiDoneBody(n: Int) = "识别出 $n 条，点此查看结果"
+    override val aiFailedTitle = "AI 识别失败"
+    override val channelAiName = "AI 识别结果"
+    override val channelAiDesc = "识别完成后的浮动提醒（可单独关闭）"
+    override val aiBadgeDesc = "有未查看的 AI 识别结果"
     override val labelPassword = "密码"
     override val labelPasswordKeep = "密码（已保存，留空表示不修改）"
     override val btnSaveAndSync = "保存并同步"
@@ -983,6 +1119,8 @@ object ZhStrings : AppStrings {
     override val permBatteryWhy = "后台提醒更可靠"
     override val permStorageName = "存储权限（Android 8.0–9）"
     override val permStorageWhy = "导出课表图片到系统相册"
+    override val permInstallName = "安装未知应用"
+    override val permInstallWhy = "应用内「检查更新 → 下载并安装」需要它（不影响其他功能）"
     override fun permMissingCount(n: Int) = "未授予 $n 项"
     override val imgDirNote = "图片会保存到系统相册的 Pictures/K日程 目录。"
 
@@ -1035,6 +1173,7 @@ object ZhStrings : AppStrings {
     override val askClearCacheBody = "将删除课表缓存与运行日志。"
 
     override val secAbout = "关于"
+    override val settingsTabAboutFeedback = "关于&反馈"
     override val aboutSub = "K日程 ${BuildConfig.VERSION_NAME}"
     override val aboutBody =
         "本地优先的课表与日程应用：课表从学校教务系统同步后缓存在本机，" +
@@ -1042,7 +1181,28 @@ object ZhStrings : AppStrings {
             "内置 DeepSeek AI 助手（可添加/修改/删除日程，入口：顶栏按钮或悬浮球）。" +
             "除用户自行配置的 AI 接口外，不上传任何个人信息。"
     override val aboutTip = "提示：若同步失败而网页可正常访问，多为学校页面改版——北航可到「开发者工具」分享运行日志；其他学校可在「设置 → 学校 → 添加学校」更新适配代码。"
-    override val aboutPeriods = "课程节数与时間均可自定义：默认 14 节（上午 4 + 下午 5 + 晚上 5），可在「设置 → 用户自定义 → 课程时间」中增删节次并修改起止时间。课程信息已经变了但教务系统还没更新时，可在课程详情里用「修改课程」做本地修正（支持「仅这一次」与「全部同一课程」），设置里可一键还原或清除后重新同步。"
+    override val aboutPeriods = "课程节数与时间均可自定义：默认 14 节（上午 4 + 下午 5 + 晚上 5），可在「设置 → 用户自定义 → 课程时间」中增删节次并修改起止时间。课程信息已经变了但教务系统还没更新时，可在课程详情里用「修改课程」做本地修正（支持「仅这一次」与「全部同一课程」），设置里可一键还原或清除后重新同步。"
+
+    override val updateCheck = "检查更新"
+    override fun updateCurrent(name: String) = "当前版本：$name"
+    override val updateChecking = "正在检查更新…"
+    override val updateLatest = "已是最新版本"
+    override fun updateAvailable(name: String, size: String) = "发现新版本 $name（$size）"
+    override val updateDownloadAndInstall = "下载并安装"
+    override val updateInstall = "安装"
+    override fun updateDownloading(percent: Int) = "正在下载… $percent%"
+    override fun updateDownloaded(size: String) = "更新包已下载（$size），点此安装"
+    override fun updateStartDownload(size: String) = "开始下载更新包（$size）"
+    override fun updateFailed(msg: String) = "更新失败：$msg"
+    override val updateHintAvailable = "(有更新!)"
+    override fun updateHintDownloading(percent: Int) = "(下载中 $percent%)"
+    override val updateHintInstall = "(点击安装)"
+    override val updateSizeUnknown = "大小未知"
+    override val updatePermissionTitle = "需要「安装未知应用」权限"
+    override val updatePermissionBody =
+        "为安装新版 K日程，请在系统设置里允许本应用「安装未知应用」，然后返回重试。"
+    override val updateOpenSettings = "去设置"
+    override val updatePackageInvalid = "更新包不可用，请重新下载"
 
     override val logTitle = "运行日志"
     override val logDesc = "日志记录每次同步的阶段、页面状态与错误信息（不包含密码），可直接分享给开发者排查。"
@@ -1118,7 +1278,7 @@ object ZhStrings : AppStrings {
 
     override val secUiStyle = "界面风格"
     override val secUiStyleSub = "选择整体视觉风格（默认保留原样式）"
-    override val uiStyleDefault = "默认"
+    override val uiStyleDefault = "默认(简约)"
     override val uiStyleDefaultSub = "当前的不透明卡片样式"
     override val uiStyleGlass = "液态玻璃"
     override val uiStyleGlassSub = "渐变背景 + 半透明毛玻璃卡片，圆角更柔和"
@@ -1207,6 +1367,93 @@ object ZhStrings : AppStrings {
     override val btnFollowAll = "全部跟随教务系统"
     override val btnKeepAll = "全部保留我的修改"
     override val editConflictLater = "稍后处理"
+    // ---------------- 手动改课表：删除 / 新增 / 调课（调休） ----------------
+    override val editActionModify = "修改信息"
+    override val editActionDelete = "删除课程"
+    override val editActionMove = "调课"
+    override val editDeleteIntro =
+        "选中的周次里不再显示这门课（只在本机生效，不会改动教务系统）。"
+    override val editDeleteWeeksHint = "全选 = 整门课都隐藏"
+    override fun editMoveIntro(n: Int) = "把这一天的课整体或单门迁到其他日期（只在本机生效）。这一天共 $n 门课。"
+    override val editMoveWholeDay = "整天的课一起调"
+    override fun editMoveWholeDayHint(n: Int) = "这一天全部 $n 门课都迁到目标日期"
+    override val editMoveSingle = "只调某几节"
+    override val editMoveSingleHint = "勾选要迁过去的课（可多选），其余不动"
+    override val editMoveTarget = "目标日期"
+    override val editMovePickDate = "选择日期"
+    override val weeksAll = "全选"
+    override val weeksNone = "清空"
+    override val courseAddTitle = "新增课程"
+    override val courseAddIntro =
+        "教务系统里没有的课可以在这里本地添加（只在课表里显示，不会上传）。"
+    override val btnAddCourse = "添加课程"
+    override val btnCopyCourse = "复制课程"
+    override val aboutOfficialSite = "官方网站 / 下载页"
+    override val aboutGithubRepo = "GitHub 仓库"
+
+    override val secFeedback = "用户反馈"
+    override val secFeedbackSub = "问题、建议或课表适配需求"
+    override val feedbackIntro =
+        "反馈会提交到开发者站点（20071009.xyz）。请勿填写账号密码等敏感信息。"
+    override val feedbackTopic = "反馈主题"
+    override val topicBug = "问题反馈"
+    override val topicFeature = "功能建议"
+    override val topicSchool = "课表适配"
+    override val topicOther = "其他"
+    override val feedbackPlaceholder = "请描述遇到的问题或想要的功能…"
+    override val feedbackContact = "联系方式（选填）"
+    override val btnFeedbackSend = "提交反馈"
+    override val msgFeedbackSent = "反馈已提交，谢谢！"
+    override val msgFeedbackFailed = "提交失败，请检查网络后重试"
+    override val feedbackEmpty = "请先填写反馈内容"
+    override val feedbackIncludeNote =
+        "提交时会附带：应用版本、Android 版本、当前学校（不含学号、密码、课表内容）"
+    override val btnRescheduleDate = "调整至..."
+    override val longPressHint = "长按日期可调整至其他日期"
+    override val rescheduleTitle = "调整至..."
+    override fun rescheduleIntro(month: Int, day: Int, n: Int) =
+        "$month/$day 共有 $n 门课。选择要迁移的课与目标日期。"
+    override val rescheduleSingleHint = "只调某一节（在下方选择）"
+    override val msgCourseDeleted = "已删除（仅本机生效）"
+    override val msgCourseAdded = "已添加课程（仅本机生效）"
+    override fun msgCourseMoved(n: Int, month: Int, day: Int) = "已把 $n 门课调整到 $month/$day"
+    override val msgMoveSameDay = "目标日期与原来相同"
+    override val msgMoveNoWeek = "无法确定教学周，请先同步一次课表"
+
+    override val secHolidayCourses = "节假日显示课表"
+    override val secHolidayCoursesSub = "默认停课（不显示节假日当天的课）"
+    override val holidayCoursesSwitch = "节假日照常显示课表"
+    override val holidayCoursesNote =
+        "开启后，法定节假日当天的课会照常显示、提醒也会照常触发（方便查看与调休节假日课程）。"
+
+    override val secBackup = "数据备份与导入"
+    override val secBackupSub = "换机 / 重装前先导出一份"
+    override val backupIntro =
+        "导出一个备份文件（课表缓存、日程与计划、课程修正、全部设置），重装或换机后可导入恢复。"
+    override val backupIncludes =
+        "备份包含学号、课表、日程与设置；不含登录密码与 API Key（换机后无法解密，需重新输入）。"
+    override val btnBackupExport = "导出备份"
+    override val btnBackupImport = "导入备份"
+    override val backupAskImportTitle = "导入备份？"
+    override val backupAskImportBody =
+        "将用备份里的内容覆盖当前的课表、日程与设置（本机密码与 API Key 不受影响）。"
+    override val backupFileName = "KAgenda_backup"
+    override val backupExportTitle = "导出备份到"
+    override val backupExportDefault = "默认位置（推荐）"
+    override val backupExportCustom = "选择其他位置..."
+    override fun msgBackupExportedDefault(dir: String, name: String) = "备份已保存到 $dir/$name"
+    override val backupImportTitle = "导入备份"
+    override fun backupImportFound(n: Int, dir: String) = "在 $dir 找到 $n 份备份："
+    override val backupImportPickOther = "选择其他文件..."
+    override fun backupDefaultDirNote(dir: String) =
+        "默认位置：$dir（卸载重装后仍会保留；导入时优先检查这里）"
+    override fun msgBackupExported(size: String) = "备份已导出（$size）"
+    override val msgBackupExportFailed = "备份导出失败"
+    override fun msgBackupImported(agenda: Int, edits: Int, courses: Int) =
+        "备份已导入：日程/计划 $agenda 条，课程修正 $edits 条，导入课程 $courses 门"
+    override val msgBackupInvalid = "这不是 KAgenda 的备份文件"
+    override fun msgBackupNewer(version: Int) = "备份格式版本（$version）比当前应用新，请先更新应用"
+    override fun msgBackupFailed(detail: String) = "导入失败：$detail"
 }
 
 // ==================================================================== English
@@ -1399,6 +1646,20 @@ object EnStrings : AppStrings {
         return if (sys != null) "Sign in to $sys" else "Sign in to $schoolName's academic system"
     }
     override val labelStudentId = "Student ID"
+    override val secProfile = "Identity profile"
+    override val secProfileSub =
+        "Fill in your college/major/grade/class: when a notice lists several classes or time slots, the AI adds only the one matching you"
+    override val labelCollege = "College"
+    override val labelMajor = "Major"
+    override val labelGrade = "Grade"
+    override val labelClazz = "Class"
+    override val btnSaveProfile = "Save profile"
+    override val aiDoneTitle = "AI recognition finished"
+    override fun aiDoneBody(n: Int) = "$n item(s) found — tap to view"
+    override val aiFailedTitle = "AI recognition failed"
+    override val channelAiName = "AI results"
+    override val channelAiDesc = "Floating alert when recognition finishes (can be muted separately)"
+    override val aiBadgeDesc = "Unseen AI recognition result"
     override val labelPassword = "Password"
     override val labelPasswordKeep = "Password (saved — leave blank to keep)"
     override val btnSaveAndSync = "Save & sync"
@@ -1586,6 +1847,9 @@ object EnStrings : AppStrings {
     override val permBatteryWhy = "More reliable background reminders"
     override val permStorageName = "Storage (Android 8.0–9)"
     override val permStorageWhy = "Save schedule images to the system gallery"
+    override val permInstallName = "Install unknown apps"
+    override val permInstallWhy =
+        "Needed by Settings → About → Check for updates → Download & install (other features work without it)"
     override fun permMissingCount(n: Int) = "$n not granted"
     override val imgDirNote = "Images are saved to Pictures/K日程 in your gallery."
 
@@ -1639,6 +1903,7 @@ object EnStrings : AppStrings {
     override val askClearCacheBody = "The schedule cache and runtime logs will be deleted."
 
     override val secAbout = "About"
+    override val settingsTabAboutFeedback = "About & feedback"
     override val aboutSub = "K Agenda ${BuildConfig.VERSION_NAME}"
     override val aboutBody =
         "Local-first timetable & agenda app: your schedule is fetched from the school's academic system and cached on-device. " +
@@ -1647,6 +1912,27 @@ object EnStrings : AppStrings {
             "No personal data is uploaded except to the AI endpoint you configure."
     override val aboutTip = "Note: if syncing fails while the website works, the school pages may have changed. BUAA users can share the runtime log from Developer tools; other schools can update the adapter code in Settings → School → Add school."
     override val aboutPeriods = "Period count and times are fully customizable: 14 by default (4 morning + 5 afternoon + 5 evening). Add or remove periods and edit their times in Settings → Custom → Class times. When class info changes before the academic system catches up, use \u201cEdit course\u201d in the course details (this occurrence or all occurrences); Settings can restore them or clear and re-sync."
+
+    override val updateCheck = "Check for updates"
+    override fun updateCurrent(name: String) = "Current version: $name"
+    override val updateChecking = "Checking for updates…"
+    override val updateLatest = "You're on the latest version"
+    override fun updateAvailable(name: String, size: String) = "New version $name ($size)"
+    override val updateDownloadAndInstall = "Download & install"
+    override val updateInstall = "Install"
+    override fun updateDownloading(percent: Int) = "Downloading… $percent%"
+    override fun updateDownloaded(size: String) = "Update downloaded ($size) — tap to install"
+    override fun updateStartDownload(size: String) = "Downloading update package ($size)"
+    override fun updateFailed(msg: String) = "Update failed: $msg"
+    override val updateHintAvailable = "(Update!)"
+    override fun updateHintDownloading(percent: Int) = "(Downloading $percent%)"
+    override val updateHintInstall = "(Tap to install)"
+    override val updateSizeUnknown = "unknown size"
+    override val updatePermissionTitle = "\"Install unknown apps\" permission needed"
+    override val updatePermissionBody =
+        "To install the new K Agenda, allow this app to install unknown apps in system settings, then come back and retry."
+    override val updateOpenSettings = "Open settings"
+    override val updatePackageInvalid = "Update package unavailable — please download again"
 
     override val logTitle = "Runtime logs"
     override val logDesc = "Logs record each sync stage, page state and errors (never passwords). Share them with the developer for diagnosis."
@@ -1724,7 +2010,7 @@ object EnStrings : AppStrings {
 
     override val secUiStyle = "Appearance"
     override val secUiStyleSub = "Choose the overall visual style (default keeps the current look)"
-    override val uiStyleDefault = "Default"
+    override val uiStyleDefault = "Default (Minimal)"
     override val uiStyleDefaultSub = "The current opaque card style"
     override val uiStyleGlass = "Liquid Glass"
     override val uiStyleGlassSub = "Gradient background + translucent frosted cards with softer corners"
@@ -1816,6 +2102,94 @@ object EnStrings : AppStrings {
     override val btnFollowAll = "Follow academic for all"
     override val btnKeepAll = "Keep all my edits"
     override val editConflictLater = "Later"
+    // ---------------- Manual timetable edits: delete / add / move ----------------
+    override val editActionModify = "Edit info"
+    override val editActionDelete = "Delete course"
+    override val editActionMove = "Reschedule"
+    override val editDeleteIntro =
+        "The course is hidden in the selected weeks (local only; the academic system is untouched)."
+    override val editDeleteWeeksHint = "Select all = hide the whole course"
+    override fun editMoveIntro(n: Int) =
+        "Move this day's courses (all or one) to another date (local only). This day has $n course(s)."
+    override val editMoveWholeDay = "Whole day together"
+    override fun editMoveWholeDayHint(n: Int) = "All $n course(s) of this day move to the target date"
+    override val editMoveSingle = "Several courses"
+    override val editMoveSingleHint = "Tick the courses to move (multi-select); the others stay"
+    override val editMoveTarget = "Target date"
+    override val editMovePickDate = "Pick a date"
+    override val weeksAll = "All"
+    override val weeksNone = "Clear"
+    override val courseAddTitle = "Add course"
+    override val courseAddIntro =
+        "Add a course missing from the academic system (local only; nothing is uploaded)."
+    override val btnAddCourse = "Add course"
+    override val btnCopyCourse = "Copy course"
+    override val aboutOfficialSite = "Official site / downloads"
+    override val aboutGithubRepo = "GitHub repository"
+
+    override val secFeedback = "Feedback"
+    override val secFeedbackSub = "Bugs, ideas or school support"
+    override val feedbackIntro =
+        "Feedback is sent to the developer's site (20071009.xyz). Never include credentials."
+    override val feedbackTopic = "Topic"
+    override val topicBug = "Bug report"
+    override val topicFeature = "Feature request"
+    override val topicSchool = "School support"
+    override val topicOther = "Other"
+    override val feedbackPlaceholder = "Describe the problem or the feature you want..."
+    override val feedbackContact = "Contact (optional)"
+    override val btnFeedbackSend = "Send"
+    override val msgFeedbackSent = "Feedback sent, thank you!"
+    override val msgFeedbackFailed = "Send failed; check your network and retry"
+    override val feedbackEmpty = "Please write something first"
+    override val feedbackIncludeNote =
+        "Attached automatically: app version, Android version, current school (no student ID, password or timetable content)"
+    override val btnRescheduleDate = "Move to..."
+    override val longPressHint = "Long-press a date to move its courses"
+    override val rescheduleTitle = "Move to..."
+    override fun rescheduleIntro(month: Int, day: Int, n: Int) =
+        "$month/$day has $n course(s). Choose what to move and the target date."
+    override val rescheduleSingleHint = "Move a single course (pick below)"
+    override val msgCourseDeleted = "Deleted (local only)"
+    override val msgCourseAdded = "Course added (local only)"
+    override fun msgCourseMoved(n: Int, month: Int, day: Int) = "Moved $n course(s) to $month/$day"
+    override val msgMoveSameDay = "Target date is the same as the source"
+    override val msgMoveNoWeek = "Cannot determine the teaching week; sync the timetable first"
+
+    override val secHolidayCourses = "Holiday timetable"
+    override val secHolidayCoursesSub = "Off by default (holiday classes hidden)"
+    override val holidayCoursesSwitch = "Show classes on public holidays"
+    override val holidayCoursesNote =
+        "When on, classes on public holidays are shown and reminders fire as usual (handy for rescheduling)."
+
+    override val secBackup = "Backup & restore"
+    override val secBackupSub = "Export before switching devices or reinstalling"
+    override val backupIntro =
+        "Export a single backup file (timetable cache, agenda and plans, course edits, all settings) and import it after reinstalling or switching devices."
+    override val backupIncludes =
+        "The backup contains your student ID, timetable, agenda and settings. It excludes the password and API key (they cannot be decrypted on another device)."
+    override val btnBackupExport = "Export backup"
+    override val btnBackupImport = "Import backup"
+    override val backupAskImportTitle = "Import backup?"
+    override val backupAskImportBody =
+        "The backup will overwrite the current timetable, agenda and settings (password and API key are kept)."
+    override val backupFileName = "KAgenda_backup"
+    override val backupExportTitle = "Export backup to"
+    override val backupExportDefault = "Default location (recommended)"
+    override val backupExportCustom = "Choose another location..."
+    override fun msgBackupExportedDefault(dir: String, name: String) = "Backup saved to $dir/$name"
+    override val backupImportTitle = "Import backup"
+    override fun backupImportFound(n: Int, dir: String) = "Found $n backup(s) in $dir:"
+    override val backupImportPickOther = "Choose another file..."
+    override fun backupDefaultDirNote(dir: String) =
+        "Default location: $dir (kept after reinstalling; checked first when importing)"
+    override fun msgBackupExported(size: String) = "Backup exported ($size)"
+    override val msgBackupExportFailed = "Backup export failed"
+    override fun msgBackupImported(agenda: Int, edits: Int, courses: Int) =
+        "Backup imported: $agenda agenda/plan item(s), $edits course edit(s), $courses imported course(s)"
+    override val msgBackupInvalid = "Not a KAgenda backup file"
+    override fun msgBackupNewer(version: Int) = "Backup format v$version is newer than this app; update the app first"
+    override fun msgBackupFailed(detail: String) = "Import failed: $detail"
 }
 
 // ==================================================================== Français
@@ -2010,6 +2384,20 @@ object FrStrings : AppStrings {
         return if (sys != null) "Connexion à $sys" else "Connexion au système académique de $schoolName"
     }
     override val labelStudentId = "Identifiant étudiant"
+    override val secProfile = "Profil d'identité"
+    override val secProfileSub =
+        "Renseignez votre université/filière/année/classe : si une annonce liste plusieurs classes ou créneaux, l'IA n'ajoute que celui qui vous correspond"
+    override val labelCollege = "Université"
+    override val labelMajor = "Filière"
+    override val labelGrade = "Année"
+    override val labelClazz = "Classe"
+    override val btnSaveProfile = "Enregistrer le profil"
+    override val aiDoneTitle = "Analyse IA terminée"
+    override fun aiDoneBody(n: Int) = "$n élément(s) trouvé(s) — appuyez pour voir"
+    override val aiFailedTitle = "Échec de l'analyse IA"
+    override val channelAiName = "Résultats IA"
+    override val channelAiDesc = "Alerte flottante à la fin de l'analyse (désactivable séparément)"
+    override val aiBadgeDesc = "Résultat IA non consulté"
     override val labelPassword = "Mot de passe"
     override val labelPasswordKeep = "Mot de passe (enregistré — laisser vide pour conserver)"
     override val btnSaveAndSync = "Enregistrer et synchroniser"
@@ -2198,6 +2586,9 @@ object FrStrings : AppStrings {
     override val permBatteryWhy = "Rappels en arrière-plan plus fiables"
     override val permStorageName = "Stockage (Android 8.0–9)"
     override val permStorageWhy = "Enregistrer les images dans la galerie système"
+    override val permInstallName = "Installer des applis inconnues"
+    override val permInstallWhy =
+        "Nécessaire pour Réglages → À propos → Vérifier les mises à jour → Télécharger et installer (sans effet sur les autres fonctions)"
     override fun permMissingCount(n: Int) = "$n non accordées"
     override val imgDirNote = "Les images sont enregistrées dans Pictures/K日程."
 
@@ -2251,6 +2642,7 @@ object FrStrings : AppStrings {
     override val askClearCacheBody = "Le cache et les journaux seront supprimés."
 
     override val secAbout = "À propos"
+    override val settingsTabAboutFeedback = "À propos & retours"
     override val aboutSub = "K Agenda ${BuildConfig.VERSION_NAME}"
     override val aboutBody =
         "Application locale d'abord : l'emploi du temps est récupéré depuis le système académique de l'école et mis en cache sur l'appareil. " +
@@ -2259,6 +2651,27 @@ object FrStrings : AppStrings {
             "Aucune donnée personnelle n'est envoyée, hormis vers l'API IA que vous configurez."
     override val aboutTip = "Remarque : si la synchro échoue alors que le site fonctionne, les pages de l'école ont peut-être changé. Les utilisateurs BUAA peuvent partager le journal via Outils développeur ; pour les autres écoles, mettez à jour le code d'adaptation dans Réglages → École → Ajouter une école."
     override val aboutPeriods = "Le nombre de périodes et leurs horaires sont entièrement personnalisables : 14 par défaut (4 le matin + 5 l'après-midi + 5 le soir). Ajoutez/supprimez des périodes dans Réglages → Personnalisation → Horaires des cours. Si les informations changent avant le système scolaire, utilisez « Modifier le cours » dans le détail du cours (cette occurrence ou toutes) ; les réglages permettent de restaurer ou d'effacer puis resynchroniser."
+
+    override val updateCheck = "Vérifier les mises à jour"
+    override fun updateCurrent(name: String) = "Version actuelle : $name"
+    override val updateChecking = "Vérification des mises à jour…"
+    override val updateLatest = "Vous avez la dernière version"
+    override fun updateAvailable(name: String, size: String) = "Nouvelle version $name ($size)"
+    override val updateDownloadAndInstall = "Télécharger et installer"
+    override val updateInstall = "Installer"
+    override fun updateDownloading(percent: Int) = "Téléchargement… $percent %"
+    override fun updateDownloaded(size: String) = "Mise à jour téléchargée ($size) — appuyez pour installer"
+    override fun updateStartDownload(size: String) = "Téléchargement du paquet de mise à jour ($size)"
+    override fun updateFailed(msg: String) = "Échec de la mise à jour : $msg"
+    override val updateHintAvailable = "(Mise à jour !)"
+    override fun updateHintDownloading(percent: Int) = "(Téléchargement $percent %)"
+    override val updateHintInstall = "(Appuyer pour installer)"
+    override val updateSizeUnknown = "taille inconnue"
+    override val updatePermissionTitle = "Autorisation « Installer des applis inconnues » requise"
+    override val updatePermissionBody =
+        "Pour installer la nouvelle version de K Agenda, autorisez cette application à installer des applis inconnues dans les réglages système, puis revenez réessayer."
+    override val updateOpenSettings = "Ouvrir les réglages"
+    override val updatePackageInvalid = "Paquet de mise à jour indisponible — veuillez retélécharger"
 
     override val logTitle = "Journaux d'exécution"
     override val logDesc = "Les journaux enregistrent chaque étape de synchro, l'état des pages et les erreurs (jamais les mots de passe)."
@@ -2336,7 +2749,7 @@ object FrStrings : AppStrings {
 
     override val secUiStyle = "Apparence"
     override val secUiStyleSub = "Choisissez le style visuel global (par défaut : style actuel conservé)"
-    override val uiStyleDefault = "Par défaut"
+    override val uiStyleDefault = "Par défaut (minimal)"
     override val uiStyleDefaultSub = "Le style actuel à cartes opaques"
     override val uiStyleGlass = "Verre liquide"
     override val uiStyleGlassSub = "Fond dégradé + cartes translucides dépoli, coins plus doux"
@@ -2428,6 +2841,94 @@ object FrStrings : AppStrings {
     override val btnFollowAll = "Tout suivre le système"
     override val btnKeepAll = "Garder toutes mes modifications"
     override val editConflictLater = "Plus tard"
+    // ---------------- Modification manuelle : supprimer / ajouter / déplacer ----------------
+    override val editActionModify = "Modifier"
+    override val editActionDelete = "Supprimer le cours"
+    override val editActionMove = "Déplacer"
+    override val editDeleteIntro =
+        "Le cours sera masqué pour les semaines sélectionnées (local uniquement, le système scolaire n'est pas modifié)."
+    override val editDeleteWeeksHint = "Tout sélectionner = masquer tout le cours"
+    override fun editMoveIntro(n: Int) =
+        "Déplacer les cours de ce jour (tous ou un seul) vers une autre date (local uniquement). Ce jour compte $n cours."
+    override val editMoveWholeDay = "Toute la journée"
+    override fun editMoveWholeDayHint(n: Int) = "Les $n cours de ce jour seront déplacés vers la date cible"
+    override val editMoveSingle = "Plusieurs cours"
+    override val editMoveSingleHint = "Cochez les cours à déplacer (multi-sélection) ; les autres restent"
+    override val editMoveTarget = "Date cible"
+    override val editMovePickDate = "Choisir une date"
+    override val weeksAll = "Toutes"
+    override val weeksNone = "Effacer"
+    override val courseAddTitle = "Ajouter un cours"
+    override val courseAddIntro =
+        "Ajoutez un cours absent du système scolaire (local uniquement, rien n'est envoyé)."
+    override val btnAddCourse = "Ajouter un cours"
+    override val btnCopyCourse = "Copier le cours"
+    override val aboutOfficialSite = "Site officiel / téléchargement"
+    override val aboutGithubRepo = "Dépôt GitHub"
+
+    override val secFeedback = "Retour utilisateur"
+    override val secFeedbackSub = "Bugs, idées ou adaptation d'école"
+    override val feedbackIntro =
+        "Le retour est envoyé au site du développeur (20071009.xyz). N'incluez jamais vos identifiants."
+    override val feedbackTopic = "Sujet"
+    override val topicBug = "Signaler un bug"
+    override val topicFeature = "Proposer une idée"
+    override val topicSchool = "Adaptation d'école"
+    override val topicOther = "Autre"
+    override val feedbackPlaceholder = "Décrivez le problème ou l'idée..."
+    override val feedbackContact = "Contact (facultatif)"
+    override val btnFeedbackSend = "Envoyer"
+    override val msgFeedbackSent = "Retour envoyé, merci !"
+    override val msgFeedbackFailed = "Échec de l'envoi ; vérifiez le réseau"
+    override val feedbackEmpty = "Écrivez d'abord votre message"
+    override val feedbackIncludeNote =
+        "Joint automatiquement : version, version d'Android, école (sans identifiant, mot de passe ni contenu de cours)"
+    override val btnRescheduleDate = "Déplacer vers..."
+    override val longPressHint = "Appui long sur une date pour déplacer les cours"
+    override val rescheduleTitle = "Déplacer vers..."
+    override fun rescheduleIntro(month: Int, day: Int, n: Int) =
+        "Le $month/$day compte $n cours. Choisissez les cours à déplacer et la date cible."
+    override val rescheduleSingleHint = "Déplacer un seul cours (choisir ci-dessous)"
+    override val msgCourseDeleted = "Supprimé (local uniquement)"
+    override val msgCourseAdded = "Cours ajouté (local uniquement)"
+    override fun msgCourseMoved(n: Int, month: Int, day: Int) = "$n cours déplacés au $month/$day"
+    override val msgMoveSameDay = "La date cible est identique à la source"
+    override val msgMoveNoWeek = "Semaine introuvable ; synchronisez d'abord l'emploi du temps"
+
+    override val secHolidayCourses = "Cours les jours fériés"
+    override val secHolidayCoursesSub = "Désactivé par défaut (cours masqués)"
+    override val holidayCoursesSwitch = "Afficher les cours les jours fériés"
+    override val holidayCoursesNote =
+        "Activé, les cours des jours fériés s'affichent et les rappels fonctionnent (utile pour les déplacer)."
+
+    override val secBackup = "Sauvegarde et restauration"
+    override val secBackupSub = "Exportez avant de changer d'appareil ou de réinstaller"
+    override val backupIntro =
+        "Exportez un fichier de sauvegarde (cache d'emploi du temps, agenda et plans, modifications de cours, réglages) à restaurer après réinstallation."
+    override val backupIncludes =
+        "La sauvegarde contient l'identifiant étudiant, l'emploi du temps, l'agenda et les réglages ; pas le mot de passe ni la clé API (indéchiffrables sur un autre appareil)."
+    override val btnBackupExport = "Exporter"
+    override val btnBackupImport = "Importer"
+    override val backupAskImportTitle = "Importer la sauvegarde ?"
+    override val backupAskImportBody =
+        "La sauvegarde remplacera l'emploi du temps, l'agenda et les réglages actuels (mot de passe et clé API conservés)."
+    override val backupFileName = "KAgenda_sauvegarde"
+    override val backupExportTitle = "Exporter la sauvegarde vers"
+    override val backupExportDefault = "Emplacement par défaut (recommandé)"
+    override val backupExportCustom = "Choisir un autre emplacement..."
+    override fun msgBackupExportedDefault(dir: String, name: String) = "Sauvegarde enregistrée dans $dir/$name"
+    override val backupImportTitle = "Importer la sauvegarde"
+    override fun backupImportFound(n: Int, dir: String) = "$n sauvegarde(s) trouvée(s) dans $dir :"
+    override val backupImportPickOther = "Choisir un autre fichier..."
+    override fun backupDefaultDirNote(dir: String) =
+        "Emplacement par défaut : $dir (conservé après réinstallation ; vérifié en premier)"
+    override fun msgBackupExported(size: String) = "Sauvegarde exportée ($size)"
+    override val msgBackupExportFailed = "Échec de l'export"
+    override fun msgBackupImported(agenda: Int, edits: Int, courses: Int) =
+        "Sauvegarde importée : $agenda éléments, $edits modifications, $courses cours importés"
+    override val msgBackupInvalid = "Ce n'est pas une sauvegarde KAgenda"
+    override fun msgBackupNewer(version: Int) = "Format v$version plus récent que l'application"
+    override fun msgBackupFailed(detail: String) = "Échec de l'import : $detail"
 }
 
 // ==================================================================== 全局入口

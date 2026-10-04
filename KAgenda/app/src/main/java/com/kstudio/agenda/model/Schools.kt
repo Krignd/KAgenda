@@ -53,6 +53,23 @@ object Schools {
     const val DEFAULT_ID = "buaa"
 
     /**
+     * 当前使用的学校 id（由设置流写入：KebiaoApp 启动 / AppViewModel 监听设置变化）。
+     *
+     * 供「只能拿到全局状态」的地方判定数据归属，例如：
+     * - 课表缓存（schedule_cache.json）里记的是哪所学校的课表；
+     * - 课程修正 / 删除 / 新增记录属于哪所学校（避免切校后张冠李戴）。
+     *
+     * 默认值与 [DEFAULT_ID] 一致，保证后台入口（小组件 / 常驻通知）在设置读取完成前不会误判。
+     */
+    @Volatile
+    var currentId: String = DEFAULT_ID
+        private set
+
+    fun setCurrent(id: String) {
+        currentId = id.ifBlank { DEFAULT_ID }
+    }
+
+    /**
      * 江苏大学的两条访问链路（三台主机的 WebVPN 加密路径、登录入口候选、
      * 课表页路径变体）已全部迁出到 data/UjsFlow.kt，分别由
      * [com.kstudio.agenda.data.UjsWebVpnFlow]（勾选「通过 WebVPN」）与

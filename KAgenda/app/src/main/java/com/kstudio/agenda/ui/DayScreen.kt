@@ -3,6 +3,7 @@ package com.kstudio.agenda.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +24,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Save
@@ -99,6 +102,10 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     // 课程详情（点课程卡片）与课程修改（详情 → 「修改课程」）
     var detailCourse by remember { mutableStateOf<Course?>(null) }
     var editingCourse by remember { mutableStateOf<Course?>(null) }
+    // 新增课程（本地添加）与「长按日期 → 调整至…」
+    var addCourseFor by remember { mutableStateOf<LocalDate?>(null) }
+    var copyFrom by remember { mutableStateOf<Course?>(null) }
+    var rescheduleSource by remember { mutableStateOf<LocalDate?>(null) }
 
     val currentWeek = week
     // 没有课表数据（未登录 / 同步失败 / 已清缓存）时不再整页早退：
@@ -118,7 +125,15 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     // 外层不加滑动手势：在周导航按钮上滑动不应切换日期；
     // 日期条自身支持左右连贯滑动切周（见 DayStripPager），内容区手势只作用于下方列表
     Column(Modifier.fillMaxSize()) {
-        DayStripPager(vm, monday, selected, flashDate = flashDate)
+        DayStripPager(
+            vm = vm,
+            monday = monday,
+            selected = selected,
+            flashDate = flashDate,
+            onLongPressDate = { d ->
+                if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday) else rescheduleSource = d
+            },
+        )
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 0.dp),
@@ -147,8 +162,18 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                 TextButton(onClick = { vm.goToday() }) { Text(t.backToToday) }
             }
             Spacer(Modifier.weight(1f))
-            // 只显示保存图标（不显示文字）
-            IconButton(onClick = { vm.saveDayImage(selected) }) {
+            // 新增课程（仅本地显示；长按日期可把当天的课「调整至…」）
+            // 两个图标统一显式尺寸，避免新增按钮后保存图标看起来变小
+            IconButton(
+                onClick = { addCourseFor = selected },
+                modifier = Modifier.size(44.dp),
+            ) {
+                Icon(Icons.Filled.Add, contentDescription = t.btnAddCourse)
+            }
+            IconButton(
+                onClick = { vm.saveDayImage(selected) },
+                modifier = Modifier.size(44.dp),
+            ) {
                 Icon(Icons.Filled.Save, contentDescription = t.saveDaySchedule)
             }
         }
@@ -309,20 +334,70 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                 detailCourse = null
             },
             onDismiss = { detailCourse = null },
+            onCopy = {
+                copyFrom = course
+                detailCourse = null
+            },
         )
     }
 
     editingCourse?.let { course ->
         CourseEditDialog(
             initial = course,
+            sourceDate = selected,
+            dayCourseCount = vm.coursesRawOnDate(selected).size,
             onDismiss = { editingCourse = null },
             onSave = { edited, applyAll ->
                 vm.saveCourseEdit(course, edited, applyAll)
                 editingCourse = null
             },
+            onDelete = { weeks, applyAll ->
+                vm.deleteCourse(course, weeks, applyAll)
+                editingCourse = null
+            },
+            onMove = { wholeDay, target ->
+                val day = vm.coursesRawOnDate(selected)
+                vm.moveCourses(selected, if (wholeDay) day else listOf(course), target)
+                editingCourse = null
+            },
             onNoChange = {
                 vm.message(t.editNoChange)
                 editingCourse = null
+            },
+        )
+    }
+
+    // 新增 / 复制课程（复制 = 用原课程信息预填新增页面）
+    if (addCourseFor != null || copyFrom != null) {
+        val base = copyFrom
+        val date = addCourseFor ?: selected
+        CourseAddDialog(
+            defaultDay = base?.dayOfWeek ?: date.dayOfWeek.value,
+            defaultWeek = vm.teachingWeekOf(date) ?: 1,
+            initial = base,
+            onDismiss = {
+                addCourseFor = null
+                copyFrom = null
+            },
+            onSave = { c ->
+                vm.addCourse(c)
+                addCourseFor = null
+                copyFrom = null
+            },
+            onInvalid = { vm.message(t.editNoChange) },
+        )
+    }
+
+    // 长按日期 → 调整至…（整天/单节调休）
+    rescheduleSource?.let { src ->
+        val dayCourses = remember(src, currentWeek) { vm.coursesRawOnDate(src) }
+        RescheduleDialog(
+            sourceDate = src,
+            dayCourses = dayCourses,
+            onDismiss = { rescheduleSource = null },
+            onConfirm = { courses, target ->
+                vm.moveCourses(src, courses, target)
+                rescheduleSource = null
             },
         )
     }
@@ -379,12 +454,14 @@ private fun pageIndexOf(minMonday: LocalDate, monday: LocalDate, totalPages: Int
  * 重算选中日，从而出现“选周四切到下一周变回周一”“逐日滑到上一周从周日跳回周一/周六”等异常。
  * 另外用 [programmaticTarget] 标记程序化滚动目标页，避免动画过程被误判为用户滑动。
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun DayStripPager(
     vm: AppViewModel,
     monday: LocalDate,
     selected: LocalDate,
     flashDate: LocalDate? = null,
+    onLongPressDate: ((LocalDate) -> Unit)? = null,
 ) {
     // 页范围覆盖应用允许的导航区间（与 vm.navMinDate/navMaxDate 一致）
     val minMonday = remember { mondayOfDate(vm.navMinDate) }
@@ -431,17 +508,20 @@ internal fun DayStripPager(
             selected = selected,
             onSelect = vm::selectDate,
             flashDate = flashDate,
+            onLongPress = onLongPressDate,
         )
     }
 }
 
 /** 一周 7 个日期框（等宽），供日视图与「计划」页共用；[flashDate] 命中时边框闪烁 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun DayStrip(
     monday: LocalDate,
     selected: LocalDate,
     onSelect: (LocalDate) -> Unit,
     flashDate: LocalDate? = null,
+    onLongPress: ((LocalDate) -> Unit)? = null,
 ) {
     val today = LocalDate.now()
     val t = LocalStrings.current
@@ -503,7 +583,10 @@ internal fun DayStrip(
                             RoundedCornerShape(14.dp),
                         ) else Modifier
                     )
-                    .clickable { onSelect(date) }
+                    .combinedClickable(
+                        onClick = { onSelect(date) },
+                        onLongClick = onLongPress?.let { lp -> { lp(date) } },
+                    )
                     .padding(vertical = 8.dp),
             ) {
                 Text(

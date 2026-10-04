@@ -52,6 +52,7 @@ object ScheduleParser {
                     startPeriod = start,
                     endPeriod = end,
                     dayOfWeek = day,
+                    extraInfo = buildExtraInfo(o.optJSONObject("extra")),
                 )
             )
         }
@@ -91,6 +92,48 @@ object ScheduleParser {
             fetchedAtMillis = System.currentTimeMillis(),
         )
     }.getOrNull()
+
+    /**
+     * 把提取脚本给出的 `extra` 结构拼成「标签：值」多行文本（存进 [Course.extraInfo]）。
+     *
+     * 标签用中文：这些内容本身来自学校页面（课程名/班级名/性质都是中文），
+     * 翻成英文反而不好核对。空字段直接跳过。
+     */
+    private fun buildExtraInfo(extra: JSONObject?): String {
+        if (extra == null) return ""
+        val lines = mutableListOf<String>()
+        fun add(label: String, key: String) {
+            val v = extra.optString(key).trim()
+            if (v.isNotBlank()) lines.add("$label：$v")
+        }
+        add("校区", "campus")
+        add("开设班级", "classNames")
+        add("开课学期", "term")
+        val classNo = extra.optString("classNo").trim()
+        if (classNo.isNotBlank()) lines.add("教学班号：$classNo")
+        else add("教学班名称", "clazz")
+        add("班型", "classType")
+        add("开课学院", "college")
+        add("学分", "credits")
+        add("课程性质", "nature")
+        add("选课备注", "note")
+        return lines.joinToString("\n")
+    }
+
+    /**
+     * 教师名清理。
+     *
+     * 教务接口的 cellDetail 里，教师字段常见“刘浩然,”或“刘浩然/1-4节”这种带分隔符/节次的写法，
+     * 直接展示就会出现莫名的逗号（2026-10-04 用户报的北航第五周问题）。
+     * 这里：先去掉尾部的 [节次]，再剥掉首尾分隔符（，,、;；/|·）与多余空白。
+     * 多个教师（“张三,李四”）中间的分隔符保留，不影响展示。
+     */
+    private fun cleanTeacher(raw: String): String =
+        raw.trim()
+            .replace(Regex("/?\\s*\\d{1,2}\\s*[-—－~]\\s*\\d{1,2}\\s*节\\s*$"), "")
+            .trim(',', '，', '、', ';', '；', '/', '|', '·', ' ', '\u00a0', '\u3000')
+            .replace(Regex("\\s+"), " ")
+            .trim()
 
     /** 适配器 day 字段：数字或中文星期 */
     private fun parseAdapterDay(v: Any?): Int? = when (v) {
@@ -443,7 +486,7 @@ object ScheduleParser {
         return Course(
             title = title,
             code = o.optString("courseCode").trim(),
-            teacher = teacher,
+            teacher = cleanTeacher(teacher),
             weeksRaw = normalizeWeeks(weeks),
             room = room,
             startPeriod = start,

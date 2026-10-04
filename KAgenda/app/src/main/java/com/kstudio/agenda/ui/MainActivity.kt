@@ -103,7 +103,10 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         intent ?: return
-        val quickAdd = intent.getBooleanExtra(EXTRA_QUICK_ADD, false)
+        // AI 识别完成的通知点进来：直接打开 AI 助手界面（结果已在 ViewModel 里）
+        // 字符串字面量与 Notifier.EXTRA_OPEN_AI_RESULT 保持一致
+        val openAiResult = intent.getBooleanExtra("kagenda_open_ai_result", false)
+        val quickAdd = intent.getBooleanExtra(EXTRA_QUICK_ADD, false) || openAiResult
         val focusDay = if (intent.hasExtra(EXTRA_FOCUS_EPOCH_DAY)) {
             intent.getLongExtra(EXTRA_FOCUS_EPOCH_DAY, -1L).takeIf { it >= 0 }
         } else null
@@ -119,6 +122,7 @@ class MainActivity : ComponentActivity() {
         )
         // 消费后清除 extras：避免旋转/恢复时重复触发快速添加或闪烁
         intent.removeExtra(EXTRA_QUICK_ADD)
+        intent.removeExtra("kagenda_open_ai_result")
         intent.removeExtra(EXTRA_FOCUS_EPOCH_DAY)
         intent.removeExtra(EXTRA_FOCUS_TITLE)
         intent.removeExtra(EXTRA_FOCUS_FROM_WIDGET)

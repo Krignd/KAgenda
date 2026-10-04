@@ -309,7 +309,7 @@ object ScheduleImageRenderer {
         for (dayNum in 1..daysInMonth) {
             val date = monthStart.withDayOfMonth(dayNum)
             val bars = mutableListOf<Pair<String, Int>>()
-            if (semester != null && !HolidayTable.isHoliday(date)) {
+            if (semester != null && !HolidayTable.hidesCourses(date)) {
                 val weekNo = semester.teachingWeekOf(date)
                 semester.weeks[weekNo]
                     ?.filter { it.dayOfWeek == date.dayOfWeek.value }

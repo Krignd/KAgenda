@@ -27,16 +27,19 @@ object LocalSmartParser {
     private val PLAN_WORDS = listOf(
         "计划", "待办", "任务", "目标", "打卡", "习惯", "todo", "Todo", "TODO",
         "减肥", "健身", "跑步", "背单词", "复习计划", "学习计划",
+        "作业", "复习", "预习", "刷题", "错题", "练琴", "练字", "读文献", "看论文",
     )
 
     /** 详情行关键词：这类行并入上一条（避免把 “地点：xxx” 拆成独立事件） */
     private val DETAIL_PREFIXES = listOf(
         "时间", "地点", "地址", "备注", "内容", "参加", "对象", "要求", "联系人", "联系电话",
         "主办", "承办", "方式", "议程", "说明", "费用", "签到",
+        "主讲", "面向", "报名", "截止", "注意", "授课", "教室", "学分", "考试范围",
     )
 
     private val MARKER_REGEX = Regex(
-        "^\\s*(?:[-*•·▪▫●○◆◇–—>]+|\\d{1,2}\\s*[.、)）]|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫]|\\(\\d{1,2}\\)|\\[\\d{1,2}]|\\d{1,2}月\\d{1,2}日)\\s*"
+        // 注意：这里**不**把 “9月20日” 这类日期当列表标记——旧写法会把它从行首删掉，导致该条丢失日期
+        "^\\s*(?:[-*•·▪▫●○◆◇–—>]+|\\d{1,2}\\s*[.、)）]|[①②③④⑤⑥⑦⑧⑨⑩⑪⑫]|\\(\\d{1,2}\\)|\\[\\d{1,2}])\\s*"
     )
 
     /** 重复规则匹配（常量：批量解析时逐行调用，避免反复编译正则） */
@@ -57,6 +60,9 @@ object LocalSmartParser {
     private val PERIOD_SINGLE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*节")
     private val PERIOD_TIME_REGEX =
         Regex("(\\d{1,2})[:：](\\d{2})\\s*[-~—到至]\\s*(\\d{1,2})[:：](\\d{2})")
+    /** 表格里光写 “1-2” 的节次格（没有“节”字） */
+    private val BARE_PERIOD_RANGE_REGEX =
+        Regex("(?:^|[^\\d:：])(\\d{1,2})\\s*[-~—–]\\s*(\\d{1,2})\\s*$")
     private val WEEKS_RANGE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*[-~—到至]\\s*(\\d{1,2})\\s*周")
     private val WEEKS_LIST_REGEX = Regex("((?:\\d{1,2}\\s*[,，、]\\s*)+\\d{1,2})\\s*周")
     private val WEEKS_SINGLE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*周")
@@ -100,7 +106,7 @@ object LocalSmartParser {
 
         for (block in blocks) {
             val p = AgendaTextParser.parse(block, baseDate)
-            val title = p.title.ifBlank { firstSentence(block) }
+            val title = cleanTitle(p.title.ifBlank { firstSentence(block) })
             if (title.isBlank()) continue
             val parsedDate = LocalDate.ofEpochDay(p.dateEpochDay)
             // 日期继承：编号列表常见“9月20日 安排”+ 后续无日期的条目
@@ -166,6 +172,30 @@ object LocalSmartParser {
 
     private fun firstSentence(text: String): String =
         text.trim().lines().firstOrNull { it.isNotBlank() }?.trim()?.take(24).orEmpty()
+
+    /**
+     * 标题清洗（通知类文本的通用噪声）：
+     * - 去掉开头的来源标注：`【教务处】…`、`（学工部）…`、`[通知]…`；
+     * - 去掉结尾的“的通知/的公告/通知/公告”等公文尾巴（保留主体，如“关于放假的安排”）。
+     */
+    private fun cleanTitle(raw: String): String {
+        var s = raw.trim()
+        val openers = charArrayOf('【', '［', '[', '（', '(')
+        if (s.isNotEmpty() && openers.contains(s[0])) {
+            val close = s.indexOfFirst {
+                it == '】' || it == '］' || it == ']' || it == '）' || it == ')'
+            }
+            if (close in 2..12) s = s.substring(close + 1).trim()
+        }
+        s = s.trimStart('-', '—', '·', '：', ':', ' ').trim()
+        for (suffix in listOf("的通知", "的公告", "通知", "公告")) {
+            if (s.length > suffix.length + 3 && s.endsWith(suffix)) {
+                s = s.removeSuffix(suffix).trim().trimEnd('的', '：', ':', ' ')
+                break
+            }
+        }
+        return s.take(40)
+    }
 
     /** 从文本中提取重复规则（“每周二/隔周三/每3天/每月5日”） */
     private fun findRepeat(text: String): String {
@@ -363,6 +393,12 @@ object LocalSmartParser {
             val ep = nearestPeriod(et) ?: return@let
             return sp to maxOf(sp, ep)
         }
+        // 兼容从教务系统表格里直接复制的“1-2 / 3-4”（这一格没有“节”字）
+        BARE_PERIOD_RANGE_REGEX.find(s)?.let { m ->
+            val a = m.groupValues[1].toIntOrNull() ?: return@let
+            val b = m.groupValues[2].toIntOrNull() ?: return@let
+            if (a in 1..PeriodTimes.MAX_COUNT && b in a..PeriodTimes.MAX_COUNT) return a to b
+        }
         return null
     }
 
@@ -422,8 +458,16 @@ object LocalSmartParser {
     private fun findRoom(s: String): String {
         // 1) “教室：xxx” / “地点：xxx”
         ROOM_LABEL_REGEX.find(s)?.let { return it.groupValues[1] }
-        // 2) 形如 “教1-101 / A301 / C1-2003 / 主楼B201”
-        ROOM_CODE_REGEX.find(s)?.let { return it.value.replace(" ", "") }
+        // 2) 形如 “教1-101 / A301 / C1-2003 / 主楼B201”；
+        //    必须排除周次/节次片段（“1-16周”“第1-2节”），否则会把周次误当教室
+        for (m in ROOM_CODE_REGEX.findAll(s)) {
+            val v = m.value.trim()
+            val after = s.getOrNull(m.range.last + 1)
+            val before = if (m.range.first > 0) s[m.range.first - 1] else null
+            if (after == '周' || after == '节' || before == '第') continue
+            if (v.isEmpty()) continue
+            return v.replace(" ", "")
+        }
         // 3) 含场馆关键词的片段
         for (k in ROOM_KEYWORDS) {
             val i = s.indexOf(k)

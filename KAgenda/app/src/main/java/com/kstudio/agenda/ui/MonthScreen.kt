@@ -3,6 +3,7 @@ package com.kstudio.agenda.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +57,8 @@ import java.time.LocalDate
  */
 @Composable
 fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRequest? = null) {
+    // 长按日期 → 调整至…（整天/单节调休）
+    var rescheduleSource by remember { mutableStateOf<LocalDate?>(null) }
     val semester by vm.semester.collectAsState()
     val agendaAll by vm.agenda.collectAsState()
     val selected by vm.selectedDate.collectAsState()
@@ -160,6 +163,15 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
                             isSelected = date == selected,
                             flash = date != null && date == flashDate,
                             onClick = { date?.let(onOpenDay) },
+                            onLongPress = {
+                                if (date != null) {
+                                    if (vm.coursesRawOnDate(date).isEmpty()) {
+                                        vm.message(t.noCoursesToday)
+                                    } else {
+                                        rescheduleSource = date
+                                    }
+                                }
+                            },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -167,9 +179,23 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
             }
         }
     }
+    // 长按日期 → 调整至…（整天/单节调休）
+    rescheduleSource?.let { src ->
+        val dayCourses = remember(src, semester) { vm.coursesRawOnDate(src) }
+        RescheduleDialog(
+            sourceDate = src,
+            dayCourses = dayCourses,
+            onDismiss = { rescheduleSource = null },
+            onConfirm = { courses, target ->
+                vm.moveCourses(src, courses, target)
+                rescheduleSource = null
+            },
+        )
+    }
 }
 
 /** 月历格子（日程条目带 HH:mm 时间标记）；「计划」页复用本组件；[flash] 为定位闪烁反馈 */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 internal fun MonthCell(
     date: LocalDate?,
@@ -180,6 +206,7 @@ internal fun MonthCell(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     flash: Boolean = false,
+    onLongPress: (() -> Unit)? = null,
 ) {
     val bg = when {
         date == null -> Color.Transparent
@@ -209,7 +236,14 @@ internal fun MonthCell(
                     RoundedCornerShape(10.dp),
                 ) else Modifier
             )
-            .then(if (date != null) Modifier.clickable { onClick() } else Modifier)
+            .then(
+                if (date != null) {
+                    Modifier.combinedClickable(
+                        onClick = onClick,
+                        onLongClick = onLongPress,
+                    )
+                } else Modifier
+            )
             .padding(horizontal = 4.dp, vertical = 4.dp),
     ) {
         if (date != null) {
@@ -279,7 +313,7 @@ private fun buildCourseMap(sem: SemesterSchedule?, monthStart: LocalDate): Map<L
     for (d in 1..days) {
         val date = monthStart.withDayOfMonth(d)
         val weekNo = sem.teachingWeekOf(date)
-        if (HolidayTable.isHoliday(date)) continue   // 法定节假日停课
+        if (HolidayTable.hidesCourses(date)) continue   // 法定节假日停课（可在设置里改）
         val weekCourses = sem.weeks[weekNo] ?: continue
         val list = weekCourses
             .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }

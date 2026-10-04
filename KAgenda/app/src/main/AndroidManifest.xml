@@ -28,6 +28,11 @@
     <!-- 请求忽略电池优化（后台提醒更可靠；用户可在设置页一键跳转授权） -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
+    <!-- 应用内更新：下载新版 APK 后调用系统安装器（Android 8.0+ 必须声明）。
+         这是**特殊权限**，不会弹窗；用户首次安装更新时系统会提示去开启「安装未知应用」，
+         应用内也提供了跳转入口（设置 → 关于 → 检查更新）。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <!-- 系统悬浮球：在其他应用上层显示（特殊权限，需用户在系统设置中授权） -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- 承载悬浮球的前台服务 -->

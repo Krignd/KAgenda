@@ -10,10 +10,15 @@ import android.view.ViewGroup
 import android.webkit.WebView
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -27,6 +32,7 @@ import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -36,15 +42,16 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -63,10 +70,15 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.kstudio.agenda.R
+import com.kstudio.agenda.data.AppUpdater
+import com.kstudio.agenda.data.InstallStart
 import com.kstudio.agenda.data.SyncUi
+import com.kstudio.agenda.data.UpdateUi
 import com.kstudio.agenda.data.WebScheduleEngine
 import com.kstudio.agenda.i18n.LocalStrings
 import java.time.LocalDate
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * 【已隐藏保留】应用内 AI 助手悬浮按钮（可拖拽的圆形 DeepSeek 按钮）开关。
@@ -99,11 +111,33 @@ fun MainScreen(
     val sync by vm.syncState.collectAsState()
     val syncActive = sync is SyncUi.Running || sync is SyncUi.NeedLogin
     val settings by vm.settings.collectAsState()
+    // 应用内更新状态（顶栏小字与「设置 → 关于」共用同一份）
+    val updateState by AppUpdater.state.collectAsState()
+    var showInstallPermDialog by remember { mutableStateOf(false) }
+    // 下载完成后提示一次（含包体大小）；失败时也提示一次
+    var announcedUpdate by remember { mutableStateOf(0) }
+    var announcedError by remember { mutableStateOf("") }
     val aiSurface by AiSurface.state.collectAsState()
     val exportNeedsPermission by vm.exportNeedsPermission.collectAsState()
-    val snackbarHostState = remember { SnackbarHostState() }
+    // 应用内提示（Snackbar）：自己维护一个堆叠列表 —— Material3 的 SnackbarHost 一次只显示一条，
+    // 新提示会把旧的顶掉；这里改成：旧提示保持在原位、新提示出现在它下方（于是旧的整体上移），
+    // 每条仍按原来的时长（4 秒）自动消失。
+    val toasts = remember { mutableStateListOf<Pair<Long, String>>() }
     val context = LocalContext.current
     val t = LocalStrings.current
+
+    /** 带单位的包体大小（拿不到时显示「大小未知」） */
+    fun sizeText(bytes: Long): String =
+        AppUpdater.formatBytes(bytes).ifBlank { t.updateSizeUnknown }
+
+    /** 拉起安装；缺「安装未知应用」权限时弹窗引导 */
+    fun startInstall() {
+        when (AppUpdater.install(context)) {
+            InstallStart.NeedPermission -> showInstallPermDialog = true
+            InstallStart.Unavailable -> vm.message(t.updatePackageInvalid)
+            InstallStart.Launched -> Unit
+        }
+    }
 
     // 启动时不申请任何权限（安装后开箱即用）：
     // · 通知权限：默认关闭的「课前提醒」或「常驻通知」由用户在设置里开启时才申请；
@@ -130,8 +164,34 @@ fun MainScreen(
     }
 
     LaunchedEffect(Unit) {
-        vm.messages.collect { snackbarHostState.showSnackbar(it) }
+        vm.messages.collect { msg ->
+            val key = System.nanoTime()
+            toasts.add(key to msg)
+            // 每条提示独立计时（与原来 Snackbar 的 4 秒一致）
+            launch {
+                delay(4000)
+                toasts.removeAll { it.first == key }
+            }
+        }
     }
+
+    // 启动时静默检查一次更新（内部按 6 小时节流；失败不打扰用户）
+    LaunchedEffect(Unit) { AppUpdater.check(context, auto = true) }
+    // 下载完成 / 更新出错时各提示一次（包体大小取自实际文件）
+    LaunchedEffect(updateState) {
+        when (val s = updateState) {
+            is UpdateUi.Downloaded -> if (s.info.versionCode != announcedUpdate) {
+                announcedUpdate = s.info.versionCode
+                vm.message(t.updateDownloaded(sizeText(s.fileBytes)))
+            }
+            is UpdateUi.Error -> if (s.message != announcedError) {
+                announcedError = s.message
+                vm.message(t.updateFailed(s.message))
+            }
+            else -> Unit
+        }
+    }
+
 
     // 通知 / 小组件点击带入的启动请求：打开 AI 助手，或定位到指定日期并闪烁反馈
     LaunchedEffect(launch?.id) {
@@ -187,7 +247,45 @@ fun MainScreen(
                             .clickable { vm.syncNow() }
                             .padding(horizontal = 6.dp, vertical = 4.dp),
                     ) {
-                        Text(t.appTitle, style = MaterialTheme.typography.titleLarge)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(t.appTitle, style = MaterialTheme.typography.titleLarge)
+                            // 有可用更新时在「K日程」右侧显示小字：
+                            //   有新版本 → (有更新!)  点一下开始下载（提示里写明包体大小）
+                            //   下载中   → (下载中 n%)
+                            //   已下载   → (点击安装)
+                            val hint: String? = when (val u = updateState) {
+                                is UpdateUi.Available -> t.updateHintAvailable
+                                is UpdateUi.Downloading -> t.updateHintDownloading(u.percent)
+                                is UpdateUi.Downloaded -> t.updateHintInstall
+                                else -> null
+                            }
+                            if (hint != null) {
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = hint,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(6.dp))
+                                        // 内层点击会消费事件，不会触发外层的「手动同步」
+                                        .clickable {
+                                            when (val u = updateState) {
+                                                is UpdateUi.Available -> {
+                                                    vm.message(
+                                                        t.updateStartDownload(
+                                                            sizeText(u.info.sizeBytes),
+                                                        ),
+                                                    )
+                                                    AppUpdater.download(context)
+                                                }
+                                                is UpdateUi.Downloaded -> startInstall()
+                                                else -> Unit
+                                            }
+                                        }
+                                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                                )
+                            }
+                        }
                         when (val s = sync) {
                             is SyncUi.Success -> Column {
                                 Text(
@@ -234,7 +332,25 @@ fun MainScreen(
                             strokeWidth = 2.dp,
                         )
                     }
-                    IconButton(onClick = { showQuickAdd = true }) {
+                    // AI 识别完成、用户还没查看时，在 DeepSeek 图标左侧显示「!」角标（点它直接看结果）
+                    if (vm.aiRun.collectAsState().value.unread) {
+                        IconButton(onClick = {
+                            vm.markAiResultSeen()
+                            showQuickAdd = true
+                        }) {
+                            Text(
+                                text = "!",
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            )
+                        }
+                    }
+                    IconButton(onClick = {
+                        // 打开界面即视为已查看：熄灭「!」角标
+                        vm.markAiResultSeen()
+                        showQuickAdd = true
+                    }) {
                         Icon(
                             painter = painterResource(R.drawable.ic_deepseek),
                             contentDescription = t.qaTitle,
@@ -280,7 +396,19 @@ fun MainScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        // 堆叠展示：先加入的在上、后加入的在下方（旧提示整体上移，而不是被顶掉）
+        snackbarHost = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                toasts.forEach { (_, text) ->
+                    Snackbar(modifier = Modifier.fillMaxWidth()) { Text(text) }
+                }
+            }
+        },
     ) { padding ->
         Box(
             Modifier
@@ -371,6 +499,24 @@ fun MainScreen(
 
     if (showQuickAdd) {
         AiQuickAddDialog(vm) { showQuickAdd = false }
+    }
+
+    // 安装更新但系统未允许本应用「安装未知应用」：引导用户去系统设置开启
+    if (showInstallPermDialog) {
+        AlertDialog(
+            onDismissRequest = { showInstallPermDialog = false },
+            title = { Text(t.updatePermissionTitle) },
+            text = { Text(t.updatePermissionBody) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showInstallPermDialog = false
+                    AppUpdater.openInstallPermissionSettings(context)
+                }) { Text(t.updateOpenSettings) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showInstallPermDialog = false }) { Text(t.cancel) }
+            },
+        )
     }
 
     // 同步后：课程修改与教务系统都不一致时询问（自动同步也会触发）

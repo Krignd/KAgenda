@@ -68,6 +68,16 @@ fun cardTonalElevation(): Dp =
 fun cardShadowElevation(): Dp =
     if (isSystemInDarkTheme() || LocalGlassEnabled.current) 0.dp else 1.dp
 
+/**
+ * 卡片描边色。
+ *
+ * 统一成与「课程卡片」（DayScreen.CourseCard）完全一致的观感：1dp + outline 45%。
+ * 之前玻璃模式单独加重、且色板里的描边带主色，会出现“异常的蓝描边”与“卡片描边质感”不一致。
+ */
+@Composable
+fun cardBorderColor(): Color =
+    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
+
 /** 小标签（本 / 研 / 周次等） */
 @Composable
 fun TagChip(text: String, color: Color, modifier: Modifier = Modifier) {
@@ -89,17 +99,33 @@ fun TagChip(text: String, color: Color, modifier: Modifier = Modifier) {
 /** 可选择的小圆角标签（用于提前分钟数等选项） */
 @Composable
 fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val bg = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    val glass = LocalGlassEnabled.current
+    // 未选中态在玻璃卡片上很容易“融”进背景：玻璃模式下改用更高一层的表面色 + 细描边
+    val bg = when {
+        selected -> MaterialTheme.colorScheme.primary
+        glass -> MaterialTheme.colorScheme.surfaceContainerHighest
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
     val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
     Surface(
         shape = RoundedCornerShape(50),
         color = bg,
-        modifier = modifier.clip(RoundedCornerShape(50)).clickable { onClick() },
+        modifier = modifier
+            .clip(RoundedCornerShape(50))
+            .then(
+                if (!selected && glass) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
+                } else {
+                    Modifier
+                }
+            )
+            .clickable { onClick() },
     ) {
         Text(
             text = label,
             color = fg,
             style = MaterialTheme.typography.labelLarge,
+            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
         )
     }
@@ -115,10 +141,10 @@ fun SectionCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            // 提高与页面背景的对比度：卡片加一圈可见描边
+            // 提高与页面背景的对比度：卡片加一圈可见描边（玻璃模式下自动变淡、变冷）
             .border(
                 1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                cardBorderColor(),
                 RoundedCornerShape(20.dp),
             ),
         shape = RoundedCornerShape(20.dp),
@@ -162,10 +188,10 @@ fun CollapsibleSectionCard(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            // 提高与页面背景的对比度：卡片加一圈可见描边
+            // 提高与页面背景的对比度：卡片加一圈可见描边（与课程卡片同参数）
             .border(
                 1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                cardBorderColor(),
                 RoundedCornerShape(20.dp),
             ),
         shape = RoundedCornerShape(20.dp),

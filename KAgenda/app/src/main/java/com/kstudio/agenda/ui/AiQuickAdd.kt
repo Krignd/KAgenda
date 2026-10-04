@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,11 +50,11 @@ import java.time.LocalDate
 fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     val t = LocalStrings.current
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    var text by remember { mutableStateOf("") }
-    var busy by remember { mutableStateOf(false) }
-    var msg by remember { mutableStateOf("") }
-    var ops by remember { mutableStateOf<List<AiSkills.AiOp>>(emptyList()) }
+    val run by vm.aiRun.collectAsState()
+    // 识别任务由 ViewModel 持有（可以离开这个界面，识别会继续跑，完成后发浮动通知）
+    // 这里只保存输入框文字与预览副本，与 VM 里的结果保持同步
+    var text by remember { mutableStateOf(run.src) }
+    var editedOps by remember(run.ops) { mutableStateOf(run.ops) }
     var editIndex by remember { mutableStateOf(-1) }
     var askReparse by remember { mutableStateOf(false) }
 
@@ -63,70 +64,9 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     // 本地优先：先用 [LocalSmartParser] 离线识别（覆盖通知/列表/课程表等常见格式），
     // 只有离线识别不到内容时才调用 DeepSeek，从而让应用不依赖 API 也能正常使用。
     fun startRecognize(offlineOnly: Boolean = false) {
-        if (text.isBlank() || busy) return
-        busy = true
-        msg = t.aiRunning
-        ops = emptyList()
-        val asked = text
-        scope.launch {
-            try {
-                val local = runCatching {
-                    LocalSmartParser.parseEvents(asked, LocalDate.now())
-                }.getOrDefault(emptyList())
-                if (offlineOnly) {
-                    if (local.isEmpty()) msg = t.qaNothing
-                    else {
-                        ops = local
-                        msg = t.aiOfflineDone(local.size)
-                    }
-                    return@launch
-                }
-                val key = SettingsStore.effectiveAiKey(context)
-                if (key.isNullOrBlank()) {
-                    // 没有可用 Key（或用户未配置且内置 Key 缺失）：直接使用本地结果
-                    if (local.isEmpty()) msg = t.aiNeedKey
-                    else {
-                        ops = local
-                        msg = t.aiOfflineDone(local.size)
-                    }
-                    return@launch
-                }
-                val model = SettingsStore.effectiveAiModel(context)
-                val reply = AiClient.chat(
-                    apiKey = key,
-                    model = model,
-                    systemPrompt = AiSkills.assistantSystemPrompt,
-                    userPrompt = AiSkills.assistantUserPrompt(
-                        asked,
-                        LocalDate.now(),
-                        AiAssistant.contextLines(vm.agenda.value),
-                    ),
-                )
-                if (asked != text) {
-                    msg = t.qaStaleResult
-                    return@launch
-                }
-                val list = AiSkills.parseOpsReply(reply)
-                when {
-                    list.isNotEmpty() -> {
-                        ops = list
-                        msg = ""
-                    }
-                    // AI 无结果但本地识别到了：用本地结果兵底
-                    local.isNotEmpty() -> {
-                        ops = local
-                        msg = t.aiOfflineDone(local.size)
-                    }
-                    else -> msg = t.qaNothing
-                }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (e: Throwable) {
-                msg = (e.message ?: t.parseFail).take(60)
-            } finally {
-                busy = false
-            }
-        }
+        if (text.isBlank() || run.busy) return
+        editedOps = emptyList()
+        vm.recognizeAi(text, offlineOnly)
     }
 
     AlertDialog(
@@ -139,7 +79,10 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     onValueChange = {
                         text = it
                         // 修改文字后旧识别结果失效：防止“改了内容却把旧结果执行了”的误操作
-                        if (ops.isNotEmpty()) ops = emptyList()
+                        if (editedOps.isNotEmpty()) {
+                            editedOps = emptyList()
+                            vm.clearAiRun()
+                        }
                     },
                     placeholder = {
                         Text(
@@ -152,21 +95,24 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     maxLines = 6,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (ops.isNotEmpty()) {
+                if (editedOps.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        ops.forEachIndexed { index, op ->
+                        editedOps.forEachIndexed { index, op ->
                             AiOpRow(
                                 op = op,
                                 existing = vm.agenda.value,
                                 onClick = { editIndex = index },
-                                onRemove = { ops = ops.filterIndexed { i, _ -> i != index } },
+                                onRemove = {
+                                    editedOps = editedOps.filterIndexed { i, _ -> i != index }
+                                    vm.updateAiRunOps(editedOps)
+                                },
                             )
                         }
                     }
                 }
-                if (msg.isNotBlank()) {
+                if (run.msg.isNotBlank()) {
                     Text(
-                        text = msg,
+                        text = run.msg,
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.primary,
                     )
@@ -176,28 +122,29 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         confirmButton = {
             TextButton(
                 onClick = {
-                    val list = ops
+                    val list = editedOps
                     if (list.isEmpty()) return@TextButton
                     // 防误触连点：先清空待执行列表，双击也不会重复执行
-                    ops = emptyList()
+                    editedOps = emptyList()
                     vm.applyAiOps(list)
+                    vm.clearAiRun()
                     onDismiss()
                 },
-                enabled = ops.isNotEmpty(),
+                enabled = editedOps.isNotEmpty() && !run.busy,
             ) { Text(t.qaConfirm) }
         },
         dismissButton = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
-                    onClick = { if (ops.isNotEmpty()) askReparse = true else startRecognize(offlineOnly = true) },
-                    enabled = text.isNotBlank() && !busy,
+                    onClick = { if (editedOps.isNotEmpty()) askReparse = true else startRecognize(offlineOnly = true) },
+                    enabled = text.isNotBlank() && !run.busy,
                 ) { Text(t.aiOfflineParse) }
                 TextButton(
                     onClick = {
                         // 已有预览时再次识别会清空（含手动修改的内容）：先让用户确认
-                        if (ops.isNotEmpty()) askReparse = true else startRecognize()
+                        if (editedOps.isNotEmpty()) askReparse = true else startRecognize()
                     },
-                    enabled = text.isNotBlank() && !busy,
+                    enabled = text.isNotBlank() && !run.busy,
                 ) { Text(t.qaParse) }
             }
         },
@@ -221,12 +168,13 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         )
     }
 
-    if (editIndex in ops.indices) {
+    if (editIndex in editedOps.indices) {
         AiOpEditDialog(
-            op = ops[editIndex],
+            op = editedOps[editIndex],
             onDismiss = { editIndex = -1 },
             onSave = { edited ->
-                ops = ops.toMutableList().also { it[editIndex] = edited }
+                editedOps = editedOps.toMutableList().also { it[editIndex] = edited }
+                vm.updateAiRunOps(editedOps)
                 editIndex = -1
             },
         )
