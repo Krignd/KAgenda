@@ -101,6 +101,7 @@ import com.kstudio.agenda.ui.components.ChoiceChip
 import com.kstudio.agenda.ui.components.CollapsibleSectionCard
 import com.kstudio.agenda.ui.components.SectionCard
 import com.kstudio.agenda.ui.components.TrailingChevron
+import com.kstudio.agenda.ui.components.cardGlassBorder
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -1455,20 +1456,17 @@ fun SettingsScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                        RoundedCornerShape(20.dp),
-                    )
-                    .clickable { showDevTools = true },
-                shape = RoundedCornerShape(20.dp),
+                    .cardGlassBorder(),
+                shape = RoundedCornerShape(18.dp),
                 color = com.kstudio.agenda.ui.components.cardBaseColor(),
                 tonalElevation = com.kstudio.agenda.ui.components.cardTonalElevation(),
                 shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
             ) {
                 Row(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showDevTools = true }
+                        .padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -1497,13 +1495,8 @@ fun SettingsScreen(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                        RoundedCornerShape(20.dp),
-                    ),
-                shape = RoundedCornerShape(20.dp),
+                    .cardGlassBorder(),
+                shape = RoundedCornerShape(18.dp),
                 color = com.kstudio.agenda.ui.components.cardBaseColor(),
                 tonalElevation = com.kstudio.agenda.ui.components.cardTonalElevation(),
                 shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
@@ -2084,20 +2077,19 @@ private fun SettingsCategoryMenu(
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(20.dp))
-                    .border(
-                        1.dp,
-                        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                        RoundedCornerShape(20.dp),
-                    )
-                    .clickable { onOpen(index) },
-                shape = RoundedCornerShape(20.dp),
+                    // 不在这里 clip/clickable：外围 clip 会把 Surface 自己的投影裁掉（卡片就看不出层次了），
+                    // 点击与涟漪放到里面那行（本身就是被 Surface 圆角裁剪的）
+                    .cardGlassBorder(),
+                shape = RoundedCornerShape(18.dp),
                 color = com.kstudio.agenda.ui.components.cardBaseColor(),
                 tonalElevation = com.kstudio.agenda.ui.components.cardTonalElevation(),
                 shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpen(index) }
+                        .padding(horizontal = 18.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {

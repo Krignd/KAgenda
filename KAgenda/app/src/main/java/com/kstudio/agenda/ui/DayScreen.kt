@@ -545,13 +545,16 @@ internal fun DayStrip(
                 isToday -> Brush.linearGradient(
                     listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primaryContainer)
                 )
-                // 周末底色轻微加深（法定节假日由下方文字红色标注）
-                isWeekend -> Brush.linearGradient(
-                    listOf(
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
-                    )
-                )
+                // 周末底色：页面底 ≈ #F2F5F9、工作日卡片 = 纯白，而本主题的 surfaceVariant 与页面底几乎同色
+                // （实测周六卡 240,243,247 vs 页面底 242,245,249，只差 2/255）→ 旧写法“周末卡片”看着与背景融为一体。
+                // 这里改用 onSurface 的 12% 淡染：浅色下 ≈ #E4E6EA（明显深于页面底、又明显区别于白卡），
+                // 深色与玻璃主题下同样能拉开层次。
+                isWeekend -> {
+                    val weekendColor = MaterialTheme.colorScheme.onSurface
+                        .copy(alpha = 0.12f)
+                        .compositeOver(cardBaseColor())
+                    Brush.linearGradient(listOf(weekendColor, weekendColor))
+                }
                 else -> Brush.linearGradient(
                     listOf(cardBaseColor(), cardBaseColor())
                 )

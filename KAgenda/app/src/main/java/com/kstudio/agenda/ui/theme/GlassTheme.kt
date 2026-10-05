@@ -48,15 +48,18 @@ private val GlassLight = lightColorScheme(
     surfaceVariant = Color(0x66FFFFFF),
     onSurfaceVariant = Color(0xFF41506B),
     surfaceContainerLowest = Color(0x59FFFFFF),
-    surfaceContainerLow = Color(0x8CFFFFFF),
+    // 底部详情面板（ModalBottomSheet 默认取这个）：完全不透明。
+    // 半透明时背后的课表文字会透上来（実测 95% 仍能看到残影），详情内容不好读。
+    surfaceContainerLow = Color(0xFFFFFFFF),
     surfaceContainer = Color(0xA6FFFFFF),
-    surfaceContainerHigh = Color(0xBAFFFFFF),
+    // 对话框：同样完全不透明（理由同上）
+    surfaceContainerHigh = Color(0xFFFFFFFF),
     surfaceContainerHighest = Color(0xCCFFFFFF),
     // 通透风格不需要色调叠加（否则半透明表面会被染上一层主色雾感）
     surfaceTint = Color.Transparent,
-    // 描边用中性灰（此前用过主色蓝微调，会在卡片/输入框上出现“异常的蓝色描边”）
-    outline = Color(0x26000000),
-    outlineVariant = Color(0x14000000),
+    // 浅色玻璃：描边用高不透明度的白（玻璃卡片靠这圈高光边才有“厚度”；深色两相都不对）
+    outline = Color(0x66FFFFFF),
+    outlineVariant = Color(0x40FFFFFF),
     error = Color(0xFFDC2626),
 )
 
@@ -77,14 +80,15 @@ private val GlassDark = darkColorScheme(
     surfaceVariant = Color(0x4D33415C),
     onSurfaceVariant = Color(0xFFB9C6DA),
     surfaceContainerLowest = Color(0x66132033),
-    surfaceContainerLow = Color(0x80172438),
+    // 底部详情面板/对话框：完全不透明（半透明时背后的课表文字会透上来，详情内容不好读）
+    surfaceContainerLow = Color(0xFF172438),
     surfaceContainer = Color(0x8C1D2942),
-    surfaceContainerHigh = Color(0x991F2D49),
+    surfaceContainerHigh = Color(0xFF1F2D49),
     surfaceContainerHighest = Color(0xA6243355),
     surfaceTint = Color.Transparent,
-    // 深色玻璃：不用纯白描边（黑色卡片上一圈白线很生硬），改用低透明度中性白作“玻璃边缘”
-    outline = Color(0x2EFFFFFF),
-    outlineVariant = Color(0x14FFFFFF),
+    // 深色玻璃：25% 中性白（不是纯白、也不是主色），给卡片/输入框一圈玻璃微光边
+    outline = Color(0x40FFFFFF),
+    outlineVariant = Color(0x26FFFFFF),
     error = Color(0xFFF87171),
 )
 

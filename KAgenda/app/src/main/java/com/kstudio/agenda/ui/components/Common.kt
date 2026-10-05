@@ -69,14 +69,23 @@ fun cardShadowElevation(): Dp =
     if (isSystemInDarkTheme() || LocalGlassEnabled.current) 0.dp else 1.dp
 
 /**
- * 卡片描边色。
- *
- * 统一成与「课程卡片」（DayScreen.CourseCard）完全一致的观感：1dp + outline 45%。
- * 之前玻璃模式单独加重、且色板里的描边带主色，会出现“异常的蓝描边”与“卡片描边质感”不一致。
+ * 卡片描边色（**只在液态玻璃下使用**）：玻璃卡片靠这圈微光边才有“厚度”。
+ * 默认（简约）主题不画描边 —— 那里靠白底 + 极淡投影分层（与课程卡片一致）。
  */
 @Composable
 fun cardBorderColor(): Color =
-    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f)
+    MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+
+/**
+ * 卡片统一修饰符：
+ * - 液态玻璃：画 1dp 玻璃微光描边（这就是玻璃的“厚重感”来源）；
+ * - 默认（简约）：什么都不画，靠白底与页面浅灰底对比 + Surface 极淡投影。
+ */
+@Composable
+fun Modifier.cardGlassBorder(
+    shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(18.dp),
+): Modifier =
+    if (LocalGlassEnabled.current) this.border(1.dp, cardBorderColor(), shape) else this
 
 /** 小标签（本 / 研 / 周次等） */
 @Composable
@@ -139,15 +148,9 @@ fun SectionCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            // 提高与页面背景的对比度：卡片加一圈可见描边（玻璃模式下自动变淡、变冷）
-            .border(
-                1.dp,
-                cardBorderColor(),
-                RoundedCornerShape(20.dp),
-            ),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().cardGlassBorder(),
+        // 默认主题：白底、无描边、18dp 圆角，靠白底 vs 页面浅灰底 + 极淡投影分层（与课程卡片一致）
+        shape = RoundedCornerShape(18.dp),
         color = cardBaseColor(),
         tonalElevation = cardTonalElevation(),
         shadowElevation = cardShadowElevation(),
@@ -186,15 +189,9 @@ fun CollapsibleSectionCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            // 提高与页面背景的对比度：卡片加一圈可见描边（与课程卡片同参数）
-            .border(
-                1.dp,
-                cardBorderColor(),
-                RoundedCornerShape(20.dp),
-            ),
-        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth().cardGlassBorder(),
+        // 默认主题：白底、无描边、18dp 圆角（与课程卡片一致）；玻璃：多一圈微光边
+        shape = RoundedCornerShape(18.dp),
         color = cardBaseColor(),
         tonalElevation = cardTonalElevation(),
         shadowElevation = cardShadowElevation(),
