@@ -28,6 +28,8 @@ data class AppSettings(
     val reminderEnabled: Boolean = false,
     val leadMinutes: Int = 30,
     val autoRefresh: Boolean = true,
+    /** 是否自动检查更新（打开应用 / 进入「关于&反馈」时静默检查；默认开） */
+    val autoCheckUpdate: Boolean = true,
     val lastSyncAtMillis: Long = 0L,
     val semesterLabel: String = "",
     val anchorEpochDay: Long? = null,
@@ -140,6 +142,7 @@ object SettingsStore {
     private val KEY_REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
     private val KEY_LEAD_MINUTES = intPreferencesKey("lead_minutes")
     private val KEY_AUTO_REFRESH = booleanPreferencesKey("auto_refresh")
+    private val KEY_AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update")
     private val KEY_LAST_SYNC = longPreferencesKey("last_sync_at")
     private val KEY_SEMESTER = stringPreferencesKey("semester_label")
     private val KEY_ANCHOR = longPreferencesKey("anchor_epoch_day")
@@ -176,6 +179,7 @@ object SettingsStore {
             reminderEnabled = p[KEY_REMINDER_ENABLED] ?: false,
             leadMinutes = p[KEY_LEAD_MINUTES] ?: 30,
             autoRefresh = p[KEY_AUTO_REFRESH] ?: true,
+            autoCheckUpdate = p[KEY_AUTO_CHECK_UPDATE] ?: true,
             lastSyncAtMillis = p[KEY_LAST_SYNC] ?: 0L,
             semesterLabel = p[KEY_SEMESTER] ?: "",
             anchorEpochDay = p[KEY_ANCHOR],
@@ -261,6 +265,11 @@ object SettingsStore {
 
     suspend fun setAutoRefresh(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_AUTO_REFRESH] = enabled }
+    }
+
+    /** 自动检查更新（默认开） */
+    suspend fun setAutoCheckUpdate(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_AUTO_CHECK_UPDATE] = enabled }
     }
 
     suspend fun setTimetableMode(context: Context, enabled: Boolean) {
@@ -450,6 +459,7 @@ object SettingsStore {
         put(KEY_REMINDER_ENABLED, "reminder_enabled")
         put(KEY_LEAD_MINUTES, "lead_minutes")
         put(KEY_AUTO_REFRESH, "auto_refresh")
+        put(KEY_AUTO_CHECK_UPDATE, "auto_check_update")
         put(KEY_LAST_SYNC, "last_sync_at")
         put(KEY_SEMESTER, "semester_label")
         put(KEY_ANCHOR, "anchor_epoch_day")

@@ -90,8 +90,30 @@ private const val SHOW_IN_APP_AI_BUTTON = false
 private enum class HomeTab {
     Schedule,
     Plan,
+    /** 【新建】学校页（底部栏中间，图标为当前学校校徽）；目前只是占位页 */
+    School,
     Ongoing,
     Settings,
+}
+
+/** 学校页占位：校徽 + 校名 + 「暂未完成」，具体功能后续再做 */
+@Composable
+private fun SchoolPlaceholderScreen(schoolId: String) {
+    val t = LocalStrings.current
+    val school = com.kstudio.agenda.model.Schools.of(schoolId)
+    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            SchoolLogo(school, 72.dp)
+            Spacer(Modifier.size(12.dp))
+            Text(text = school.name, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.size(8.dp))
+            Text(
+                text = t.comingSoon,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
@@ -175,8 +197,12 @@ fun MainScreen(
         }
     }
 
-    // 启动时静默检查一次更新（内部按 6 小时节流；失败不打扰用户）
-    LaunchedEffect(Unit) { AppUpdater.check(context, auto = true) }
+    // 启动时静默检查一次更新（内部按 6 小时节流；失败不打扰用户）。
+    // 可在设置里关闭（默认开）—— 先等设置读到再判断，避免读取未完成时误判。
+    val updateSettings by vm.settings.collectAsState()
+    LaunchedEffect(updateSettings.autoCheckUpdate) {
+        if (updateSettings.autoCheckUpdate) AppUpdater.check(context, auto = true)
+    }
     // 下载完成 / 更新出错时各提示一次（包体大小取自实际文件）
     LaunchedEffect(updateState) {
         when (val s = updateState) {
@@ -382,6 +408,13 @@ fun MainScreen(
                     icon = { Icon(Icons.Filled.EventNote, contentDescription = null) },
                     label = { Text(t.tabPlan) },
                 )
+                // 中间的「学校」页签：图标用当前所选学校的校徽（具体页面待做，先显示「暂未完成」）
+                NavigationBarItem(
+                    selected = tab == HomeTab.School,
+                    onClick = { tab = HomeTab.School },
+                    icon = { SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp) },
+                    label = { Text(t.tabSchool) },
+                )
                 NavigationBarItem(
                     selected = tab == HomeTab.Ongoing,
                     onClick = { tab = HomeTab.Ongoing },
@@ -423,6 +456,8 @@ fun MainScreen(
                 HomeTab.Plan -> PlanScreen(vm)
                 // 「进行中」：专门展示正在进行的长日程
                 HomeTab.Ongoing -> OngoingScreen(vm)
+                // 【新建】「学校」页：占位（校徽 + 校名 + 「暂未完成」），等后续再做具体内容
+                HomeTab.School -> SchoolPlaceholderScreen(settings.schoolId)
                 // 【已隐藏保留】网页登录入口：显隐由 SettingsScreen 内的 SHOW_WEB_LOGIN_ENTRY 控制
                 HomeTab.Settings -> SettingsScreen(
                     vm = vm,

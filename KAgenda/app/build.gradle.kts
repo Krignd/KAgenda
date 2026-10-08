@@ -68,8 +68,8 @@ android {
         //   注意：(revN) 只接在版本号后，**不叠加在 (preN) 之后**；预览阶段自己发现的修复留在同一个 (preN) 里
         // - versionCode 只增不减：上一轮已到 20260916（2026.9 v2.0.8(pre6)），
         //   本轮换 2026.10 的序号 1 → 20261001
-        versionCode = 20261002
-        versionName = "2026.10 v1(pre2)"
+        versionCode = 20261003
+        versionName = "2026.10 v1(pre3)"
         // WebView 相关无 NDK 需求
     }
 

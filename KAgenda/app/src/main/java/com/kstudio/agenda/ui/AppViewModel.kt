@@ -442,6 +442,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { SettingsStore.setAutoRefresh(getApplication(), enabled) }
     }
 
+    /** 自动检查更新（默认开）：关掉后启动与进入「关于&反馈」时都不再静默检查 */
+    fun setAutoCheckUpdate(enabled: Boolean) {
+        viewModelScope.launch { SettingsStore.setAutoCheckUpdate(getApplication(), enabled) }
+    }
+
     /** 课程表模式（日程表页顶部勾选框） */
     fun setTimetableMode(enabled: Boolean) {
         viewModelScope.launch { SettingsStore.setTimetableMode(getApplication(), enabled) }

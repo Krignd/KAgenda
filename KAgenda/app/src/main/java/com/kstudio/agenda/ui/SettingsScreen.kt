@@ -223,7 +223,7 @@ fun SettingsScreen(
     LaunchedEffect(settingsTab) {
         runCatching { listState.scrollToItem(0) }
         // 进入「关于」页时静默检查一次更新（内部按 6 小时节流；手动点刷新图标则强制请求）
-        if (settingsTab == 5) AppUpdater.check(context, auto = true)
+        if (settingsTab == 5 && settings.autoCheckUpdate) AppUpdater.check(context, auto = true)
     }
 
     // 分类标题/说明（分类菜单与二级页顶栏共用）
@@ -1263,6 +1263,14 @@ fun SettingsScreen(
                         onCheckedChange = { vm.setAutoRefresh(it) },
                     )
                 }
+                Spacer(Modifier.height(10.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(t.autoCheckUpdate, modifier = Modifier.weight(1f))
+                    Switch(
+                        checked = settings.autoCheckUpdate,
+                        onCheckedChange = { vm.setAutoCheckUpdate(it) },
+                    )
+                }
                 Spacer(Modifier.height(12.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedButton(onClick = { vm.syncNow() }) { Text(t.btnSyncNow) }
@@ -2019,7 +2027,7 @@ private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
  * 与首字圆标的观感一致，也避免在深色/玻璃背景下露出白色方角。
  */
 @Composable
-private fun SchoolLogo(school: School, size: Dp) {
+internal fun SchoolLogo(school: School, size: Dp) {
     val res = when (school.id) {
         "buaa" -> R.drawable.school_buaa
         "ujs" -> R.drawable.school_ujs

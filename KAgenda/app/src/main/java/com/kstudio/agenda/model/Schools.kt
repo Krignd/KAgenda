@@ -65,8 +65,20 @@ object Schools {
     var currentId: String = DEFAULT_ID
         private set
 
+    /**
+     * 是否已经从设置里读到过「当前学校」。
+     *
+     * 冷启动存在竞态：设置是异步读取的，而课表缓存 / 后台入口可能先一步加载。
+     * 在还没读到真实学校之前，[currentId] 只是默认值（buaa），不能据此判定缓存
+     * 「属于别的学校」而丢弃 —— 2026-10-08 江苏大学冷启动课表空白就是这个原因。
+     */
+    @Volatile
+    var currentKnown: Boolean = false
+        private set
+
     fun setCurrent(id: String) {
         currentId = id.ifBlank { DEFAULT_ID }
+        currentKnown = true
     }
 
     /**

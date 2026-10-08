@@ -52,8 +52,12 @@ object ScheduleCache {
                 val root = JSONObject(file.readText(Charsets.UTF_8))
                 val school = root.optString("school")
                 // 缓存属于另一所学校（刚切换学校、还没重新同步）：当作没有缓存，
-                // 并且**不写入内存缓存** —— 用户切回原学校时这份缓存还能直接用
-                if (school.isNotBlank() && school != Schools.currentId) {
+                // 并且**不写入内存缓存** —— 用户切回原学校时这份缓存还能直接用。
+                //
+                // 例外：冷启动时设置还没读出来（Schools.currentKnown=false），此刻 currentId
+                // 只是默认值，不能用它判定“属于别的学校”，否则江大用户冷启动会看到空白课表
+                // （2026-10-08 修复）。
+                if (school.isNotBlank() && school != Schools.currentId && Schools.currentKnown) {
                     foreignSchool = true
                     null
                 } else {

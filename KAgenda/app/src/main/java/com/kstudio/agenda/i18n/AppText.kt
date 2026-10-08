@@ -362,6 +362,11 @@ interface AppStrings {
     val secData: String
     val secDataSub: String
     val autoRefresh: String
+    val autoCheckUpdate: String
+    /** 底部栏中间的「学校」页签名 */
+    val tabSchool: String
+    /** 占位文案（页面尚未完成） */
+    val comingSoon: String
     val btnSyncNow: String
     val btnClearCache: String
     val btnSaveDayImg: String
@@ -1090,7 +1095,10 @@ object ZhStrings : AppStrings {
 
     override val secData = "数据&图片"
     override val secDataSub = "课表从教务系统同步后缓存在本机"
-    override val autoRefresh = "打开应用时自动刷新"
+    override val autoRefresh = "自动同步"
+    override val autoCheckUpdate = "自动检查更新"
+    override val tabSchool = "学校"
+    override val comingSoon = "暂未完成"
     override val btnSyncNow = "立即同步"
     override val btnClearCache = "清除缓存"
     override val btnSaveDayImg = "保存日课表图片"
@@ -1815,7 +1823,10 @@ object EnStrings : AppStrings {
 
     override val secData = "Data & images"
     override val secDataSub = "Schedule is cached locally after sync"
-    override val autoRefresh = "Auto-refresh on open"
+    override val autoRefresh = "Auto-sync"
+    override val autoCheckUpdate = "Auto-check for updates"
+    override val tabSchool = "School"
+    override val comingSoon = "Coming soon"
     override val btnSyncNow = "Sync now"
     override val btnClearCache = "Clear cache"
     override val btnSaveDayImg = "Save day image"
@@ -2553,7 +2564,10 @@ object FrStrings : AppStrings {
 
     override val secData = "Données et images"
     override val secDataSub = "L'emploi du temps est mis en cache localement après synchro"
-    override val autoRefresh = "Actualisation automatique à l'ouverture"
+    override val autoRefresh = "Synchronisation automatique"
+    override val autoCheckUpdate = "Vérification auto des mises à jour"
+    override val tabSchool = "École"
+    override val comingSoon = "À venir"
     override val btnSyncNow = "Synchroniser"
     override val btnClearCache = "Vider le cache"
     override val btnSaveDayImg = "Image du jour"
