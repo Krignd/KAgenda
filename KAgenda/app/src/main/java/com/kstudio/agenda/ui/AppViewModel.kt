@@ -1159,9 +1159,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             message(t.msgNoScheduleData)
             return
         }
-        // 导出包含当天日程（含跨天长日程，不含计划），按时间排序
+        // 导出包含当天日程（含重复命中、跨天长日程，不含计划），按时间排序
         val events = agenda.value
-            .filter { !it.isPlan && it.coversDate(date) }
+            .filter { !it.isPlan && it.occursOn(date) }
             .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
         val context = getApplication<Application>()
         withExportPermission {
@@ -1191,10 +1191,10 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             message(t.msgNoScheduleData)
             return
         }
-        // 导出包含本周日程（按日期+时间排序，不含计划）
+        // 导出包含本周日程（含重复命中；按日期+时间排序，不含计划）
         val monday = week.monday
         val events = agenda.value
-            .filter { ev -> !ev.isPlan && (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
+            .filter { ev -> !ev.isPlan && (0L..6L).any { off -> ev.occursOn(monday.plusDays(off)) } }
             .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
         val context = getApplication<Application>()
         withExportPermission {

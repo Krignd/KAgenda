@@ -75,9 +75,10 @@ object NextClassWidgetUpdater {
         // 叠加用户课程修改后的课表（课程名/地点/时间可能被用户改过）
         val semester = CourseEditStore.appliedFromCache(context)
         AgendaStore.ensureLoaded(context)
-        // 小组件只展示「日程/课程」，不展示「计划」
-        val events = AgendaStore.events.value.filter { !it.isPlan }
         val now = LocalDateTime.now()
+        // 小组件只展示「日程/课程」，不展示「计划」；
+        // upcomingView：重复条目投影到“下一次发生”那天（否则隔周/每月过了第一天就再也不显示）
+        val events = AgendaStore.events.value.filter { !it.isPlan }.map { it.upcomingView(now) }
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 2) }.orEmpty()
         for (spec in SPECS) {
@@ -126,9 +127,9 @@ object NextClassWidgetUpdater {
 
         val semester = CourseEditStore.appliedFromCache(context)
         AgendaStore.ensureLoaded(context)
-        // 小组件只展示「日程/课程」，不展示「计划」
-        val events = AgendaStore.events.value.filter { !it.isPlan }
         val now = LocalDateTime.now()
+        // 小组件只展示「日程/课程」，不展示「计划」；upcomingView 见 updateAll 的说明
+        val events = AgendaStore.events.value.filter { !it.isPlan }.map { it.upcomingView(now) }
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 1) }.orEmpty()
         // “进行中”只适用于起止时间都精确的日程（模糊/无时间的条目仅显示倒计时）

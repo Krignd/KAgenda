@@ -71,10 +71,32 @@ data class AgendaEvent(
      * 小组件排序/倒计时用的锚点时刻：
      * 精确或模糊都能给出大致时间；完全没有时间时按当天 23:59（让同日“有具体时间”的条目优先）。
      */
-    fun anchorDateTime(): LocalDateTime =
-        date.atTime(
+    fun anchorDateTime(): LocalDateTime = anchorDateTimeOn(date)
+
+    /** 指定日期上的锚点时刻（小组件/常驻通知按“下一次发生”计算时用） */
+    fun anchorDateTimeOn(d: LocalDate): LocalDateTime =
+        d.atTime(
             FuzzyTime.minutesOf(startTime)?.let { LocalTime.of(it / 60, it % 60) } ?: LocalTime.of(23, 59)
         )
+
+    /**
+     * 供小组件 / 常驻通知使用的「下一次发生」视图：
+     * - 重复条目 → 复制一份并把日期挪到**下一次命中（严格晚于 [now]）**的那天，
+     *   这样下游继续用 [date] / [startDateTime] / [anchorDateTime] 就天然是“下一次”；
+     * - 非重复条目 / 找不到下一次 → 原样返回（行为与以前一致）。
+     *
+     * 为什么需要它：以前小组件/通知直接用 `anchorDateTime()`（＝开始日），
+     * 重复条目过了第一天就永远落在“过去”，于是“隔周 / 每月”的日程在小组件里只出现第一周。
+     */
+    fun upcomingView(now: LocalDateTime = LocalDateTime.now(), limitDays: Int = 400): AgendaEvent {
+        if (repeatRule.isBlank()) return this
+        var d = if (now.toLocalDate().isAfter(date)) now.toLocalDate() else date
+        for (i in 0..limitDays) {
+            if (occursOn(d) && anchorDateTimeOn(d).isAfter(now)) return copy(dateEpochDay = d.toEpochDay())
+            d = d.plusDays(1)
+        }
+        return this
+    }
 
     fun startDateTime(): LocalDateTime = date.atTime(parseTime(startTime) ?: LocalTime.MIN)
 

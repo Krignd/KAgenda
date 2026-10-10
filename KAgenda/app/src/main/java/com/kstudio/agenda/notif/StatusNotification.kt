@@ -285,7 +285,8 @@ object StatusNotification {
         }
 
         AgendaStore.ensureLoaded(context)
-        val events = AgendaStore.events.value
+        // upcomingView：重复的计划/日程要投影到“下一次发生”那天（否则过了开始日就再也不显示）
+        val events = AgendaStore.events.value.map { it.upcomingView(now) }
         if ("plan" in sources) {
             // 进行中的计划优先；没有进行中的计划时退化为「下一项计划」，
             // 否则勾选「当前计划」后在没有进行中计划时看不到任何变化，容易被认为开关失效

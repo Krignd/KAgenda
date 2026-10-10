@@ -316,7 +316,8 @@ object ScheduleImageRenderer {
                     ?.sortedBy { it.startPeriod }
                     ?.forEach { bars.add(markedTitle(it) to CoursePalette.colorFor(it)) }
             }
-            events.filter { it.coversDate(date) }
+            // occursOn：重复日程要出现在每一个命中的日子（以前用 coversDate → 只在开始日）
+            events.filter { it.occursOn(date) }
                 .sortedWith(compareBy({ com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
                 .forEach {
                     // 时间标记：有开始时间时以 "HH:mm 标题" 完整展示

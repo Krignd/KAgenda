@@ -111,4 +111,27 @@ class RepeatUntilTest {
         assertEquals(monday.plusDays(5).toEpochDay(), e.endDateEpochDay)
         assertTrue(e.occursOn(monday.plusDays(2)))
     }
+
+    // ---------------- 小组件 / 常驻通知的「下一次发生」 ----------------
+
+    @Test
+    fun `upcomingView projects repeat onto the next occurrence`() {
+        val biweekly = AgendaEvent(
+            id = "b",
+            title = "隔周例会",
+            dateEpochDay = monday.toEpochDay(),
+            repeatRule = RepeatRules.biweekly(listOf(1)), // 隔周周一（monday 就是周一）
+        )
+        // 开始日当天：下一次 = 开始日
+        assertEquals(monday, biweekly.upcomingView(monday.atTime(6, 0)).date)
+        // 隔一周的周一不该命中 → 应投影到再下一周的周一
+        assertEquals(monday.plusWeeks(2), biweekly.upcomingView(monday.plusWeeks(1).atTime(6, 0)).date)
+    }
+
+    @Test
+    fun `upcomingView keeps non repeat item unchanged`() {
+        val single = AgendaEvent(id = "s", title = "开会", dateEpochDay = monday.toEpochDay())
+        val view = single.upcomingView(monday.plusDays(3).atTime(6, 0))
+        assertEquals(monday, view.date)
+    }
 }
