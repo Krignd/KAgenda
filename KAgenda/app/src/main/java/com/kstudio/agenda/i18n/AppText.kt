@@ -131,6 +131,10 @@ interface AppStrings {
     val segLongPlan: String
     val secTimelineRange: String
     val secTimelineRangeSub: String
+    val secWeekDays: String
+    val secWeekDaysSub: String
+    val weekDaysFive: String
+    val weekDaysSeven: String
     val labelNextDay: String
     val secWidget: String
     val secWidgetSub: String
@@ -233,6 +237,7 @@ interface AppStrings {
     val secReminder: String
     val secReminderSub: String
     val reminderEnable: String
+    val remindAgendaLabel: String
     val leadLabel: String
     fun minutes(n: Int): String
     val exactOk: String
@@ -363,6 +368,10 @@ interface AppStrings {
     val secDataSub: String
     val autoRefresh: String
     val autoCheckUpdate: String
+    /** 重复日程的「截止日期」字段（与开始同日表示不限、持续延伸） */
+    val fieldRepeatUntil: String
+    /** 重复截止未填时的显示文案（不限、持续延伸） */
+    val repeatUntilNone: String
     /** 底部栏中间的「学校」页签名 */
     val tabSchool: String
     /** 占位文案（页面尚未完成） */
@@ -534,6 +543,7 @@ interface AppStrings {
     val channelName: String
     val channelDesc: String
     fun notifClassSoon(title: String): String
+    fun notifAgendaSoon(title: String): String
     val syncTimeLabel: String
     val exportTimeLabel: String
 
@@ -839,6 +849,10 @@ object ZhStrings : AppStrings {
     override val segLongPlan = "长计划"
     override val secTimelineRange = "时间线显示范围"
     override val secTimelineRangeSub = "非课程表模式下周视图的起止时间；结束早于开始表示跨到次日（默认 06:00 – 次日 02:00）"
+    override val secWeekDays = "周视图天数"
+    override val secWeekDaysSub = "周视图默认显示的天数；「日程表」与「计划」共用（可双指缩放调整）"
+    override val weekDaysFive = "5 天（周一~周五）"
+    override val weekDaysSeven = "7 天（周一~周日）"
     override val labelNextDay = "次日"
     override val secWidget = "小组件"
     override val secWidgetSub = "一键把课表小组件添加到桌面"
@@ -964,6 +978,7 @@ object ZhStrings : AppStrings {
     override val secReminder = "课前提醒"
     override val secReminderSub = "在每节课开始前推送通知提醒"
     override val reminderEnable = "开启提醒"
+    override val remindAgendaLabel = "日程/计划也提醒（有具体开始时间）"
     override val leadLabel = "提前时间"
     override fun minutes(n: Int) = "${n} 分钟"
     override val exactOk = "精确提醒：可用"
@@ -1097,6 +1112,8 @@ object ZhStrings : AppStrings {
     override val secDataSub = "课表从教务系统同步后缓存在本机"
     override val autoRefresh = "自动同步"
     override val autoCheckUpdate = "自动检查更新"
+    override val fieldRepeatUntil = "重复截止"
+    override val repeatUntilNone = "不限"
     override val tabSchool = "学校"
     override val comingSoon = "暂未完成"
     override val btnSyncNow = "立即同步"
@@ -1256,6 +1273,7 @@ object ZhStrings : AppStrings {
     override val channelName = "上课提醒"
     override val channelDesc = "上课前提醒通知"
     override fun notifClassSoon(title: String) = "即将上课：${title}"
+    override fun notifAgendaSoon(title: String) = "即将开始：${title}"
     override val syncTimeLabel = "数据同步时间："
     override val exportTimeLabel = "导出时间："
 
@@ -1567,6 +1585,10 @@ object EnStrings : AppStrings {
     override val segLongPlan = "Long plan"
     override val secTimelineRange = "Timeline range"
     override val secTimelineRangeSub = "Start/end of the week timeline (non-timetable mode). An end earlier than the start wraps to the next day (default 06:00 – 02:00 next day)"
+    override val secWeekDays = "Week view days"
+    override val secWeekDaysSub = "How many days the week view shows by default; shared by Schedule and Plans (pinch to zoom)"
+    override val weekDaysFive = "5 days (Mon–Fri)"
+    override val weekDaysSeven = "7 days (Mon–Sun)"
     override val labelNextDay = "next day"
     override val secWidget = "Widget"
     override val secWidgetSub = "Pin a timetable widget to the home screen"
@@ -1691,6 +1713,7 @@ object EnStrings : AppStrings {
     override val secReminder = "Class reminder"
     override val secReminderSub = "Get a notification before each class"
     override val reminderEnable = "Enable reminders"
+    override val remindAgendaLabel = "Also remind for events/plans (with a set start time)"
     override val leadLabel = "Lead time"
     override fun minutes(n: Int) = "${n} min"
     override val exactOk = "Exact alarms: available"
@@ -1825,6 +1848,8 @@ object EnStrings : AppStrings {
     override val secDataSub = "Schedule is cached locally after sync"
     override val autoRefresh = "Auto-sync"
     override val autoCheckUpdate = "Auto-check for updates"
+    override val fieldRepeatUntil = "Repeat until"
+    override val repeatUntilNone = "No end"
     override val tabSchool = "School"
     override val comingSoon = "Coming soon"
     override val btnSyncNow = "Sync now"
@@ -1991,6 +2016,7 @@ object EnStrings : AppStrings {
     override val channelName = "Class reminders"
     override val channelDesc = "Reminder notifications before classes"
     override fun notifClassSoon(title: String) = "Class soon: ${title}"
+    override fun notifAgendaSoon(title: String) = "Starting soon: ${title}"
     override val syncTimeLabel = "Synced: "
     override val exportTimeLabel = "Exported: "
 
@@ -2307,6 +2333,10 @@ object FrStrings : AppStrings {
     override val segLongPlan = "Plan long"
     override val secTimelineRange = "Plage de la frise"
     override val secTimelineRangeSub = "Heures de début/fin de la frise hebdomadaire (mode emploi du temps désactivé). Une fin antérieure au début passe au lendemain (par défaut 06:00 – 02:00 le lendemain)"
+    override val secWeekDays = "Jours de la vue semaine"
+    override val secWeekDaysSub = "Nombre de jours affichés par défaut dans la vue semaine ; partagé par Emploi du temps et Plans (pincer pour zoomer)"
+    override val weekDaysFive = "5 jours (lun.–ven.)"
+    override val weekDaysSeven = "7 jours (lun.–dim.)"
     override val labelNextDay = "lendemain"
     override val secWidget = "Widget"
     override val secWidgetSub = "Épingler un widget d'emploi du temps à l'accueil"
@@ -2432,6 +2462,7 @@ object FrStrings : AppStrings {
     override val secReminder = "Rappel de cours"
     override val secReminderSub = "Une notification avant chaque cours"
     override val reminderEnable = "Activer les rappels"
+    override val remindAgendaLabel = "Rappeler aussi les événements/plans (avec une heure de début)"
     override val leadLabel = "Délai avant"
     override fun minutes(n: Int) = "${n} min"
     override val exactOk = "Alarmes exactes : disponibles"
@@ -2566,6 +2597,8 @@ object FrStrings : AppStrings {
     override val secDataSub = "L'emploi du temps est mis en cache localement après synchro"
     override val autoRefresh = "Synchronisation automatique"
     override val autoCheckUpdate = "Vérification auto des mises à jour"
+    override val fieldRepeatUntil = "Répéter jusqu'au"
+    override val repeatUntilNone = "Sans fin"
     override val tabSchool = "École"
     override val comingSoon = "À venir"
     override val btnSyncNow = "Synchroniser"
@@ -2733,6 +2766,7 @@ object FrStrings : AppStrings {
     override val channelName = "Rappels de cours"
     override val channelDesc = "Rappels avant chaque cours"
     override fun notifClassSoon(title: String) = "Cours bientôt : ${title}"
+    override fun notifAgendaSoon(title: String) = "Bientôt : ${title}"
     override val syncTimeLabel = "Synchro : "
     override val exportTimeLabel = "Exporté : "
 

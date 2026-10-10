@@ -68,13 +68,30 @@ fun cardTonalElevation(): Dp =
 fun cardShadowElevation(): Dp =
     if (isSystemInDarkTheme() || LocalGlassEnabled.current) 0.dp else 1.dp
 
+/** 分段按钮（日/周/月等）的描边色：深色玻璃下透明，其余用主题 outline */
+@Composable
+fun segmentedStrokeColor(): Color =
+    if (isDarkGlass()) Color.Transparent else MaterialTheme.colorScheme.outline
+
+/**
+ * 是否处于「深色 + 液态玻璃」。
+ * 该组合下用户明确要求描边**完全透明**（2026-10-10）；浅色 / 默认主题一律不受影响。
+ */
+@Composable
+fun isDarkGlass(): Boolean = LocalGlassEnabled.current && isSystemInDarkTheme()
+
 /**
  * 卡片描边色（**只在液态玻璃下使用**）：玻璃卡片靠这圈微光边才有“厚度”。
  * 默认（简约）主题不画描边 —— 那里靠白底 + 极淡投影分层（与课程卡片一致）。
+ *
+ * ⚠️ `Color.copy(alpha = x)` 是**覆盖** alpha（不是相乘）——所以这里必须显式分深浅：
+ * 深色下用户明确要求「描边要透明的」（2026-10-10）→ 返回**完全透明**；
+ * 浅色维持白 60% 微光边（**不动**浅色 / 默认主题的观感）。
  */
 @Composable
 fun cardBorderColor(): Color =
-    MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
+    if (isDarkGlass()) Color.Transparent
+    else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
 
 /**
  * 卡片统一修饰符：
@@ -123,7 +140,11 @@ fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
             .clip(RoundedCornerShape(50))
             .then(
                 if (!selected && glass) {
-                    Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(50))
+                    // 深色玻璃：细边也透明（与卡片描边口径一致）；浅色玻璃维持原细边
+                    val borderColor =
+                        if (isDarkGlass()) Color.Transparent
+                        else MaterialTheme.colorScheme.outlineVariant
+                    Modifier.border(1.dp, borderColor, RoundedCornerShape(50))
                 } else {
                     Modifier
                 }

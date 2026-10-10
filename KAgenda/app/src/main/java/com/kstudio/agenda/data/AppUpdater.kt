@@ -145,9 +145,15 @@ object AppUpdater {
                     AppLog.i(TAG, "已是最新版本（本地 ${BuildConfig.VERSION_CODE}，站点 ${info.versionCode}）")
                     return@launch
                 }
-                // 已经下载过同一个新版本 → 直接进入「待安装」
-                val existing = downloadedFile(appContext, info.versionCode)
-                cleanDownloaded(appContext, keepVersionCode = info.versionCode)
+                // 已经下载过同一个新版本 → 直接进入「待安装」。
+                // ⚠️ 必须校验文件：残留的 0 字节 / 大小对不上的包会被当成“已下载”，
+                // 界面就显示“已下载（包体大小未知）”，点安装报错，还得再点一次下载
+                // （2026-10-08 修复）。不完整的包直接删掉，回到「有新版本」状态。
+                val existing = downloadedFile(appContext, info.versionCode)?.takeIf { f ->
+                    f.exists() && f.length() > 0L &&
+                        (info.sizeBytes <= 0L || f.length() == info.sizeBytes)
+                }
+                cleanDownloaded(appContext, keepVersionCode = if (existing != null) info.versionCode else 0)
                 if (existing != null) {
                     _state.value = UpdateUi.Downloaded(info, existing.length())
                     AppLog.i(TAG, "发现已下载的更新包：${existing.name}（${formatBytes(existing.length())}）")

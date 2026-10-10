@@ -181,7 +181,8 @@ fun SettingsScreen(
     }
 
     // ---------------- 分类与卡片展开状态 ----------------
-    // -1 = 分类菜单（设置页首屏）；0 学校&账号 / 1 功能&权限 / 2 用户自定义 / 3 数据&图片 / 4 语言 / 5 关于
+    // -1 = 分类菜单（设置页首屏）；0 学校&账号 / 1 功能&权限 / 2 用户自定义 / 3 数据&图片
+    //   / 4 课程修改 / 5 语言 / 6 关于&反馈
     // 首屏只列分类入口，点进某一类后才显示该类目的具体选项（二级页可返回）
     var settingsTab by rememberSaveable { mutableStateOf(-1) }
     var expPermissions by rememberSaveable { mutableStateOf(false) }
@@ -191,6 +192,7 @@ fun SettingsScreen(
     var expStatus by rememberSaveable { mutableStateOf(true) }
     var expWidget by rememberSaveable { mutableStateOf(true) }
     var expTimeline by rememberSaveable { mutableStateOf(true) }
+    var expWeekDays by rememberSaveable { mutableStateOf(true) }
     var expWidgetRefresh by rememberSaveable { mutableStateOf(true) }
     var expPeriodTimes by rememberSaveable { mutableStateOf(true) }
     var expUiStyle by rememberSaveable { mutableStateOf(true) }
@@ -223,7 +225,7 @@ fun SettingsScreen(
     LaunchedEffect(settingsTab) {
         runCatching { listState.scrollToItem(0) }
         // 进入「关于」页时静默检查一次更新（内部按 6 小时节流；手动点刷新图标则强制请求）
-        if (settingsTab == 5 && settings.autoCheckUpdate) AppUpdater.check(context, auto = true)
+        if (settingsTab == 6 && settings.autoCheckUpdate) AppUpdater.check(context, auto = true)
     }
 
     // 分类标题/说明（分类菜单与二级页顶栏共用）
@@ -232,6 +234,7 @@ fun SettingsScreen(
         t.settingsTabFeature,
         t.settingsTabCustom,
         t.secData,
+        t.secCourseEdits,
         t.secLang,
         t.settingsTabAboutFeedback,
     )
@@ -240,6 +243,7 @@ fun SettingsScreen(
         t.settingsTabFeatureSub,
         t.settingsTabCustomSub,
         t.secDataSub,
+        t.secCourseEditsSub,
         t.secLangSub,
         t.aboutSub,
     )
@@ -643,6 +647,14 @@ fun SettingsScreen(
                 // 避免“功能本来没开，却在提示未授权/未解除”的困扰
                 if (settings.reminderEnabled) {
                     Spacer(Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(t.remindAgendaLabel, modifier = Modifier.weight(1f))
+                        Switch(
+                            checked = settings.remindAgenda,
+                            onCheckedChange = { vm.setRemindAgenda(it) },
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
                     Text(
                         text = t.leadLabel,
                         style = MaterialTheme.typography.labelMedium,
@@ -760,9 +772,9 @@ fun SettingsScreen(
             }
         }
 
-        // ---------------------------------------------------------- 【选项卡 2】用户自定义：课程修改
+        // ---------------------------------------------------------- 【选项卡 4】课程修改（独立一级分类）
         // 应对「课程信息已经变了、教务系统还没改」：可逐门课本地修正，也可一键还原 / 清除后重新同步
-        if (settingsTab == 2) item {
+        if (settingsTab == 4) item {
             CollapsibleSectionCard(
                 t.secCourseEdits,
                 t.secCourseEditsSub,
@@ -851,6 +863,32 @@ fun SettingsScreen(
                                 "%02d:%02d".format(settings.timelineEndMinutes / 60, settings.timelineEndMinutes % 60)
                         )
                     }
+                }
+            }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 2】用户自定义：周视图天数
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                t.secWeekDays,
+                t.secWeekDaysSub,
+                expanded = expWeekDays,
+                onToggle = { expWeekDays = !expWeekDays },
+            ) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ChoiceChip(
+                        label = t.weekDaysFive,
+                        selected = settings.weekDays != 7,
+                        onClick = { vm.setWeekDays(5) },
+                    )
+                    ChoiceChip(
+                        label = t.weekDaysSeven,
+                        selected = settings.weekDays == 7,
+                        onClick = { vm.setWeekDays(7) },
+                    )
                 }
             }
         }
@@ -1300,8 +1338,8 @@ fun SettingsScreen(
             }
         }
 
-        // ---------------------------------------------------------- 【选项卡 4】语言（中/法/英，默认跟随系统）
-        if (settingsTab == 4) item {
+        // ---------------------------------------------------------- 【选项卡 5】语言（中/法/英，默认跟随系统）
+        if (settingsTab == 5) item {
             CollapsibleSectionCard(
                 t.secLang,
                 null,
@@ -1336,8 +1374,8 @@ fun SettingsScreen(
             }
         }
 
-        // ---------------------------------------------------------- 【选项卡 5】关于（默认折叠，右侧显示 K日程 + 版本号）
-        if (settingsTab == 5) item {
+        // ---------------------------------------------------------- 【选项卡 6】关于（默认折叠，右侧显示 K日程 + 版本号）
+        if (settingsTab == 6) item {
             CollapsibleSectionCard(
                 t.secAbout,
                 t.aboutSub,
@@ -1391,9 +1429,9 @@ fun SettingsScreen(
                 }
             }
         }
-        // ---------------------------------------------------------- 【选项卡 5】关于：用户反馈
+        // ---------------------------------------------------------- 【选项卡 6】关于：用户反馈
         // 主题 + 内容 + 联系方式（选填）→ POST 到开发者站点（接口见部署指南）
-        if (settingsTab == 5) item {
+        if (settingsTab == 6) item {
             CollapsibleSectionCard(
                 t.secFeedback,
                 t.secFeedbackSub,
@@ -1459,8 +1497,8 @@ fun SettingsScreen(
                 }
             }
         }
-        // ---------------------------------------------------------- 【选项卡 5】关于：开发者工具入口（整行可点，行尾尖角符）
-        if (settingsTab == 5) item {
+        // ---------------------------------------------------------- 【选项卡 6】关于：开发者工具入口（整行可点，行尾尖角符）
+        if (settingsTab == 6) item {
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -1495,10 +1533,10 @@ fun SettingsScreen(
                 }
             }
         }
-        // ---------------------------------------------------------- 【选项卡 5】关于：检查更新
+        // ---------------------------------------------------------- 【选项卡 6】关于：检查更新
         // 右侧动作随状态变化：
         //   刷新图标（点一下检查） → 「下载并安装」 → 「安装」（已下载但未安装）
-        if (settingsTab == 5) item {
+        if (settingsTab == 6) item {
             val u = updateState
             Surface(
                 modifier = Modifier

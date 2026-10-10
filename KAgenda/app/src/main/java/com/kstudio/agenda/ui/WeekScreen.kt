@@ -197,6 +197,7 @@ fun WeekScreen(
                             hScroll = gridScroll,
                             screenW = screenW,
                             zoom = zoom,
+                            days = settings.weekDays,
                             flashDate = flashDate,
                             flashTitle = flashTitle,
                             onLongPressDate = { d ->
@@ -212,6 +213,7 @@ fun WeekScreen(
                             hScroll = gridScroll,
                             screenW = screenW,
                             zoom = zoom,
+                            days = settings.weekDays,
                             startMin = timelineStartMin,
                             endMin = timelineEndMin,
                             flashDate = flashDate,
@@ -228,7 +230,7 @@ fun WeekScreen(
             // ---------------- 我的日程（本周，按时间排序） ----------------
             // 该区域内横滑始终切换周（不在课表上，无需让横向滚动先消费）
             val weekEvents = agenda
-                .filter { ev -> (0L..6L).any { off -> ev.coversDate(monday.plusDays(off)) } }
+                .filter { ev -> (0L..6L).any { off -> ev.occursOn(monday.plusDays(off)) } }
                 .sortedWith(compareBy({ it.dateEpochDay }, { com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
             Column(
                 Modifier
@@ -461,15 +463,16 @@ private fun WeekGrid(
     hScroll: ScrollState,
     screenW: Dp,
     zoom: Float,
+    days: Int = 5,
     flashDate: LocalDate? = null,
     flashTitle: String = "",
     onLongPressDate: ((LocalDate) -> Unit)? = null,
     onSelect: (Course) -> Unit,
 ) {
-    // 默认：课程表模式按“手机宽度刚好显示周一到周五”计算列宽；双指缩放可调整（0.7x~2x）
+    // 默认列宽按设置的天数（5=周一~周五 / 7=周一~周日）撑满屏宽；双指缩放可调整（0.7x~2x）
     val rowHeight = 58.dp * zoom
     val timeColWidth = 52.dp
-    val dayWidth = ((screenW - timeColWidth) / 5f) * zoom
+    val dayWidth = ((screenW - timeColWidth) / days.toFloat()) * zoom
 
     // 注意：纵向滚动交给外层容器（周网格与「我的日程」同屏滚动），这里只保留横向滚动
     Column(
@@ -685,14 +688,15 @@ private fun WeekTimelineGrid(
     zoom: Float,
     startMin: Int,
     endMin: Int,
+    days: Int = 5,
     flashDate: LocalDate? = null,
     flashTitle: String = "",
     onLongPressDate: ((LocalDate) -> Unit)? = null,
     onSelect: (Course) -> Unit,
 ) {
-    // 默认：时间线模式按“手机宽度刚好显示周一至周日”计算列宽；双指缩放只横向缩放（竖向保持 0.85dp/分）
+    // 默认列宽按设置的天数（5/7）撑满屏宽；双指缩放只横向缩放（竖向保持 0.85dp/分）
     val timeColWidth = 56.dp
-    val dayWidth = ((screenW - timeColWidth) / 7f) * zoom
+    val dayWidth = ((screenW - timeColWidth) / days.toFloat()) * zoom
     val totalH = ((endMin - startMin) * MINUTE_SCALE).dp
     // 首个整点刻度（起始恰为整点时从该整点开始）
     val firstHour = (startMin + 59) / 60

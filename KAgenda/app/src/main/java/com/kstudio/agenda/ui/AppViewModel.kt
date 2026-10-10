@@ -265,6 +265,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AgendaStore.upsert(getApplication(), event)
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            // 日程/计划的时间可能变了：重排提醒（含日程提醒）
+            repo.rescheduleReminders()
         }
         message(if (event.isPlan) t.planSaved else t.agendaSaved)
     }
@@ -276,6 +278,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AgendaStore.delete(getApplication(), id)
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            repo.rescheduleReminders()
         }
         message(if (wasPlan) t.planDeleted else t.agendaDeleted)
     }
@@ -286,6 +289,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AgendaStore.clear(getApplication())
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            repo.rescheduleReminders()
         }
         message(t.msgEventsCleared)
     }
@@ -432,6 +436,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** 课前提醒开启时，是否也为自己添加的日程/计划提醒 */
+    fun setRemindAgenda(enabled: Boolean) {
+        viewModelScope.launch {
+            SettingsStore.setRemindAgenda(getApplication(), enabled)
+            repo.rescheduleReminders()
+        }
+    }
+
     /** 仅重新排程提醒（开发者工具按钮） */
     fun rescheduleReminders() {
         repo.rescheduleReminders()
@@ -452,6 +464,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { SettingsStore.setTimetableMode(getApplication(), enabled) }
     }
 
+    /** 周视图默认显示天数（5 或 7；「日程表」与「计划」共用） */
+    fun setWeekDays(days: Int) {
+        viewModelScope.launch { SettingsStore.setWeekDays(getApplication(), days) }
+    }
+
     /** 时间线模式（非课程表）显示范围：开始/结束时间（分钟，0~1439；结束 ≤ 开始表示跨到次日） */
     fun setTimelineStart(minutes: Int) {
         viewModelScope.launch { SettingsStore.setTimelineStart(getApplication(), minutes) }
@@ -469,6 +486,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             AgendaStore.upsertAll(getApplication(), events)
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            repo.rescheduleReminders()
         }
         message(t.qaAdded(events.size))
     }
@@ -597,6 +615,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val r = AiAssistant.apply(getApplication(), ops)
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
+            repo.rescheduleReminders()
             message(t.qaOpsDone(r.added, r.updated, r.deleted, r.unmatched))
         }
     }

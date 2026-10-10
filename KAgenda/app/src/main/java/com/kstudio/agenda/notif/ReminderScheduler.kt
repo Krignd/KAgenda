@@ -5,20 +5,26 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.SettingsStore
+import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import org.json.JSONArray
 import java.io.File
 import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneId
 
 /**
- * 上课提醒调度：
+ * 提醒调度：
  * - 依据缓存课表 + 设置中的“提前分钟数”，为未来 7 天内每一节课安排闹钟；
+ * - 若开启「日程/计划也提醒」（[com.kstudio.agenda.data.AppSettings.remindAgenda]，默认开），
+ *   同样为自己添加的、带精确开始时刻的日程/计划安排提醒；
  * - 优先使用精确闹钟（需系统授权），未授权时自动降级为窗口闹钟（约 10 分钟误差）；
- * - 同一个（课程 + 日期）重复调度会覆盖旧闹钟，不会重复提醒。
+ * - 同一个（课程/日程 + 日期）重复调度会覆盖旧闹钟，不会重复提醒。
  */
 object ReminderScheduler {
 
@@ -35,12 +41,6 @@ object ReminderScheduler {
 
         // 课表统一走 CourseEditStore：用户手动修改过的课程（时间/地点等）也要按修改后排提醒
         val semester = CourseEditStore.appliedFromCache(context)
-        if (semester == null) {
-            // 课表缓存不存在（尚未同步 / 已被“清缓存”清掉）：取消残留闹钟，
-            // 避免按旧课表继续弹出“即将上课”提醒
-            cancelAll(context)
-            return
-        }
         val am = context.getSystemService(AlarmManager::class.java) ?: return
         // 先取消上一轮调度的闹钟，再统一重排（保证不重复、不错配）
         cancelAll(context)
@@ -48,19 +48,44 @@ object ReminderScheduler {
         val today = LocalDate.now()
         val nowMillis = System.currentTimeMillis()
 
-        for (offset in 0..LOOKAHEAD_DAYS) {
-            val date = today.plusDays(offset.toLong())
-            val weekNo = semester.teachingWeekOf(date)
-            if (weekNo < 1 || weekNo > 40) continue
-            // 法定节假日停课：不排课，也就不提醒（用户开启「节假日显示课表」时照常排）
-            if (HolidayTable.hidesCourses(date)) continue
-            val courses = semester.weeks[weekNo].orEmpty()
-                .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
-            for (course in courses) {
-                val triggerAt = PeriodTimes.startMillisEpoch(date, course.startPeriod) -
-                    settings.leadMinutes * 60_000L
-                if (triggerAt <= nowMillis + 30_000L) continue   // 已过时或即将发生
-                scheduledCodes.add(scheduleOne(context, am, triggerAt, course, date))
+        // 课表缓存不存在（尚未同步 / 已被“清缓存”清掉）时跳过课程，但仍可为日程排提醒
+        if (semester != null) {
+            for (offset in 0..LOOKAHEAD_DAYS) {
+                val date = today.plusDays(offset.toLong())
+                val weekNo = semester.teachingWeekOf(date)
+                if (weekNo < 1 || weekNo > 40) continue
+                // 法定节假日停课：不排课，也就不提醒（用户开启「节假日显示课表」时照常排）
+                if (HolidayTable.hidesCourses(date)) continue
+                val courses = semester.weeks[weekNo].orEmpty()
+                    .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
+                for (course in courses) {
+                    val triggerAt = PeriodTimes.startMillisEpoch(date, course.startPeriod) -
+                        settings.leadMinutes * 60_000L
+                    if (triggerAt <= nowMillis + 30_000L) continue   // 已过时或即将发生
+                    scheduledCodes.add(scheduleOne(context, am, triggerAt, course, date))
+                }
+            }
+        }
+
+        // 自建日程/计划：有精确开始时刻（HH:mm）的条目，同样按开始时刻提前 [leadMinutes] 提醒
+        if (settings.remindAgenda) {
+            AgendaStore.ensureLoaded(context)
+            for (ev in AgendaStore.events.value) {
+                if (!ev.hasPreciseStart) continue
+                val startTime = runCatching { LocalTime.parse(ev.startTime) }.getOrNull() ?: continue
+                // 长日程只在开始日提醒一次；其余（含重复）按命中的日期各排一次
+                val dates = if (ev.isLong) {
+                    listOf(ev.date)
+                } else {
+                    (0..LOOKAHEAD_DAYS).map { today.plusDays(it.toLong()) }.filter { ev.occursOn(it) }
+                }
+                for (date in dates) {
+                    val startAt = date.atTime(startTime)
+                        .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val triggerAt = startAt - settings.leadMinutes * 60_000L
+                    if (triggerAt <= nowMillis + 30_000L) continue
+                    scheduledCodes.add(scheduleAgenda(context, am, triggerAt, ev, date))
+                }
             }
         }
         writeCodes(context, scheduledCodes)
@@ -81,6 +106,37 @@ object ReminderScheduler {
             putExtra(ReminderReceiver.EXTRA_DATE, date.toString())
         }
         val requestCode = (course.id + "@" + date).hashCode()
+        return arm(context, am, triggerAtMillis, intent, requestCode)
+    }
+
+    /** 为一条自建日程/计划排提醒（与课程提醒同一套降级策略） */
+    private fun scheduleAgenda(
+        context: Context,
+        am: AlarmManager,
+        triggerAtMillis: Long,
+        event: AgendaEvent,
+        date: LocalDate,
+    ): Int {
+        val intent = Intent(context, ReminderReceiver::class.java).apply {
+            putExtra(ReminderReceiver.EXTRA_TITLE, event.title)
+            putExtra(ReminderReceiver.EXTRA_ROOM, event.location)
+            putExtra(ReminderReceiver.EXTRA_TIME_RANGE, event.timeLabel)
+            putExtra(ReminderReceiver.EXTRA_PERIOD_LABEL, "")
+            putExtra(ReminderReceiver.EXTRA_DATE, date.toString())
+            putExtra(ReminderReceiver.EXTRA_AGENDA, true)
+        }
+        val requestCode = ("agenda:" + event.id + "@" + date).hashCode()
+        return arm(context, am, triggerAtMillis, intent, requestCode)
+    }
+
+    /** 真正落地一个闹钟：优先精确，未授权/异常时降级为 setAndAllowWhileIdle */
+    private fun arm(
+        context: Context,
+        am: AlarmManager,
+        triggerAtMillis: Long,
+        intent: Intent,
+        requestCode: Int,
+    ): Int {
         val pi = PendingIntent.getBroadcast(
             context,
             requestCode,

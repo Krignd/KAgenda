@@ -20,6 +20,8 @@ class ReminderReceiver : BroadcastReceiver() {
         const val EXTRA_TIME_RANGE = "timeRange"
         const val EXTRA_PERIOD_LABEL = "periodLabel"
         const val EXTRA_DATE = "date"
+        /** true=自建日程/计划提醒（与课程提醒区分标题文案） */
+        const val EXTRA_AGENDA = "agenda"
 
         /** 测试提醒标记：为 true 时不受“提醒开关”限制（供开发者工具验证链路） */
         const val EXTRA_TEST = "testMode"
@@ -40,6 +42,7 @@ class ReminderReceiver : BroadcastReceiver() {
                     timeRange = intent.getStringExtra(EXTRA_TIME_RANGE) ?: "",
                     periodLabel = intent.getStringExtra(EXTRA_PERIOD_LABEL) ?: "",
                     dateIso = intent.getStringExtra(EXTRA_DATE) ?: "",
+                    agenda = intent.getBooleanExtra(EXTRA_AGENDA, false),
                 )
                 // 提醒触发后，“下一节课”已变化：顺手刷新桌面小组件与常驻通知
                 runCatching {

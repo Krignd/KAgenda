@@ -36,22 +36,33 @@ object AiAssistant {
             }
 
     /** 由 AI 解析条目构建本地事件 */
-    fun buildEvent(item: AiSkills.AiItem): AgendaEvent = AgendaEvent(
-        id = UUID.randomUUID().toString(),
-        title = item.title,
-        dateEpochDay = (item.date ?: LocalDate.now()).toEpochDay(),
-        startTime = item.startTime,
-        endTime = item.endTime,
-        location = item.location,
-        note = item.note,
-        type = item.type.takeIf { key -> key in AgendaTypes.ORDER } ?: "",
-        isPlan = item.isPlan,
-        // 长日程 / 长计划：AI 解析出的跨天区间必须带上，否则会被压成一天
-        isLong = item.isLong,
-        endDateEpochDay = if (item.isLong) item.endDate?.toEpochDay() else null,
-        // 重复规则：日程与计划同样支持（“每周二四六”这类周期性描述不能丢）
-        repeatRule = item.repeat,
-    )
+    fun buildEvent(item: AiSkills.AiItem): AgendaEvent {
+        val startDay = item.date ?: LocalDate.now()
+        // 长条目本身已是时间段，不叠加重复（与编辑器/RepeatRulePicker 口径一致）
+        val repeat = if (item.isLong) "" else item.repeat
+        // 长条目：ed = 结束日期；重复条目：ed = 重复截止（≤ 开始日则视为“不限”，与编辑器保存口径一致）
+        val endDay = item.endDate?.toEpochDay()
+        return AgendaEvent(
+            id = UUID.randomUUID().toString(),
+            title = item.title,
+            dateEpochDay = startDay.toEpochDay(),
+            startTime = item.startTime,
+            endTime = item.endTime,
+            location = item.location,
+            note = item.note,
+            type = item.type.takeIf { key -> key in AgendaTypes.ORDER } ?: "",
+            isPlan = item.isPlan,
+            // 长日程 / 长计划：AI 解析出的跨天区间必须带上，否则会被压成一天
+            isLong = item.isLong,
+            endDateEpochDay = when {
+                item.isLong -> endDay
+                repeat.isNotBlank() -> endDay?.takeIf { it > startDay.toEpochDay() }
+                else -> null
+            },
+            // 重复规则：日程与计划同样支持（“每周二四六”这类周期性描述不能丢）
+            repeatRule = repeat,
+        )
+    }
 
     /** 应用一批操作；返回统计（unmatched=未匹配到目标的修改/删除） */
     fun apply(context: Context, ops: List<AiSkills.AiOp>): ApplyResult {

@@ -87,13 +87,18 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
 
     val courseMap = remember(semester, monthStart) { buildCourseMap(semester, monthStart) }
     val agendaMap = remember(agendaAll, monthStart) {
-        agendaAll
-            .filter { !it.isPlan }
-            .filter {
-                val d = LocalDate.ofEpochDay(it.dateEpochDay)
-                d.year == monthStart.year && d.monthValue == monthStart.monthValue
-            }
-            .groupBy { it.dateEpochDay }
+        val monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth())
+        val out = HashMap<Long, MutableList<AgendaEvent>>()
+        var d = monthStart
+        while (!d.isAfter(monthEnd)) {
+            // 「计划」归计划页，月视图只展示日程；
+            // 用 occursOn 而不是按 dateEpochDay 归档 —— 否则重复日程、跨天长日程都只在开始日显示
+            // （2026-10-08 修「取消课程表模式后月视图看不到日程」）
+            val list = agendaAll.filter { !it.isPlan && it.occursOn(d) }
+            if (list.isNotEmpty()) out[d.toEpochDay()] = list.toMutableList()
+            d = d.plusDays(1)
+        }
+        out
     }
 
     Column(

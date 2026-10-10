@@ -96,8 +96,18 @@ data class AgendaEvent(
      * 该事件是否“出现在”指定日期：
      * 无重复时等同 [coversDate]；有重复规则（短日程）时 = 从开始日期起按规则命中的日期。
      */
-    fun occursOn(d: LocalDate): Boolean =
-        if (repeatRule.isBlank()) coversDate(d) else RepeatRules.occursOn(date, repeatRule, d)
+    fun occursOn(d: LocalDate): Boolean {
+        if (repeatRule.isNotBlank()) {
+            // 重复日程的「结束边界」：ed = 重复截止日期。
+            // 未填、或 ed ≤ 开始日（含“与开始同日＝不限”的约定）→ 持续延伸，不做截断。
+            // ⚠️ 如果无条件 `d.isAfter(until) → false`，ed ≤ 开始日的条目会**永远不显示**
+            //    （AI 常把 ed 填成与 d 同一天 → 用户反馈“AI 添加的重复日程根本不显示”）。
+            val until = endDateEpochDay?.let { LocalDate.ofEpochDay(it) }
+            if (until != null && until.isAfter(date) && d.isAfter(until)) return false
+            return RepeatRules.occursOn(date, repeatRule, d)
+        }
+        return coversDate(d)
+    }
 
     /** 展示颜色（0 表示未指定，由 UI 决定默认色） */
     val displayColor: Int

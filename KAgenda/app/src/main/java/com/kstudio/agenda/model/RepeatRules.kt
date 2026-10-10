@@ -44,7 +44,11 @@ object RepeatRules {
     fun occursOn(start: LocalDate, rule: String, d: LocalDate): Boolean {
         if (rule.isBlank() || d.isBefore(start)) return false
         return when {
-            rule == MONTHLY -> d.dayOfMonth == start.dayOfMonth
+            // 每月同日；当月没有该日（如 31 号遇到 2 月）→ 落到**当月最后一天**
+            // （否则“每月31号”的条目在短月里会整体消失）
+            rule == MONTHLY ->
+                d.dayOfMonth == start.dayOfMonth ||
+                    (d.dayOfMonth == d.lengthOfMonth() && d.dayOfMonth < start.dayOfMonth)
             rule.startsWith("daily:") -> {
                 val n = rule.removePrefix("daily:").toIntOrNull() ?: return false
                 if (n <= 0) false else ChronoUnit.DAYS.between(start, d) % n == 0L
@@ -56,12 +60,26 @@ object RepeatRules {
             rule.startsWith("biweekly:") -> {
                 val days = parseIntSet(rule.removePrefix("biweekly:"))
                 if (d.dayOfWeek.value !in days) return false
-                val startMonday = start.minusDays((start.dayOfWeek.value - 1).toLong())
+                // 「隔周」相位以**开始日期当天或之后第一个命中的星期**所在自然周为基准。
+                // 若改为以“开始日期所在自然周”为基准，开始日期与所选星期不一致时（例如
+                // 开始日期是周六、选了周一），第一次命中会被推到 2 周以后 → 用户反馈“添加完不显示”。
+                val anchor = firstHitOnOrAfter(start, days) ?: return false
+                val anchorMonday = anchor.minusDays((anchor.dayOfWeek.value - 1).toLong())
                 val dMonday = d.minusDays((d.dayOfWeek.value - 1).toLong())
-                ChronoUnit.WEEKS.between(startMonday, dMonday) % 2 == 0L
+                ChronoUnit.WEEKS.between(anchorMonday, dMonday) % 2 == 0L
             }
             else -> false
         }
+    }
+
+    /** 从 [start]（含）起 7 天内第一个星期几命中 [days] 的日期（[days] 非空时必然有结果） */
+    private fun firstHitOnOrAfter(start: LocalDate, days: Set<Int>): LocalDate? {
+        if (days.isEmpty()) return null
+        for (i in 0..6) {
+            val c = start.plusDays(i.toLong())
+            if (c.dayOfWeek.value in days) return c
+        }
+        return null
     }
 
     /** 宽松解析“重复描述”（AI 字段或用户手输中文）；已经是合法 token 也直接通过；无法解析返回 null */

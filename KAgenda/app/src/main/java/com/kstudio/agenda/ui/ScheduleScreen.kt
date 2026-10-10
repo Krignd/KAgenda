@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.ui.components.segmentedStrokeColor
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -76,6 +77,7 @@ fun ScheduleScreen(vm: AppViewModel) {
                         index = index,
                         count = ScheduleMode.entries.size,
                     ),
+                    border = SegmentedButtonDefaults.borderStroke(segmentedStrokeColor()),
                     label = {
                         Text(
                             when (m) {

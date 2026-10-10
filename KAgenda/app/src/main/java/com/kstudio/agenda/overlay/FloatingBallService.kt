@@ -40,6 +40,7 @@ import com.kstudio.agenda.ui.MainActivity
 import com.kstudio.agenda.ui.aiOpBadgeLabel
 import com.kstudio.agenda.ui.aiOpSummary
 import com.kstudio.agenda.data.AiAssistant
+import com.kstudio.agenda.notif.ReminderScheduler
 import com.kstudio.agenda.util.AppPresence
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
@@ -509,6 +510,7 @@ class FloatingBallService : Service() {
                         val result = AiAssistant.apply(this@FloatingBallService, list)
                         runCatching { StatusNotification.refresh(this@FloatingBallService) }
                         runCatching { NextClassWidgetUpdater.updateAndSchedule(this@FloatingBallService) }
+                        runCatching { ReminderScheduler.reschedule(this@FloatingBallService) }
                         result
                     }
                     Toast.makeText(

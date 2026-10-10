@@ -183,7 +183,8 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         }
         // 显示覆盖当天的所有日程（含跨天长日程），按时间排序
         val dayEvents = agenda
-            .filter { it.coversDate(selected) }
+            // 用 occursOn：重复日程（如“每周一”）与跨天长日程都能在命中的每一天出现
+            .filter { it.occursOn(selected) }
             .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
 
         if (timetableMode) {
@@ -646,6 +647,11 @@ fun CourseCard(
                 if (flash) Modifier.border(
                     2.dp,
                     color.copy(alpha = 0.35f + 0.65f * pulse),
+                    RoundedCornerShape(18.dp),
+                ) else if (com.kstudio.agenda.ui.theme.LocalGlassEnabled.current) Modifier.border(
+                    // 液态玻璃：不要纯色描边，用半透明白微光边 → 体现玻璃的“厚度”（与设置页卡片同一套观感）
+                    1.dp,
+                    com.kstudio.agenda.ui.components.cardBorderColor(),
                     RoundedCornerShape(18.dp),
                 ) else Modifier.border(
                     1.dp,

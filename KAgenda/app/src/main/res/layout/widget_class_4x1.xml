@@ -68,6 +68,16 @@
             android:maxLines="1"
             android:textColor="#64748B"
             android:textSize="10sp" />
+
+        <!-- 老师单独一行（行序：课程/时间/地点/老师/倒计时） -->
+        <TextView
+            android:id="@+id/widget_teacher"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#64748B"
+            android:textSize="10sp" />
     </LinearLayout>
 
     <!-- 右侧：倒计时（如“11小时26分钟后”）+ 其下方的「下一节课」 -->

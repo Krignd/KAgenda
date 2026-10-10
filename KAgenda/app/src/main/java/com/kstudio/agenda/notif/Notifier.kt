@@ -124,7 +124,15 @@ object Notifier {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
 
-    fun show(context: Context, title: String, room: String, timeRange: String, periodLabel: String, dateIso: String) {
+    fun show(
+        context: Context,
+        title: String,
+        room: String,
+        timeRange: String,
+        periodLabel: String,
+        dateIso: String,
+        agenda: Boolean = false,
+    ) {
         ensureChannel(context)
         if (!hasPermission(context)) return
 
@@ -146,7 +154,10 @@ object Notifier {
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle(AppText.current.notifClassSoon(title))
+            .setContentTitle(
+                if (agenda) AppText.current.notifAgendaSoon(title)
+                else AppText.current.notifClassSoon(title),
+            )
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_HIGH)

@@ -49,6 +49,27 @@ class RepeatRulesTest {
     }
 
     @Test
+    fun `monthly falls back to last day when the day does not exist`() {
+        val eom = LocalDate.of(2026, 1, 31) // 31 号
+        assertTrue(RepeatRules.occursOn(eom, RepeatRules.MONTHLY, LocalDate.of(2026, 3, 31)))
+        assertTrue(RepeatRules.occursOn(eom, RepeatRules.MONTHLY, LocalDate.of(2026, 4, 30)))  // 4 月无 31 → 月末
+        assertTrue(RepeatRules.occursOn(eom, RepeatRules.MONTHLY, LocalDate.of(2026, 2, 28)))
+        assertFalse(RepeatRules.occursOn(eom, RepeatRules.MONTHLY, LocalDate.of(2026, 4, 29)))
+    }
+
+    @Test
+    fun `biweekly anchors on the first matching weekday on or after start`() {
+        // 开始日期是周六（2026-10-10），选“隔周周一”
+        val sat = LocalDate.of(2026, 10, 10)
+        val rule = RepeatRules.biweekly(listOf(1))
+        val firstMonday = LocalDate.of(2026, 10, 12)
+        assertTrue(RepeatRules.occursOn(sat, rule, firstMonday))                 // 第一次命中就在 2 天内
+        assertTrue(RepeatRules.occursOn(sat, rule, firstMonday.plusWeeks(2)))
+        assertFalse(RepeatRules.occursOn(sat, rule, firstMonday.plusWeeks(1)))   // 隔周
+        assertFalse(RepeatRules.occursOn(sat, rule, sat))                        // 周六不命中
+    }
+
+    @Test
     fun `nothing before start`() {
         assertFalse(RepeatRules.occursOn(start, RepeatRules.daily(1), start.minusDays(1)))
         assertFalse(RepeatRules.occursOn(start, RepeatRules.weekly(listOf(2)), start.minusWeeks(1)))

@@ -31,6 +31,21 @@ import androidx.compose.ui.graphics.Color
 /** 当前是否为液态玻璃风格（组件内可按需做额外适配） */
 val LocalGlassEnabled = staticCompositionLocalOf { false }
 
+/**
+ * ⚠️ 液态玻璃改动踩坑备忘（**改这里的配色/描边前先读**，2026-10-10 连续被否掉三轮的根因）
+ *
+ * 1. `Color.copy(alpha = x)` 是**覆盖** alpha，不是相乘！
+ *    所以 `outline.copy(alpha = 0.6f)` 画出来恒为 **60% 不透明度**，与 `outline` 自身是 25% 还是 14% 没有关系。
+ *    曾因此反复调 `GlassDark.outline`（25%→14%）却一直看到“一圈硬白线”。
+ *    → 要“低透明度描边”请在**调用点**显式算（见 `components/Common.kt` 的
+ *      `isDarkGlass()` / `cardBorderColor()` / `segmentedStrokeColor()`），别去动下面的 scheme 值。
+ * 2. `outline` 里**绝不掺主色**：试过带蓝的 `0x2E9EC5FF`（深）/`0x241D4ED8`（浅）→ 用户反馈“异常的蓝色描边”。
+ *    中性白（深色）/ 中性黑（浅色）才是对的。
+ * 3. 深色玻璃下**描边完全透明**（卡片 / 未选中选择芯片 / 分段按钮），浅色玻璃保持白 60% 微光边，
+ *    **默认（简约）主题一律不动**（那里靠白底 + 极淡投影分层）。
+ * 4. 只影响深色玻璃的判定统一走 `components/isDarkGlass()`，不要在通用组件里写死颜色或按主题名分支。
+ */
+
 /** 玻璃风格 · 浅色：表面带 alpha，叠加在渐变背景上 */
 private val GlassLight = lightColorScheme(
     primary = Color(0xFF1D4ED8),
@@ -86,9 +101,13 @@ private val GlassDark = darkColorScheme(
     surfaceContainerHigh = Color(0xFF1F2D49),
     surfaceContainerHighest = Color(0xA6243355),
     surfaceTint = Color.Transparent,
-    // 深色玻璃：25% 中性白（不是纯白、也不是主色），给卡片/输入框一圈玻璃微光边
-    outline = Color(0x40FFFFFF),
-    outlineVariant = Color(0x26FFFFFF),
+    // 深色玻璃：outline / outlineVariant 只影响**直接引用**它们的地方（如未选中选项按钮的细边）。
+    // ⚠️ `Color.copy(alpha = x)` 是**覆盖** alpha（不是相乘），所以卡片描边不能靠这两个值控制，
+    //    而是由 `ui/components/cardBorderColor()` 判定：深色下返回**完全透明**
+    //    （2026-10-10 用户：“液态玻璃UI深色模式下描边还是有问题，要透明的”）。
+    //    也不能加主色（试过带蓝的 2E9EC5FF → 用户反馈“异常的蓝色描边”）。
+    outline = Color(0x24FFFFFF),
+    outlineVariant = Color(0x14FFFFFF),
     error = Color(0xFFF87171),
 )
 

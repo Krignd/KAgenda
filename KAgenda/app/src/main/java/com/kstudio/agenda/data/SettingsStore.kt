@@ -27,6 +27,8 @@ data class AppSettings(
     /** 课前提醒：默认关闭（开关由用户主动开启；开启时才申请通知权限） */
     val reminderEnabled: Boolean = false,
     val leadMinutes: Int = 30,
+    /** 课前提醒开关开启时，是否也为自己添加的日程/计划（有精确开始时间）提醒；默认开 */
+    val remindAgenda: Boolean = true,
     val autoRefresh: Boolean = true,
     /** 是否自动检查更新（打开应用 / 进入「关于&反馈」时静默检查；默认开） */
     val autoCheckUpdate: Boolean = true,
@@ -35,6 +37,8 @@ data class AppSettings(
     val anchorEpochDay: Long? = null,
     /** 课程表模式（日程表页顶部勾选框；true=按节次等行显示） */
     val timetableMode: Boolean = true,
+    /** 周视图默认显示天数：5=周一到周五；7=周一到周日（日程与计划周视图共用） */
+    val weekDays: Int = 5,
     /** 应用语言：""=跟随系统；"zh"/"fr"/"en" */
     val appLanguage: String = "",
     /** 所选学校 id（见 Schools.ALL） */
@@ -141,12 +145,14 @@ object SettingsStore {
     private val KEY_PASSWORD_ENC = stringPreferencesKey("password_enc")
     private val KEY_REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
     private val KEY_LEAD_MINUTES = intPreferencesKey("lead_minutes")
+    private val KEY_REMIND_AGENDA = booleanPreferencesKey("remind_agenda")
     private val KEY_AUTO_REFRESH = booleanPreferencesKey("auto_refresh")
     private val KEY_AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update")
     private val KEY_LAST_SYNC = longPreferencesKey("last_sync_at")
     private val KEY_SEMESTER = stringPreferencesKey("semester_label")
     private val KEY_ANCHOR = longPreferencesKey("anchor_epoch_day")
     private val KEY_TIMETABLE_MODE = booleanPreferencesKey("timetable_mode")
+    private val KEY_WEEK_DAYS = intPreferencesKey("week_days")
     private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
     private val KEY_SCHOOL = stringPreferencesKey("school_id")
     private val KEY_AI_KEY_ENC = stringPreferencesKey("ai_key_enc")
@@ -178,12 +184,14 @@ object SettingsStore {
             hasPassword = !p[KEY_PASSWORD_ENC].isNullOrEmpty(),
             reminderEnabled = p[KEY_REMINDER_ENABLED] ?: false,
             leadMinutes = p[KEY_LEAD_MINUTES] ?: 30,
+            remindAgenda = p[KEY_REMIND_AGENDA] ?: true,
             autoRefresh = p[KEY_AUTO_REFRESH] ?: true,
             autoCheckUpdate = p[KEY_AUTO_CHECK_UPDATE] ?: true,
             lastSyncAtMillis = p[KEY_LAST_SYNC] ?: 0L,
             semesterLabel = p[KEY_SEMESTER] ?: "",
             anchorEpochDay = p[KEY_ANCHOR],
             timetableMode = p[KEY_TIMETABLE_MODE] ?: true,
+            weekDays = if ((p[KEY_WEEK_DAYS] ?: 5) == 7) 7 else 5,
             appLanguage = p[KEY_APP_LANGUAGE] ?: "",
             schoolId = p[KEY_SCHOOL] ?: "buaa",
             aiKeySet = !p[KEY_AI_KEY_ENC].isNullOrEmpty(),
@@ -263,6 +271,11 @@ object SettingsStore {
         context.settingsDataStore.edit { it[KEY_LEAD_MINUTES] = minutes.coerceIn(0, 120) }
     }
 
+    /** 课前提醒开启时，是否也提醒自己添加的日程/计划（默认开） */
+    suspend fun setRemindAgenda(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_REMIND_AGENDA] = enabled }
+    }
+
     suspend fun setAutoRefresh(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_AUTO_REFRESH] = enabled }
     }
@@ -274,6 +287,11 @@ object SettingsStore {
 
     suspend fun setTimetableMode(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_TIMETABLE_MODE] = enabled }
+    }
+
+    /** 周视图默认显示天数（5 或 7） */
+    suspend fun setWeekDays(context: Context, days: Int) {
+        context.settingsDataStore.edit { it[KEY_WEEK_DAYS] = if (days == 7) 7 else 5 }
     }
 
     /** 时间线显示范围：开始/结束时间（分钟，0~1439；结束 ≤ 开始表示跨到次日） */
@@ -458,12 +476,14 @@ object SettingsStore {
         put(KEY_PASSWORD_ENC, "password_enc")
         put(KEY_REMINDER_ENABLED, "reminder_enabled")
         put(KEY_LEAD_MINUTES, "lead_minutes")
+        put(KEY_REMIND_AGENDA, "remind_agenda")
         put(KEY_AUTO_REFRESH, "auto_refresh")
         put(KEY_AUTO_CHECK_UPDATE, "auto_check_update")
         put(KEY_LAST_SYNC, "last_sync_at")
         put(KEY_SEMESTER, "semester_label")
         put(KEY_ANCHOR, "anchor_epoch_day")
         put(KEY_TIMETABLE_MODE, "timetable_mode")
+        put(KEY_WEEK_DAYS, "week_days")
         put(KEY_APP_LANGUAGE, "app_language")
         put(KEY_SCHOOL, "school_id")
         put(KEY_AI_KEY_ENC, "ai_key_enc")

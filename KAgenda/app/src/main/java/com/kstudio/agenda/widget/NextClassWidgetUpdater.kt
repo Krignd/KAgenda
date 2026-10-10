@@ -192,10 +192,9 @@ object NextClassWidgetUpdater {
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, spec.layoutRes)
 
-        // 2×1（compactInfo）：用户要求自上而下为 课程 / 课程时间 / 地点 / 距离时间，
-        // 因此该尺寸只显示时间（不拼老师，避免行内拥挤）；其他尺寸信息行仍为「时间 · 老师」。
+        // 2×1（compactInfo）：用户要求自上而下为 课程 / 课程时间 / 地点 / 距离时间，不显示老师。
+        // 其余尺寸把老师也从信息行拆出来、单独成行；地点单独成行：四种尺寸都显示。
         val showTeacher = !spec.compactInfo
-        // 地点单独成行：四种尺寸都显示
         val showRoom = true
 
         // 自建日程：进行中 / 下一项（均不含计划；“进行中”仅限起止时间都精确的条目，
@@ -241,6 +240,8 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_title, context.getString(R.string.widget_next_class))
             rv.setTextViewText(R.id.widget_name, context.getString(R.string.widget_no_data))
             rv.setTextViewText(R.id.widget_info, "")
+            rv.setTextViewText(R.id.widget_room, "")
+            if (showTeacher) rv.setTextViewText(R.id.widget_teacher, "")
             rv.setTextViewText(R.id.widget_remaining, "")
             rv.setTextViewText(R.id.widget_next2, "")
             rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
@@ -264,29 +265,15 @@ object NextClassWidgetUpdater {
                     it.course.title,
                 )
             }
-            val info = if (spec.showNext2) {
-                // 大尺寸：信息行放“结束时间 + 老师”，下一节单独一行（地点见 widget_room）
-                listOfNotNull(
-                    endLabel,
-                    current.course.teacher.ifBlank { null },
-                ).joinToString(" · ")
-            } else if (spec.compactInfo) {
-                // 2×1：只要结束时间（行序为 课程/时间/地点/距离）
-                endLabel
-            } else {
-                // 中等尺寸：至 + 老师 + 下节
-                listOfNotNull(
-                    endLabel,
-                    current.course.teacher.ifBlank { null },
-                    nextLabel,
-                ).joinToString(" · ")
-            }
-            rv.setTextViewText(R.id.widget_info, info)
-            // 地点单独一行（2×1 不显示）
+            // 信息行只放“结束时间”；地点/老师各自单独成行（行序：课程/时间/地点/老师/倒计时）
+            rv.setTextViewText(R.id.widget_info, endLabel)
             rv.setTextViewText(
                 R.id.widget_room,
                 if (showRoom) current.course.room.ifBlank { "" } else "",
             )
+            if (showTeacher) {
+                rv.setTextViewText(R.id.widget_teacher, current.course.teacher.ifBlank { "" })
+            }
             val remainMinutes = Duration.between(now, current.end()).toMinutes().coerceAtLeast(1)
             rv.setTextViewText(
                 R.id.widget_remaining,
@@ -310,6 +297,7 @@ object NextClassWidgetUpdater {
                 R.id.widget_room,
                 if (showRoom) agendaOngoing.location.ifBlank { "" } else "",
             )
+            if (showTeacher) rv.setTextViewText(R.id.widget_teacher, "")
             val left = Duration.between(now, agendaOngoing.endDateTime()).toMinutes()
             rv.setTextViewText(
                 R.id.widget_remaining,
@@ -328,6 +316,8 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_title, context.getString(R.string.widget_next_class))
             rv.setTextViewText(R.id.widget_name, context.getString(R.string.widget_none))
             rv.setTextViewText(R.id.widget_info, "")
+            rv.setTextViewText(R.id.widget_room, "")
+            if (showTeacher) rv.setTextViewText(R.id.widget_teacher, "")
             rv.setTextViewText(R.id.widget_remaining, "")
             rv.setTextViewText(R.id.widget_next2, "")
             rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
@@ -349,6 +339,7 @@ object NextClassWidgetUpdater {
                 R.id.widget_room,
                 if (showRoom) ev.location.ifBlank { "" } else "",
             )
+            if (showTeacher) rv.setTextViewText(R.id.widget_teacher, "")
             // 有精确开始时间 → 倒计时到开始；模糊/无时间 → 只提示“距离还有多久”（今天/明天/后天/日期）
             val remainLabel = if (ev.hasPreciseStart) {
                 remainingText(context, Duration.between(now, ev.startDateTime()).toMinutes().coerceAtLeast(0))
@@ -369,18 +360,15 @@ object NextClassWidgetUpdater {
         rv.setTextViewText(R.id.widget_title, context.getString(R.string.widget_next_class))
         val first = nextCourse!!
         rv.setTextViewText(R.id.widget_name, first.course.title)
-        // 信息行：时间（+ 老师；2×1 只显示时间）
-        rv.setTextViewText(
-            R.id.widget_info,
-            listOfNotNull(
-                timeLabel(context, first),
-                if (showTeacher) first.course.teacher.ifBlank { null } else null,
-            ).joinToString(" · "),
-        )
+        // 信息行只放时间；地点、老师各自单独成行（2×1 无老师行）
+        rv.setTextViewText(R.id.widget_info, timeLabel(context, first))
         rv.setTextViewText(
             R.id.widget_room,
             if (showRoom) first.course.room.ifBlank { "" } else "",
         )
+        if (showTeacher) {
+            rv.setTextViewText(R.id.widget_teacher, first.course.teacher.ifBlank { "" })
+        }
         val minutes = Duration.between(now, first.start).toMinutes().coerceAtLeast(0)
         rv.setTextViewText(R.id.widget_remaining, remainingText(context, minutes))
         rv.setTextColor(R.id.widget_remaining, CoursePalette.colorFor(first.course))

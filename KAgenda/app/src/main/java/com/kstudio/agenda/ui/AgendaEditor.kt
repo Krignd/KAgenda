@@ -79,6 +79,7 @@ import com.kstudio.agenda.ui.components.cardBaseColor
 import com.kstudio.agenda.ui.components.cardShadowElevation
 import com.kstudio.agenda.ui.components.cardTonalElevation
 import com.kstudio.agenda.ui.components.rememberFlashPulse
+import com.kstudio.agenda.ui.components.segmentedStrokeColor
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.LocalTime
@@ -129,8 +130,10 @@ fun AgendaCard(
                     accent.copy(alpha = 0.35f + 0.65f * pulse),
                     RoundedCornerShape(18.dp),
                 ) else Modifier.border(
+                    // 深色玻璃：描边透明（用户要求）；其余主题保持 outline 45%（与课程卡片一致）
                     1.dp,
-                    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                    if (com.kstudio.agenda.ui.components.isDarkGlass()) Color.Transparent
+                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
                     RoundedCornerShape(18.dp),
                 )
             )
@@ -442,19 +445,22 @@ fun AgendaEditorDialog(
                         selected = !isLong,
                         onClick = { isLong = false },
                         shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
+                        border = SegmentedButtonDefaults.borderStroke(segmentedStrokeColor()),
                         label = { Text(if (isPlanContext) t.segShortPlan else t.segShort) },
                     )
                     SegmentedButton(
                         selected = isLong,
                         onClick = { isLong = true },
                         shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
+                        border = SegmentedButtonDefaults.borderStroke(segmentedStrokeColor()),
                         label = { Text(if (isPlanContext) t.segLongPlan else t.segLong) },
                     )
                 }
 
                 if (!isLong) {
                     PickerField(
-                        label = t.fieldDate,
+                        // 选了重复规则时，这个字段的实际含义就是“开始日期”（重复从这天开始）
+                        label = if (repeatRule.isNotBlank()) t.fieldStartDate else t.fieldDate,
                         value = startDate.toString(),
                         modifier = Modifier.fillMaxWidth(),
                         onClick = { picker = "startDate" },
@@ -516,6 +522,16 @@ fun AgendaEditorDialog(
                         modifier = Modifier.fillMaxWidth(),
                         anchorDayOfWeek = startDate.dayOfWeek.value,
                     )
+                    // 重复截止：选了重复规则才出现；未填 / 清空（与开始同日）= 不限、持续延伸
+                    if (repeatRule.isNotBlank()) {
+                        PickerField(
+                            label = t.fieldRepeatUntil,
+                            value = if (endDate.isAfter(startDate)) endDate.toString() else t.repeatUntilNone,
+                            modifier = Modifier.fillMaxWidth(),
+                            onClick = { picker = "endDate" },
+                            onClear = if (endDate.isAfter(startDate)) ({ endDateEpoch = startDateEpoch }) else null,
+                        )
+                    }
                 }
 
                 OutlinedTextField(
@@ -583,7 +599,13 @@ fun AgendaEditorDialog(
                         location = location.trim(),
                         note = note.trim(),
                         isLong = isLong,
-                        endDateEpochDay = if (isLong) endDate.toEpochDay() else null,
+                        // 短日程：选了重复规则时，结束日期 = 重复截止日期
+                        // （未填 / 与开始同日 / 早于开始日 = 不限、持续延伸 → 存 null）
+                        endDateEpochDay = when {
+                            isLong -> endDate.toEpochDay()
+                            repeatRule.isNotBlank() && endDate.isAfter(startDate) -> endDate.toEpochDay()
+                            else -> null
+                        },
                         type = type,
                         colorArgb = colorArgb,
                         isPlan = initial?.isPlan ?: asPlan,

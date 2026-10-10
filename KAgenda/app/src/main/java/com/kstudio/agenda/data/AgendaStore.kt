@@ -125,6 +125,8 @@ object AgendaStore {
             val title = o.optString("title")
             val day = o.optLong("dateEpochDay", Long.MIN_VALUE)
             if (id.isBlank() || title.isBlank() || day == Long.MIN_VALUE) continue
+            val repeat = o.optString("repeat").takeIf { RepeatRules.isValid(it) } ?: ""
+            val endDay = if (o.has("endDateEpochDay")) o.optLong("endDateEpochDay") else null
             result.add(
                 AgendaEvent(
                     id = id,
@@ -136,11 +138,13 @@ object AgendaStore {
                     note = o.optString("note"),
                     createdAt = o.optLong("createdAt", System.currentTimeMillis()),
                     isLong = o.optBoolean("isLong", false),
-                    endDateEpochDay = if (o.has("endDateEpochDay")) o.optLong("endDateEpochDay") else null,
+                    // 重复条目的 ed 是“重复截止”：≤ 开始日（含与开始同日＝不限的约定）一律视为持续延伸。
+                    // 否则这种脏数据会让条目**永远不显示**（老版本 AI 写坏过；读取时顺手修回来）。
+                    endDateEpochDay = if (repeat.isNotBlank() && endDay != null && endDay <= day) null else endDay,
                     type = AgendaTypes.fromLegacy(o.optString("type")),
                     colorArgb = o.optInt("colorArgb", 0),
                     isPlan = o.optBoolean("isPlan", false),
-                    repeatRule = o.optString("repeat").takeIf { RepeatRules.isValid(it) } ?: "",
+                    repeatRule = repeat,
                 )
             )
         }

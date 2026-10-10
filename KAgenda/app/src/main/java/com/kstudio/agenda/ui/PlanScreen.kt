@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.FuzzyTime
+import com.kstudio.agenda.ui.components.segmentedStrokeColor
 import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
 
@@ -71,6 +72,7 @@ fun PlanScreen(vm: AppViewModel) {
                         index = index,
                         count = PlanMode.entries.size,
                     ),
+                    border = SegmentedButtonDefaults.borderStroke(segmentedStrokeColor()),
                     label = {
                         Text(
                             when (m) {
@@ -190,14 +192,17 @@ private fun PlanDayView(vm: AppViewModel) {
 private fun PlanWeekView(vm: AppViewModel) {
     val agendaAll by vm.agenda.collectAsState()
     val selected by vm.selectedDate.collectAsState()
+    val settings by vm.settings.collectAsState()
     val t = LocalStrings.current
     val plans = agendaAll.filter { it.isPlan }
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
 
     val monday = selected.minusDays((selected.dayOfWeek.value - 1).toLong())
+    // 周视图天数与「日程表」周视图共用同一设置（5=周一~周五 / 7=周一~周日）
+    val visibleDays = settings.weekDays
     val weekPlans = plans
-        .filter { ev -> (0L..6L).any { off -> ev.occursOn(monday.plusDays(off)) } }
+        .filter { ev -> (0L until visibleDays.toLong()).any { off -> ev.occursOn(monday.plusDays(off)) } }
         .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
 
     Column(
