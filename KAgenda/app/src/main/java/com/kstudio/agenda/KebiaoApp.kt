@@ -21,7 +21,10 @@ class KebiaoApp : Application() {
         // 全局崩溃兜底：把未捕获异常写入日志并同步落盘，保证崩溃现场可被分享排查
         installCrashLogger()
         // 加载用户自定义学校（适配器）
+        com.kstudio.agenda.model.Schools.loadCatalog(this)
         com.kstudio.agenda.model.Schools.loadCustom(this)
+        com.kstudio.agenda.data.OfficialHolidayStore.load(this)
+        com.kstudio.agenda.data.SchoolLocationsStore.load(this)
         // 通知渠道
         Notifier.ensureChannel(this)
         // 定期兜底调度提醒

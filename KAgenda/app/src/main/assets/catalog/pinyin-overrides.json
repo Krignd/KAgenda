@@ -1,0 +1,12 @@
+{
+  "phrases": {
+    "朝阳": ["chao", "yang"],
+    "长治": ["chang", "zhi"],
+    "长垣": ["chang", "yuan"]
+  },
+  "sources": [
+    "https://www.cynu.edu.cn/",
+    "https://www.changzhi.gov.cn/",
+    "https://www.cyprxy.edu.cn/__local/F/C7/43/47D1A388C64721C7B359E219FBF_D7CCF34B_22C964.pdf"
+  ]
+}

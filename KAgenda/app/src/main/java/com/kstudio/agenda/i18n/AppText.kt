@@ -30,6 +30,97 @@ enum class AppLang(val tag: String) {
  * 三个实现：ZhStrings / FrStrings / EnStrings。
  */
 interface AppStrings {
+    val festivalNewYear: String
+    val festivalSpring: String
+    val festivalQingming: String
+    val festivalLabour: String
+    val festivalDragonBoat: String
+    val festivalMidAutumn: String
+    val festivalNational: String
+    fun holidayLabel(raw: String): String = when (raw) {
+        "元旦" -> festivalNewYear
+        "春节" -> festivalSpring
+        "清明", "清明节" -> festivalQingming
+        "劳动节" -> festivalLabour
+        "端午", "端午节" -> festivalDragonBoat
+        "中秋", "中秋节" -> festivalMidAutumn
+        "国庆", "国庆节" -> festivalNational
+        else -> raw
+    }
+
+    val independentSupport: String
+    val warehouseSupport: String
+    val unsupportedSchool: String
+    val schoolSearch: String
+    val schoolAlphabetIndex: String
+    fun schoolIndexJump(letter: String): String
+    val schoolCatalogNote: String
+    val warehouseImport: String
+    val warehouseRun: String
+    val warehousePreview: String
+    val warehouseInstructions: String
+    val warehouseReady: String
+    val warehouseInvalid: String
+    val warehouseUnsupportedTime: String
+    val warehouseSource: String
+    val chooseAdapter: String
+    val semesterStart: String
+    val confirmImport: String
+    val importCreditLabel: String
+    val warehouseImported: String
+    val warehouseFailed: String
+    val warehouseBusy: String
+    val officialCalendarPending: String
+    val legacyWidgetPreviews: String
+    val previewMath: String
+    val previewTeacher: String
+    val previewRemaining: String
+    val previewNext: String
+
+    val openSchoolPicker: String
+    val licenseAttribution: String
+    val noSchoolFound: String
+
+    val workdayMark: String
+    val stopAlarm: String
+    val sampleCourse: String
+    val sampleLocation: String
+
+    val globalReminder: String
+    val followGlobal: String
+    val applyGlobal: String
+    val notifyEvent: String
+    val alarmEvent: String
+    val alarmHint: String
+    val leadZero: String
+    val eventTags: String
+    val statusDelayed: String
+    val statusAdvanced: String
+    val statusWaiting: String
+    val todoHeader: String
+    val locationsTitle: String
+    val locationsHint: String
+    val locationsEmpty: String
+    val myEvents: String
+    val holidayFetch: String
+    val holidayHint: String
+    val holidayYear: String
+    val holidayUrl: String
+    val holidayBusy: String
+    val holidayDone: String
+    val holidayFailed: String
+    val undergraduates: String
+    val chooseCourses: String
+    val restoreSelected: String
+    val widgetTodayAgenda: String
+    val widgetTodayCourses: String
+    val widgetWeekAgenda: String
+    val widgetWeekCourses: String
+    val widgetEmpty: String
+    val widgetMore: String
+    val aiContextNote: String
+    val reminderNeedsTime: String
+
 
     // ---------------- 通用 ----------------
     val appTitle: String
@@ -752,6 +843,86 @@ interface AppStrings {
 // ==================================================================== 中文
 
 object ZhStrings : AppStrings {
+    override val festivalNewYear = "元旦"
+    override val festivalSpring = "春节"
+    override val festivalQingming = "清明"
+    override val festivalLabour = "劳动节"
+    override val festivalDragonBoat = "端午"
+    override val festivalMidAutumn = "中秋"
+    override val festivalNational = "国庆"
+
+    override val independentSupport = "独立适配"
+    override val warehouseSupport = "拾光仓库"
+    override val unsupportedSchool = "未支持"
+    override val schoolSearch = "搜索学校名称、地区、拼音或首字母"
+    override val schoolAlphabetIndex = "学校拼音索引"
+    override fun schoolIndexJump(letter: String) = "跳转至 $letter"
+    override val schoolCatalogNote = "教育部 2026-06-17 名单：3196 所普通及成人高校，不含港澳台。拾光标记表示有社区脚本，需在本校教务中验证。"
+    override val warehouseImport = "教务网页登录导入"
+    override val warehouseRun = "执行提取"
+    override val warehousePreview = "核对导入内容"
+    override val warehouseInstructions = "先在网页中登录，进入课表页面后执行提取。识别完成后核对课程、开学日期与作息，再确认导入。"
+    override val warehouseReady = "提取完成，请核对后导入"
+    override val warehouseInvalid = "导入数据不完整或格式不兼容，请确认课表页面或更换适配脚本。"
+    override val warehouseUnsupportedTime = "该脚本使用的自定义时间或组合作息暂不兼容，未导入课程。"
+    override val warehouseSource = "脚本来源与开源许可"
+    override val chooseAdapter = "选择教务适配脚本"
+    override val semesterStart = "第一教学周周一（YYYY-MM-DD）"
+    override val confirmImport = "确认导入"
+    override val importCreditLabel = "学分"
+    override val warehouseImported = "课表已导入"
+    override val warehouseFailed = "提取失败，请重试或选择其他脚本"
+    override val warehouseBusy = "正在提取…"
+    override val officialCalendarPending = "仅显示传统节日日期；该年的官方放假安排尚未获取。"
+    override val legacyWidgetPreviews = "下一项小组件示意图"
+    override val previewMath = "高等数学"
+    override val previewTeacher = "王老师"
+    override val previewRemaining = "进行中 · 还剩 20 分钟"
+    override val previewNext = "下一节 线性代数 10:00"
+    override val openSchoolPicker = "选择学校"
+    override val licenseAttribution = "拾光脚本：星河欲转及各适配器维护者（MIT）；校徽字体：封尘 lovefc（Apache-2.0）。校徽标识归相应学校所有。离线拼音数据由 pypinyin 生成（MIT）。"
+    override val noSchoolFound = "没有匹配的学校"
+
+    override val workdayMark = "班"
+    override val stopAlarm = "停止闹钟"
+    override val sampleCourse = "高等数学"
+    override val sampleLocation = "教学楼 A201"
+
+    override val globalReminder = "全局提醒"
+    override val followGlobal = "跟随全局设置"
+    override val applyGlobal = "一键全部设为跟随全局"
+    override val notifyEvent = "通知提醒"
+    override val alarmEvent = "闹钟提醒"
+    override val alarmHint = "到时使用闹钟音量响铃，通知中可停止，最长响铃两分钟。"
+    override val leadZero = "开始时"
+    override val eventTags = "日程标签"
+    override val statusDelayed = "延后"
+    override val statusAdvanced = "提前"
+    override val statusWaiting = "等待通知"
+    override val todoHeader = "待办日程"
+    override val locationsTitle = "学校常用地点"
+    override val locationsHint = "每行一个地点，可添加、修改或删除；仅对当前学校生效。"
+    override val locationsEmpty = "暂无预设地点，可在设置 → 数据&图片中添加"
+    override val myEvents = "我的自建日程"
+    override val holidayFetch = "获取法定节假日"
+    override val holidayHint = "从官方网站通知获取所选年份的放假及补班标记；可填写 gov.cn 通知链接。"
+    override val holidayYear = "年份"
+    override val holidayUrl = "官方通知链接（可选）"
+    override val holidayBusy = "正在获取…"
+    override val holidayDone = "法定节假日已更新"
+    override val holidayFailed = "获取失败，请检查年份、通知链接或网络"
+    override val undergraduates = "本科生"
+    override val chooseCourses = "选择要调的课程（可多选）"
+    override val restoreSelected = "还原所选课程"
+    override val widgetTodayAgenda = "今日日程"
+    override val widgetTodayCourses = "今日课表"
+    override val widgetWeekAgenda = "周日程"
+    override val widgetWeekCourses = "周课表"
+    override val widgetEmpty = "暂无安排"
+    override val widgetMore = "点击查看全部"
+    override val aiContextNote = "AI 识别会发送现有日程的标题、日期、时间、地点、标签和重复规则，以便准确修改。"
+    override val reminderNeedsTime = "提醒需要精确开始时间"
+
     override val appTitle = "K日程"
     override val brand = "K日程"
     override val save = "保存"
@@ -1485,6 +1656,86 @@ object ZhStrings : AppStrings {
 // ==================================================================== English
 
 object EnStrings : AppStrings {
+    override val festivalNewYear = "New Year"
+    override val festivalSpring = "Spring Festival"
+    override val festivalQingming = "Qingming"
+    override val festivalLabour = "Labour Day"
+    override val festivalDragonBoat = "Dragon Boat"
+    override val festivalMidAutumn = "Mid-Autumn"
+    override val festivalNational = "National Day"
+
+    override val independentSupport = "Independent adapter"
+    override val warehouseSupport = "Shiguang repository"
+    override val unsupportedSchool = "Not supported"
+    override val schoolSearch = "Search name, region, pinyin or initials"
+    override val schoolAlphabetIndex = "School pinyin index"
+    override fun schoolIndexJump(letter: String) = "Jump to $letter"
+    override val schoolCatalogNote = "MOE list dated 2026-06-17: 3,196 mainland institutions. Shiguang indicates a community script; verify it with your institution."
+    override val warehouseImport = "Import from academic portal"
+    override val warehouseRun = "Extract courses"
+    override val warehousePreview = "Review imported courses"
+    override val warehouseInstructions = "Log in and open your timetable, then extract. Review courses, semester start and time slots before importing."
+    override val warehouseReady = "Extraction complete; review before importing"
+    override val warehouseInvalid = "Incomplete or incompatible data. Check the timetable page or select another adapter."
+    override val warehouseUnsupportedTime = "This script uses unsupported custom times or combined schedules. No courses were imported."
+    override val warehouseSource = "Script source and licenses"
+    override val chooseAdapter = "Choose academic adapter"
+    override val semesterStart = "First teaching Monday (YYYY-MM-DD)"
+    override val confirmImport = "Confirm import"
+    override val importCreditLabel = "Credits"
+    override val warehouseImported = "Timetable imported"
+    override val warehouseFailed = "Extraction failed; retry or select another script"
+    override val warehouseBusy = "Extracting…"
+    override val officialCalendarPending = "Only festival dates are shown; the official vacation schedule for this year has not been loaded."
+    override val legacyWidgetPreviews = "Next-event widget previews"
+    override val previewMath = "Mathematics"
+    override val previewTeacher = "Prof. Wang"
+    override val previewRemaining = "Ongoing · 20 min left"
+    override val previewNext = "Next: Algebra 10:00"
+    override val openSchoolPicker = "Choose school"
+    override val licenseAttribution = "Shiguang scripts: 星河欲转 and adapter maintainers (MIT). Badge font: lovefc (Apache-2.0). Emblems belong to their institutions. Offline pinyin data generated with pypinyin (MIT)."
+    override val noSchoolFound = "No matching school"
+
+    override val workdayMark = "Work"
+    override val stopAlarm = "Stop alarm"
+    override val sampleCourse = "Mathematics"
+    override val sampleLocation = "Building A201"
+
+    override val globalReminder = "Global reminders"
+    override val followGlobal = "Use global settings"
+    override val applyGlobal = "Apply global settings to all"
+    override val notifyEvent = "Notification"
+    override val alarmEvent = "Alarm"
+    override val alarmHint = "Rings at alarm volume. Stop from the notification; ringing ends after two minutes."
+    override val leadZero = "At start"
+    override val eventTags = "Event tags"
+    override val statusDelayed = "Delayed"
+    override val statusAdvanced = "Advanced"
+    override val statusWaiting = "Awaiting notice"
+    override val todoHeader = "To do"
+    override val locationsTitle = "School locations"
+    override val locationsHint = "One location per line. Add, edit or remove locations for the current school."
+    override val locationsEmpty = "Add locations in Settings → Data & images"
+    override val myEvents = "My events"
+    override val holidayFetch = "Fetch official holidays"
+    override val holidayHint = "Fetch holidays and make-up workdays from an official notice. An official gov.cn notice URL may be provided."
+    override val holidayYear = "Year"
+    override val holidayUrl = "Official notice URL (optional)"
+    override val holidayBusy = "Fetching…"
+    override val holidayDone = "Official holidays updated"
+    override val holidayFailed = "Fetch failed. Check the year, notice URL or connection"
+    override val undergraduates = "Undergraduates"
+    override val chooseCourses = "Select courses to move"
+    override val restoreSelected = "Restore selected courses"
+    override val widgetTodayAgenda = "Today’s agenda"
+    override val widgetTodayCourses = "Today’s classes"
+    override val widgetWeekAgenda = "Weekly agenda"
+    override val widgetWeekCourses = "Weekly classes"
+    override val widgetEmpty = "No events"
+    override val widgetMore = "Tap to view all"
+    override val aiContextNote = "AI recognition sends existing event titles, dates, times, locations, tags and recurrence rules to improve edits."
+    override val reminderNeedsTime = "A precise start time is required for reminders"
+
     override val appTitle = "K Agenda"
     override val brand = "K Agenda"
     override val save = "Save"
@@ -2232,6 +2483,86 @@ object EnStrings : AppStrings {
 // ==================================================================== Français
 
 object FrStrings : AppStrings {
+    override val festivalNewYear = "Nouvel An"
+    override val festivalSpring = "Nouvel An lunaire"
+    override val festivalQingming = "Qingming"
+    override val festivalLabour = "Fête du Travail"
+    override val festivalDragonBoat = "Bateaux-dragons"
+    override val festivalMidAutumn = "Mi-automne"
+    override val festivalNational = "Fête nationale"
+
+    override val independentSupport = "Adaptation indépendante"
+    override val warehouseSupport = "Dépôt Shiguang"
+    override val unsupportedSchool = "Non pris en charge"
+    override val schoolSearch = "Nom, région, pinyin ou initiales"
+    override val schoolAlphabetIndex = "Index pinyin des établissements"
+    override fun schoolIndexJump(letter: String) = "Aller à $letter"
+    override val schoolCatalogNote = "Liste du 17 juin 2026 : 3 196 établissements de Chine continentale. Le dépôt Shiguang fournit des scripts communautaires à vérifier."
+    override val warehouseImport = "Importer depuis le portail pédagogique"
+    override val warehouseRun = "Extraire les cours"
+    override val warehousePreview = "Vérifier les cours à importer"
+    override val warehouseInstructions = "Connectez-vous et ouvrez votre emploi du temps. Vérifiez les cours, la date de rentrée et les horaires avant de confirmer."
+    override val warehouseReady = "Extraction terminée ; vérifiez avant d’importer"
+    override val warehouseInvalid = "Données incomplètes ou incompatibles. Vérifiez la page ou choisissez un autre script."
+    override val warehouseUnsupportedTime = "Ce script utilise des horaires personnalisés ou combinés non pris en charge. Aucun cours importé."
+    override val warehouseSource = "Source des scripts et licences"
+    override val chooseAdapter = "Choisir le script pédagogique"
+    override val semesterStart = "Premier lundi du semestre (AAAA-MM-JJ)"
+    override val confirmImport = "Confirmer l’importation"
+    override val importCreditLabel = "Crédits"
+    override val warehouseImported = "Emploi du temps importé"
+    override val warehouseFailed = "Échec de l’extraction ; réessayez ou choisissez un autre script"
+    override val warehouseBusy = "Extraction…"
+    override val officialCalendarPending = "Seules les dates des fêtes sont affichées ; les congés officiels de cette année ne sont pas chargés."
+    override val legacyWidgetPreviews = "Aperçus des widgets Prochain événement"
+    override val previewMath = "Mathématiques"
+    override val previewTeacher = "Pr Wang"
+    override val previewRemaining = "En cours · reste 20 min"
+    override val previewNext = "Puis : Algèbre 10:00"
+    override val openSchoolPicker = "Choisir un établissement"
+    override val licenseAttribution = "Scripts Shiguang : 星河欲转 et mainteneurs (MIT). Police des emblèmes : lovefc (Apache-2.0). Les emblèmes appartiennent aux établissements. Données pinyin hors ligne générées avec pypinyin (MIT)."
+    override val noSchoolFound = "Aucun établissement trouvé"
+
+    override val workdayMark = "Travail"
+    override val stopAlarm = "Arrêter l’alarme"
+    override val sampleCourse = "Mathématiques"
+    override val sampleLocation = "Bâtiment A201"
+
+    override val globalReminder = "Rappels globaux"
+    override val followGlobal = "Utiliser les réglages globaux"
+    override val applyGlobal = "Appliquer les réglages globaux à tous"
+    override val notifyEvent = "Notification"
+    override val alarmEvent = "Alarme"
+    override val alarmHint = "Sonne au volume des alarmes. Arrêt depuis la notification ou après deux minutes."
+    override val leadZero = "Au début"
+    override val eventTags = "Étiquettes"
+    override val statusDelayed = "Reporté"
+    override val statusAdvanced = "Avancé"
+    override val statusWaiting = "En attente de nouvelles"
+    override val todoHeader = "À faire"
+    override val locationsTitle = "Lieux de l’établissement"
+    override val locationsHint = "Un lieu par ligne. Ajoutez, modifiez ou supprimez les lieux de cet établissement."
+    override val locationsEmpty = "Ajoutez des lieux dans Réglages → Données et images"
+    override val myEvents = "Mes événements"
+    override val holidayFetch = "Charger les jours fériés officiels"
+    override val holidayHint = "Charge les jours fériés et jours travaillés depuis un avis officiel. Vous pouvez fournir un lien gov.cn."
+    override val holidayYear = "Année"
+    override val holidayUrl = "Lien de l’avis officiel (facultatif)"
+    override val holidayBusy = "Chargement…"
+    override val holidayDone = "Jours fériés mis à jour"
+    override val holidayFailed = "Échec. Vérifiez l’année, le lien ou la connexion"
+    override val undergraduates = "Premier cycle"
+    override val chooseCourses = "Sélectionnez les cours à déplacer"
+    override val restoreSelected = "Restaurer les cours sélectionnés"
+    override val widgetTodayAgenda = "Agenda du jour"
+    override val widgetTodayCourses = "Cours du jour"
+    override val widgetWeekAgenda = "Agenda de la semaine"
+    override val widgetWeekCourses = "Cours de la semaine"
+    override val widgetEmpty = "Aucun événement"
+    override val widgetMore = "Touchez pour tout voir"
+    override val aiContextNote = "La reconnaissance IA transmet les titres, dates, horaires, lieux, étiquettes et règles de répétition pour améliorer les modifications."
+    override val reminderNeedsTime = "Une heure de début précise est requise"
+
     override val appTitle = "K Agenda"
     override val brand = "K Agenda"
     override val save = "Enregistrer"

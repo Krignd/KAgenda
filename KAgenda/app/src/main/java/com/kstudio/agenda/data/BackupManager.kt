@@ -73,6 +73,16 @@ object BackupManager {
         putFileIfPresent(root, "courseEdits", File(context.filesDir, CourseEditStore.FILE_NAME))
         putFileIfPresent(root, "extraCourses", File(context.filesDir, ExtraCoursesStore.FILE_NAME))
         putFileIfPresent(root, "schedule", File(context.filesDir, ScheduleCache.SCHEDULE_FILE))
+        putFileIfPresent(root, "locations", File(context.filesDir, SchoolLocationsStore.FILE_NAME))
+        putFileIfPresent(root, "holidays", File(context.filesDir, OfficialHolidayStore.FILE_NAME))
+        val schoolSchedules = JSONObject()
+        val schoolExtraCourses = JSONObject()
+        File(context.filesDir, "school_data").listFiles()?.filter { it.isDirectory && it.name.matches(Regex("[a-zA-Z0-9_-]+")) }?.forEach { directory ->
+            putFileIfPresent(schoolSchedules, directory.name, File(directory, ScheduleCache.SCHEDULE_FILE))
+            putFileIfPresent(schoolExtraCourses, directory.name, File(directory, ExtraCoursesStore.FILE_NAME))
+        }
+        root.put("schoolSchedules", schoolSchedules)
+        root.put("schoolExtraCourses", schoolExtraCourses)
         return root.toString()
     }
 
@@ -133,16 +143,15 @@ object BackupManager {
     // ------------------------------------------------------------ 导入
 
     /** 从 SAF 目标读取并导入 */
-    suspend fun importFrom(context: Context, uri: Uri): ImportResult {
+    suspend fun importFrom(context: Context, uri: Uri): ImportResult = withContext(Dispatchers.IO) {
         val text = runCatching {
             val size = context.contentResolver.openInputStream(uri)?.use { stream ->
-                val bytes = stream.readBytes()
-                if (bytes.size > MAX_BYTES) error("too large")
+                val bytes = BoundedInput.read(stream, MAX_BYTES)
                 bytes.toString(Charsets.UTF_8)
             } ?: error("no input stream")
             size
-        }.getOrElse { return ImportResult.Failed(it.message ?: "read failed") }
-        return import(context, text)
+        }.getOrElse { return@withContext ImportResult.Failed(it.message ?: "read failed") }
+        import(context, text)
     }
 
     /** 导入备份文本（会覆盖同名的数据文件） */
@@ -153,15 +162,41 @@ object BackupManager {
         if (version <= 0) return ImportResult.NotABackup
         if (version > VERSION) return ImportResult.NewerVersion(version)
 
-        runCatching { SettingsStore.importPreferences(context, parseSettings(root.optJSONArray("settings"))) }
-            .onFailure { AppLog.e(TAG, "备份导入：设置写入失败", it) }
+        val importedSettings = runCatching {
+            BackupPayload.validate(root)
+            parseSettings(root.optJSONArray("settings"))
+        }.getOrElse { return ImportResult.Failed(it.message ?: "invalid backup") }
+        val files = linkedMapOf<String, String>()
+        fun add(name: String, value: Any?) {
+            if (value != null && value != JSONObject.NULL) files[name] = value.toString()
+        }
+        add(AgendaStore.FILE_NAME, root.opt("agenda"))
+        add(CourseEditStore.FILE_NAME, root.opt("courseEdits"))
+        add(ExtraCoursesStore.FILE_NAME, root.opt("extraCourses"))
+        add(ScheduleCache.SCHEDULE_FILE, root.opt("schedule"))
+        for ((key, name) in listOf("schoolSchedules" to ScheduleCache.SCHEDULE_FILE, "schoolExtraCourses" to ExtraCoursesStore.FILE_NAME)) {
+            root.optJSONObject(key)?.let { entries ->
+                entries.keys().forEach { id ->
+                    add("school_data/$id/$name", entries.getJSONObject(id))
+                }
+            }
+        }
 
-        var failed = 0
-        failed += writeFile(context, AgendaStore.FILE_NAME, root.opt("agenda"))
-        failed += writeFile(context, CourseEditStore.FILE_NAME, root.opt("courseEdits"))
-        failed += writeFile(context, ExtraCoursesStore.FILE_NAME, root.opt("extraCourses"))
-        failed += writeFile(context, ScheduleCache.SCHEDULE_FILE, root.opt("schedule"))
-
+        add(SchoolLocationsStore.FILE_NAME, root.opt("locations"))
+        add(OfficialHolidayStore.FILE_NAME, root.opt("holidays"))
+        try {
+            BackupFileTransaction.restore(context.filesDir, files) {
+                SettingsStore.importPreferences(context, importedSettings)
+            }
+        } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+        catch (e: Exception) {
+            AppLog.e(TAG, "备份导入失败，已回滚文件", e)
+            return ImportResult.Failed(e.message ?: "write failed")
+        }
+        // 旧备份的导入课程没有学校字段，先确定学校再迁移归属。
+        com.kstudio.agenda.model.Schools.setCurrent(SettingsStore.read(context).schoolId)
+        SchoolLocationsStore.load(context, force = true)
+        OfficialHolidayStore.load(context)
         // 内存状态失效后重新读盘，界面/提醒/小组件立刻跟上
         AgendaStore.invalidateMemory()
         CourseEditStore.invalidateMemory()
@@ -170,10 +205,6 @@ object BackupManager {
         CourseEditStore.ensureLoaded(context)
         ExtraCoursesStore.ensureLoaded(context)
 
-        if (failed > 0) {
-            AppLog.e(TAG, "备份导入：$failed 个文件写入失败")
-            return ImportResult.Failed("write failed ($failed)")
-        }
         AppLog.i(
             TAG,
             "备份导入完成：日程/计划 ${AgendaStore.events.value.size} 条，" +
@@ -184,17 +215,8 @@ object BackupManager {
             agenda = AgendaStore.events.value.size,
             edits = CourseEditStore.edits.value.size,
             courses = ExtraCoursesStore.courses.value.size,
-            schedule = root.opt("schedule") != null,
+            schedule = !root.isNull("schedule"),
         )
-    }
-
-    /** 把备份里的一个数据块写回文件；不存在返回 0，写失败返回 1 */
-    private fun writeFile(context: Context, name: String, value: Any?): Int {
-        if (value == null) return 0
-        return runCatching {
-            File(context.filesDir, name).writeText(value.toString(), Charsets.UTF_8)
-            0
-        }.onFailure { AppLog.e(TAG, "备份导入失败：$name", it) }.getOrDefault(1)
     }
 
     private fun parseSettings(arr: JSONArray?): Map<String, Any> {
@@ -205,10 +227,10 @@ object BackupManager {
             val key = o.optString("k")
             if (key.isBlank() || key in EXCLUDED_SETTING_KEYS) continue
             when (o.optString("t")) {
-                "b" -> out[key] = o.optBoolean("v")
-                "i" -> out[key] = o.optInt("v")
-                "l" -> out[key] = o.optLong("v")
-                "s" -> out[key] = o.optString("v")
+                "b" -> out[key] = o.getBoolean("v")
+                "i" -> out[key] = o.getInt("v")
+                "l" -> out[key] = o.getLong("v")
+                "s" -> out[key] = o.getString("v")
             }
         }
         return out

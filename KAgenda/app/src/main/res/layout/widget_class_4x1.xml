@@ -29,7 +29,7 @@
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_weight="1"
+        android:layout_weight="3"
         android:orientation="vertical">
 
         <TextView
@@ -82,14 +82,15 @@
 
     <!-- 右侧：倒计时（如“11小时26分钟后”）+ 其下方的「下一节课」 -->
     <LinearLayout
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
+        android:layout_weight="2"
         android:layout_height="wrap_content"
         android:gravity="end"
         android:orientation="vertical">
 
         <TextView
             android:id="@+id/widget_remaining"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="10dp"
             android:maxLines="1"
@@ -99,7 +100,7 @@
 
         <TextView
             android:id="@+id/widget_next2"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="end"
             android:layout_marginStart="10dp"

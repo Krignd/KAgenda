@@ -39,6 +39,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <application
         android:name=".KebiaoApp"
         android:allowBackup="true"
@@ -97,6 +98,8 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.WarehouseImportActivity" android:exported="false" />
+
         <!-- 【已隐藏保留】网页登录：以可见 WebView 完成统一认证。
              入口已按需求在设置页隐藏（SettingsScreen.SHOW_WEB_LOGIN_ENTRY=false），组件保留未删除 -->
         <activity
@@ -122,6 +125,7 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <service android:name=".notif.AgendaAlarmService" android:exported="false" android:foregroundServiceType="mediaPlayback" />
         <!-- 上课提醒 -->
         <receiver
             android:name=".notif.ReminderReceiver"
@@ -194,6 +198,22 @@
                 android:resource="@xml/widget_info_4x2" />
         </receiver>
 
+        <receiver android:name=".widget.TodayAgendaWidget" android:exported="false" android:label="@string/feature_widget_today_agenda">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_today_agenda" />
+        </receiver>
+        <receiver android:name=".widget.TodayCoursesWidget" android:exported="false" android:label="@string/feature_widget_today_courses">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_today_courses" />
+        </receiver>
+        <receiver android:name=".widget.WeekAgendaWidget" android:exported="false" android:label="@string/feature_widget_week_agenda">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_week_agenda" />
+        </receiver>
+        <receiver android:name=".widget.WeekCoursesWidget" android:exported="false" android:label="@string/feature_widget_week_courses">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_week_courses" />
+        </receiver>
         <!-- 小组件定时刷新链（每次触发后自动安排下一次） -->
         <receiver
             android:name=".widget.WidgetRefreshReceiver"

@@ -94,6 +94,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     // 读一下设置：课程时间/节数变化后 PeriodTimes 是全局对象，Compose 无法感知，
     // 这里用设置值作为 remember 的 key 来触发重新组合
     val settings by vm.settings.collectAsState()
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
 
     // 日程新建/编辑对话框状态
@@ -346,19 +347,18 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         CourseEditDialog(
             initial = course,
             sourceDate = selected,
-            dayCourseCount = vm.coursesRawOnDate(selected).size,
+            dayCourses = vm.coursesRawOnDate(selected),
             onDismiss = { editingCourse = null },
-            onSave = { edited, applyAll ->
-                vm.saveCourseEdit(course, edited, applyAll)
+            onSave = { edited, applyAll, weekdays ->
+                vm.saveCourseEdit(course, edited, applyAll, weekdays)
                 editingCourse = null
             },
             onDelete = { weeks, applyAll ->
                 vm.deleteCourse(course, weeks, applyAll)
                 editingCourse = null
             },
-            onMove = { wholeDay, target ->
-                val day = vm.coursesRawOnDate(selected)
-                vm.moveCourses(selected, if (wholeDay) day else listOf(course), target)
+            onMove = { courses, target ->
+                vm.moveCourses(selected, courses, target)
                 editingCourse = null
             },
             onNoChange = {
@@ -525,6 +525,7 @@ internal fun DayStrip(
     onLongPress: ((LocalDate) -> Unit)? = null,
 ) {
     val today = LocalDate.now()
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
     // 7 个日期框等宽排列（用 weight(1f)，不再横向滚动，宽度完全一致）
     Row(
@@ -537,7 +538,7 @@ internal fun DayStrip(
             val date = monday.plusDays((d - 1).toLong())
             val isSelected = date == selected
             val isToday = date == today
-            val holiday = HolidayTable.nameOf(date)
+            val holiday = HolidayTable.nameOf(date)?.let(t::holidayLabel) ?: if (HolidayTable.isWorkday(date)) t.workdayMark else null
             val isWeekend = date.dayOfWeek.value >= 6
             val bg = when {
                 isSelected -> Brush.linearGradient(
@@ -624,6 +625,7 @@ fun CourseCard(
     flash: Boolean = false,
     onClick: (() -> Unit)? = null,
 ) {
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
     val pulse = rememberFlashPulse(flash)
     // CoursePalette 返回 Android 原生 ARGB Int，这里转换为 Compose Color
@@ -732,6 +734,7 @@ fun CourseCard(
 /** 同步状态提示（未登录/出错/进行中） */
 @Composable
 internal fun SyncHint(sync: SyncUi) {
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
     when (sync) {
         // 【已隐藏保留】原提示含“或点「网页登录」完成统一认证”；入口隐藏后仅保留账密登录引导

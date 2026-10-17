@@ -67,6 +67,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -166,6 +167,9 @@ fun SettingsScreen(
     var expCourseEdits by rememberSaveable { mutableStateOf(true) }
     var showRestoreEditsConfirm by remember { mutableStateOf(false) }
     var showSyncClearEditsConfirm by remember { mutableStateOf(false) }
+    val allCourseEdits by com.kstudio.agenda.data.CourseEditStore.edits.collectAsState()
+    val currentEdits = allCourseEdits.filter { it.belongsToCurrentSchool() }
+    var restoreKeys by remember { mutableStateOf(emptySet<String>()) }
     val courseEditCount by vm.courseEditCount.collectAsState()
     var aiKeyInput by rememberSaveable { mutableStateOf("") }
     var aiModel by rememberSaveable { mutableStateOf("") }
@@ -383,6 +387,10 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.titleSmall,
                         modifier = Modifier.weight(1f),
                     )
+                    if (school.undergraduateOnly) {
+                        Text(t.undergraduates, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f))
+                        Spacer(Modifier.width(6.dp))
+                    }
                     TrailingChevron()
                 }
             }
@@ -435,8 +443,14 @@ fun SettingsScreen(
             }
         }
         // ---------------------------------------------------------- 【选项卡 0】学校&账号：账号
-        // 未登录时默认展开（直接看到登录表单），已登录默认折叠（右侧显示学号）
-        if (settingsTab == 0) item {
+        // 独立适配沿用原登录；社区协议使用可见浏览器与预览确认。
+        if (settingsTab == 0 && Schools.of(settings.schoolId).warehouseId.isNotBlank()) item {
+            CollapsibleSectionCard(t.warehouseImport, t.warehouseSupport, expanded = true, onToggle = {}) {
+                Text(t.warehouseInstructions, style = MaterialTheme.typography.bodySmall)
+                Button(onClick = { vm.syncNow() }) { Text(t.warehouseImport) }
+            }
+        }
+        if (settingsTab == 0 && Schools.of(settings.schoolId).warehouseId.isBlank()) item {
             CollapsibleSectionCard(
                 t.secAccount,
                 t.secAccountSubOf(settings.schoolId, Schools.of(settings.schoolId).name),
@@ -625,7 +639,7 @@ fun SettingsScreen(
         // ---------------------------------------------------------- 【选项卡 1】功能&权限：课前提醒
         if (settingsTab == 1) item {
             CollapsibleSectionCard(
-                t.secReminder,
+                t.globalReminder,
                 t.secReminderSub,
                 expanded = expReminder,
                 onToggle = { expReminder = !expReminder },
@@ -643,6 +657,7 @@ fun SettingsScreen(
                         },
                     )
                 }
+                OutlinedButton(onClick = { vm.applyGlobalReminders() }) { Text(t.applyGlobal) }
                 // 提醒关闭时（默认状态）不再展示提前时间与授权状态细节，
                 // 避免“功能本来没开，却在提示未授权/未解除”的困扰
                 if (settings.reminderEnabled) {
@@ -653,6 +668,10 @@ fun SettingsScreen(
                             checked = settings.remindAgenda,
                             onCheckedChange = { vm.setRemindAgenda(it) },
                         )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(t.alarmEvent, modifier = Modifier.weight(1f))
+                        Switch(checked = settings.alarmEnabled, onCheckedChange = { vm.setGlobalAlarm(it) })
                     }
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -665,9 +684,9 @@ fun SettingsScreen(
                         modifier = Modifier.horizontalScroll(rememberScrollState()),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
-                        listOf(5, 10, 15, 20, 30, 45, 60).forEach { minutes ->
+                        listOf(0, 5, 10, 15, 20, 30, 45, 60).forEach { minutes ->
                             ChoiceChip(
-                                label = t.minutes(minutes),
+                                label = if (minutes == 0) t.leadZero else t.minutes(minutes),
                                 selected = settings.leadMinutes == minutes,
                                 onClick = { vm.setLeadMinutes(minutes) },
                             )
@@ -796,7 +815,7 @@ fun SettingsScreen(
                     )
                 } else {
                     OutlinedButton(
-                        onClick = { showRestoreEditsConfirm = true },
+                        onClick = { restoreKeys = currentEdits.map { it.targetKey }.toSet(); showRestoreEditsConfirm = true },
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(t.btnRestoreCourseEdits) }
                     Spacer(Modifier.height(8.dp))
@@ -1189,6 +1208,19 @@ fun SettingsScreen(
                 expanded = expWidget,
                 onToggle = { expWidget = !expWidget },
             ) {
+                Text(t.legacyWidgetPreviews, style = MaterialTheme.typography.titleSmall)
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    listOf("2×1" to R.drawable.widget_preview_2x1, "2×2" to R.drawable.widget_preview_2x2,
+                        "4×1" to R.drawable.widget_preview_4x1, "4×2" to R.drawable.widget_preview_4x2,
+                        t.widgetTodayAgenda to R.drawable.widget_preview_today_agenda, t.widgetTodayCourses to R.drawable.widget_preview_today_courses,
+                        t.widgetWeekAgenda to R.drawable.widget_preview_week_agenda, t.widgetWeekCourses to R.drawable.widget_preview_week_courses).forEach { (label, resource) ->
+                        Column(Modifier.width(240.dp)) {
+                            Text(label, style = MaterialTheme.typography.labelMedium)
+                            Image(painterResource(resource), label, Modifier.fillMaxWidth().height(160.dp))
+                        }
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
                 Text(
                     text = t.widgetPinHint,
                     style = MaterialTheme.typography.bodySmall,
@@ -1204,6 +1236,10 @@ fun SettingsScreen(
                         "2×2" to com.kstudio.agenda.widget.NextClassWidget2x2::class.java,
                         "4×1" to com.kstudio.agenda.widget.NextClassWidget4x1::class.java,
                         "4×2" to com.kstudio.agenda.widget.NextClassWidget4x2::class.java,
+                        "${t.widgetTodayAgenda} 4×2" to com.kstudio.agenda.widget.TodayAgendaWidget::class.java,
+                        "${t.widgetTodayCourses} 4×2" to com.kstudio.agenda.widget.TodayCoursesWidget::class.java,
+                        "${t.widgetWeekAgenda} 4×4" to com.kstudio.agenda.widget.WeekAgendaWidget::class.java,
+                        "${t.widgetWeekCourses} 4×4" to com.kstudio.agenda.widget.WeekCoursesWidget::class.java,
                     ).forEach { (label, cls) ->
                         OutlinedButton(onClick = {
                             val awm = android.appwidget.AppWidgetManager.getInstance(context)
@@ -1219,6 +1255,7 @@ fun SettingsScreen(
             }
         }
 
+        if (settingsTab == 3) item { DataManagementCards(vm) }
         // ---------------------------------------------------------- 【选项卡 3】数据与图片：数据备份与导入
         // 换机 / 重装前导出一份；导入为「按键覆盖」，本机密码与 AI Key 不受影响
         if (settingsTab == 3) item {
@@ -1651,12 +1688,39 @@ fun SettingsScreen(
         AlertDialog(
             onDismissRequest = { showRestoreEditsConfirm = false },
             title = { Text(t.askRestoreEditsTitle) },
-            text = { Text(t.askRestoreEditsBody) },
+            text = {
+                Column(Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                    Row {
+                        TextButton(onClick = { restoreKeys = currentEdits.map { it.targetKey }.toSet() }) { Text(t.weeksAll) }
+                        TextButton(onClick = { restoreKeys = emptySet() }) { Text(t.weeksNone) }
+                    }
+                    currentEdits.groupBy { it.original.seriesKey }.values.forEach { edits ->
+                        val keys = edits.map { it.targetKey }.toSet()
+                        val checked = keys.all { it in restoreKeys }
+                        Row(Modifier.fillMaxWidth().clickable {
+                            restoreKeys = if (checked) restoreKeys - keys else restoreKeys + keys
+                        }, verticalAlignment = Alignment.CenterVertically) {
+                            Checkbox(checked = checked, onCheckedChange = { want -> restoreKeys = if (want) restoreKeys + keys else restoreKeys - keys })
+                            Column(Modifier.weight(1f)) {
+                                Text(edits.first().edited.title)
+                                edits.forEach { edit ->
+                                    val operation = when (edit.kind) {
+                                        com.kstudio.agenda.data.EDIT_KIND_ADD -> t.courseAddTitle
+                                        com.kstudio.agenda.data.EDIT_KIND_DELETE -> t.editActionDelete
+                                        else -> t.editActionModify
+                                    }
+                                    Text("$operation · ${courseSummary(edit.edited, t)}", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
                     showRestoreEditsConfirm = false
-                    vm.restoreCourseEdits()
-                }) { Text(t.confirm) }
+                    vm.restoreCourseEdits(restoreKeys)
+                }, enabled = restoreKeys.isNotEmpty()) { Text(t.restoreSelected) }
             },
             dismissButton = {
                 TextButton(onClick = { showRestoreEditsConfirm = false }) { Text(t.cancel) }
@@ -1698,52 +1762,10 @@ fun SettingsScreen(
     }
 
     if (showSchoolPicker) {
-        AlertDialog(
-            onDismissRequest = { showSchoolPicker = false },
-            title = { Text(t.secSchool) },
-            text = {
-                Column {
-                    Schools.all().forEach { school ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    vm.setSchool(school.id)
-                                    showSchoolPicker = false
-                                }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            SchoolLogo(school, 36.dp)
-                            Spacer(Modifier.width(10.dp))
-                            Column(Modifier.weight(1f)) {
-                                Text(school.name, style = MaterialTheme.typography.bodyMedium)
-                            }
-                            if (settings.schoolId == school.id) {
-                                Text("✓", color = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    OutlinedButton(
-                        onClick = {
-                            showSchoolPicker = false
-                            showAdapterDialog = true
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { Text(t.schoolAdd) }
-                    // 入口保留（不隐藏），但如实提示可用性存疑（详见对话框内的说明）
-                    Text(
-                        text = t.adapterWarnTitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSchoolPicker = false }) { Text(t.cancel) }
-            },
+        SchoolPicker(settings.schoolId,
+            onSelect = { school -> vm.setSchool(school.id); showSchoolPicker = false },
+            onDismiss = { showSchoolPicker = false },
+            onAdd = { showSchoolPicker = false; showAdapterDialog = true },
         )
     }
 
@@ -2066,12 +2088,21 @@ private fun SchoolAdapterDialog(vm: AppViewModel, onDismiss: () -> Unit) {
  */
 @Composable
 internal fun SchoolLogo(school: School, size: Dp) {
-    val res = when (school.id) {
-        "buaa" -> R.drawable.school_buaa
-        "ujs" -> R.drawable.school_ujs
-        else -> null
+    val res = school.logoRes.takeIf { it != 0 }
+    val context = LocalContext.current
+    val revision by com.kstudio.agenda.data.SchoolIconStore.revision.collectAsState()
+    val cached by androidx.compose.runtime.produceState<android.graphics.Bitmap?>(null, school.id, revision) {
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.kstudio.agenda.data.SchoolIconStore.load(context, school.id) }
     }
-    if (res != null) {
+    val glyph = com.kstudio.agenda.data.SchoolCatalog.glyph(school.name)
+    if (res == null && glyph == null && cached != null) {
+        Image(cached!!.asImageBitmap(), school.name, Modifier.size(size).clip(CircleShape))
+    } else if (res == null && glyph != null) {
+        Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            Text(glyph, fontFamily = androidx.compose.ui.text.font.FontFamily(androidx.compose.ui.text.font.Font(R.font.school_badges)), fontSize = with(density) { size.toSp() }, lineHeight = with(density) { size.toSp() }, color = MaterialTheme.colorScheme.primary)
+        }
+    } else if (res != null) {
         Image(
             painter = painterResource(res),
             contentDescription = school.name,
@@ -2229,14 +2260,15 @@ private fun UiStyleOption(
  *        （当前学校的作息预设；无预设的学校为内置默认作息）。
  */
 @Composable
-private fun PeriodTimesDialog(
+internal fun PeriodTimesDialog(
     restoreDefaults: List<Pair<LocalTime, LocalTime>>,
     onDismiss: () -> Unit,
     onSave: (List<Pair<LocalTime, LocalTime>>) -> Unit,
     onInvalid: () -> Unit,
+    initialTimes: List<Pair<LocalTime, LocalTime>> = PeriodTimes.current(),
 ) {
     val t = LocalStrings.current
-    val initial = remember { PeriodTimes.current() }
+    val initial = remember { initialTimes }
     val starts = remember {
         mutableStateListOf<String>().apply {
             addAll(initial.map { PeriodTimes.format(it.first) })

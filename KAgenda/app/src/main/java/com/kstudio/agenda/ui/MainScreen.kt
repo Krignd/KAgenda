@@ -96,26 +96,6 @@ private enum class HomeTab {
     Settings,
 }
 
-/** 学校页占位：校徽 + 校名 + 「暂未完成」，具体功能后续再做 */
-@Composable
-private fun SchoolPlaceholderScreen(schoolId: String) {
-    val t = LocalStrings.current
-    val school = com.kstudio.agenda.model.Schools.of(schoolId)
-    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            SchoolLogo(school, 72.dp)
-            Spacer(Modifier.size(12.dp))
-            Text(text = school.name, style = MaterialTheme.typography.titleMedium)
-            Spacer(Modifier.size(8.dp))
-            Text(
-                text = t.comingSoon,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 @Composable
 fun MainScreen(
     vm: AppViewModel,
@@ -456,8 +436,8 @@ fun MainScreen(
                 HomeTab.Plan -> PlanScreen(vm)
                 // 「进行中」：专门展示正在进行的长日程
                 HomeTab.Ongoing -> OngoingScreen(vm)
-                // 【新建】「学校」页：占位（校徽 + 校名 + 「暂未完成」），等后续再做具体内容
-                HomeTab.School -> SchoolPlaceholderScreen(settings.schoolId)
+                // 「学校」页只放各校特色功能，未接入时留空；学校选择在设置中。
+                HomeTab.School -> SchoolHomeScreen()
                 // 【已隐藏保留】网页登录入口：显隐由 SettingsScreen 内的 SHOW_WEB_LOGIN_ENTRY 控制
                 HomeTab.Settings -> SettingsScreen(
                     vm = vm,

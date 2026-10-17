@@ -6,6 +6,7 @@ import com.kstudio.agenda.notif.ReminderScheduler
 import com.kstudio.agenda.util.AppLog
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -148,12 +149,7 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     /** 导入课程发生变化后调用：让缓存文件也带上导入课程（供小组件/常驻通知等读取缓存的地方使用） */
     fun onImportedCoursesChanged() {
         scope.launch {
-            val merged = ExtraCoursesStore.mergeInto(
-                ScheduleCache.load(appContext),
-                ExtraCoursesStore.courses.value,
-                ExtraCoursesStore.anchorEpochDay.value,
-            )
-            if (merged != null) ScheduleCache.save(appContext, merged)
+            // 导入课程独立存储；把合并结果写入原始缓存会导致删除/修改后旧课程复活。
             runCatching { ReminderScheduler.reschedule(appContext) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
             runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
@@ -174,8 +170,12 @@ class ScheduleRepository private constructor(private val appContext: Context) {
      * 并重排提醒 / 刷新小组件与常驻通知。
      */
     fun reloadFromCache() {
+        bumpGeneration()
+        syncJob?.cancel()
+        _sync.value = SyncUi.Idle
         scope.launch {
             ScheduleCache.invalidateMemory()
+            ExtraCoursesStore.ensureLoaded(appContext)
             _semester.value = ScheduleCache.load(appContext)
             runCatching { ReminderScheduler.reschedule(appContext) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
@@ -194,6 +194,8 @@ class ScheduleRepository private constructor(private val appContext: Context) {
         silent: Boolean = false,
         verifyCredentials: Boolean = false,
     ) {
+        // 社区脚本需要用户在可见浏览器中完成交互，不进入后台自动登录引擎。
+        if (com.kstudio.agenda.model.Schools.of(com.kstudio.agenda.model.Schools.currentId).warehouseId.isNotBlank()) return
         // 防误操作/并发：互斥判定在进入协程之前完成（原实现两次快速调用可能同时通过检查，
         // 导致两个同步流程并发运行、状态互相覆盖）
         synchronized(this) {
@@ -216,84 +218,97 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             null
         }
         syncJob = scope.launch {
-            val creds = credentials ?: SettingsStore.credentials(appContext)
-            // 即使没有保存账号，也先让引擎用“已有网页会话”尝试抓取
-            // （网页登录完成但未保存密码也可同步；未登录时由引擎引导登录）
-            if (creds == null) {
-                AppLog.i(TAG, "未保存账号，将先尝试使用已有网页会话")
-            }
-            AppLog.i(TAG, "开始同步（silent=$silent）")
-            val result = withTimeoutOrNull(SYNC_HARD_TIMEOUT_MS) {
-                engine.fetchWeek(
-                    creds,
-                    incrementalAgainstSemester = incrementalAgainst,
-                    verifyCredentials = verifyCredentials,
-                )
-            } ?: SyncResult.Failure("同步超时（超过 4 分钟），请重试")
-            // 重置/退出登录会提升世代号：过期的同步结果一律丢弃，
-            // 防止“刚清空/登出，又被旧结果写回”的错乱状态
-            if (generationAtStart != currentGeneration()) {
-                AppLog.w(TAG, "同步结果已过期（同步期间执行了重置或退出登录），已忽略")
-                return@launch
-            }
-            when (result) {
-                is SyncResult.Success -> {
-                    var semester = result.semester
-                    // 防退化：若本次周数少于缓存（例如会话失效导致重放全部失败、只剩当前周 DOM），
-                    // 与缓存合并（同周次以新数据为准），避免整个学期的课表被单周数据覆盖
-                    runCatching {
-                        val cached = ScheduleCache.load(appContext)
-                        if (cached != null &&
-                            cached.semesterLabel.isNotBlank() &&
-                            cached.semesterLabel == semester.semesterLabel &&
-                            cached.anchorEpochDay == semester.anchorEpochDay &&
-                            semester.weeks.size < cached.weeks.size
-                        ) {
-                            val merged = LinkedHashMap(cached.weeks)
-                            semester.weeks.forEach { (weekNo, courses) -> merged[weekNo] = courses }
-                            AppLog.w(
-                                TAG,
-                                "本次仅抓到 ${semester.weeks.size} 周，与缓存合并为 ${merged.size} 周（防止课表缓存退化）"
-                            )
-                            semester = semester.copy(weeks = merged)
-                        }
-                    }
-                    // 缓存里同时写入「导入课程」，保证小组件/常驻通知（直接读缓存）也能看到导入的课
-                    ScheduleCache.save(appContext, withImported(semester))
-                    SettingsStore.setLastSync(appContext, semester.fetchedAtMillis)
-                    SettingsStore.setSemesterAnchor(
-                        appContext,
-                        semester.semesterLabel.ifBlank { "当前学期" },
-                        semester.anchorEpochDay,
+            try {
+                val creds = credentials ?: SettingsStore.credentials(appContext)
+                // 即使没有保存账号，也先让引擎用“已有网页会话”尝试抓取
+                // （网页登录完成但未保存密码也可同步；未登录时由引擎引导登录）
+                if (creds == null) {
+                    AppLog.i(TAG, "未保存账号，将先尝试使用已有网页会话")
+                }
+                AppLog.i(TAG, "开始同步（silent=$silent）")
+                val result = withTimeoutOrNull(SYNC_HARD_TIMEOUT_MS) {
+                    engine.fetchWeek(
+                        creds,
+                        incrementalAgainstSemester = incrementalAgainst,
+                        verifyCredentials = verifyCredentials,
                     )
-                    _semester.value = semester
-                    _sync.value = SyncUi.Success(semester.fetchedAtMillis, result.notice)
-                    // 课程修改与最新教务数据比对：教务已一致 → 去掉「已修改」标记；两者都不同 → 询问用户
-                    runCatching { CourseEditStore.reconcile(appContext, semester) }
-                        .onSuccess { conflicts ->
-                            _editConflicts.value = conflicts
-                            if (conflicts.isNotEmpty()) {
-                                AppLog.w(TAG, "发现 ${conflicts.size} 门课程的修改与教务系统不一致，等待用户确认")
+                } ?: SyncResult.Failure("同步超时（超过 4 分钟），请重试")
+                // 重置/退出登录会提升世代号：过期的同步结果一律丢弃，
+                // 防止“刚清空/登出，又被旧结果写回”的错乱状态
+                if (generationAtStart != currentGeneration()) {
+                    AppLog.w(TAG, "同步结果已过期（同步期间执行了重置或退出登录），已忽略")
+                    return@launch
+                }
+                when (result) {
+                    is SyncResult.Success -> {
+                        var semester = result.semester
+                        // 防退化：若本次周数少于缓存（例如会话失效导致重放全部失败、只剩当前周 DOM），
+                        // 与缓存合并（同周次以新数据为准），避免整个学期的课表被单周数据覆盖
+                        runCatching {
+                            val cached = ScheduleCache.load(appContext)
+                            if (cached != null &&
+                                cached.semesterLabel.isNotBlank() &&
+                                cached.semesterLabel == semester.semesterLabel &&
+                                cached.anchorEpochDay == semester.anchorEpochDay &&
+                                semester.weeks.size < cached.weeks.size
+                            ) {
+                                val merged = LinkedHashMap(cached.weeks)
+                                semester.weeks.forEach { (weekNo, courses) -> merged[weekNo] = courses }
+                                AppLog.w(
+                                    TAG,
+                                    "本次仅抓到 ${semester.weeks.size} 周，与缓存合并为 ${merged.size} 周（防止课表缓存退化）"
+                                )
+                                semester = semester.copy(weeks = merged)
                             }
                         }
-                        .onFailure { AppLog.e(TAG, "课程修改比对失败", it) }
-                    runCatching { ReminderScheduler.reschedule(appContext) }
-                    runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
-                    runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
-                    AppLog.i(
-                        TAG,
-                        "同步成功：共 ${semester.weeks.size} 周，周次=${semester.weekNumbers}"
-                    )
-                }
+                        // 提醒/小组件统一通过 appliedFromCache 合并导入课程，缓存仅保存教务原始数据。
+                        check(ScheduleCache.save(appContext, semester)) { com.kstudio.agenda.i18n.AppText.current.msgSaveFailed }
+                        SettingsStore.setLastSync(appContext, semester.fetchedAtMillis)
+                        SettingsStore.setSemesterAnchor(
+                            appContext,
+                            semester.semesterLabel.ifBlank { "当前学期" },
+                            semester.anchorEpochDay,
+                        )
+                        _semester.value = semester
+                        _sync.value = SyncUi.Success(semester.fetchedAtMillis, result.notice)
+                        // 课程修改与最新教务数据比对：教务已一致 → 去掉「已修改」标记；两者都不同 → 询问用户
+                        runCatching { CourseEditStore.reconcile(appContext, semester) }
+                            .onSuccess { conflicts ->
+                                _editConflicts.value = conflicts
+                                if (conflicts.isNotEmpty()) {
+                                    AppLog.w(TAG, "发现 ${conflicts.size} 门课程的修改与教务系统不一致，等待用户确认")
+                                }
+                            }
+                            .onFailure { AppLog.e(TAG, "课程修改比对失败", it) }
+                        runCatching { ReminderScheduler.reschedule(appContext) }
+                        runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
+                        runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
+                        AppLog.i(
+                            TAG,
+                            "同步成功：共 ${semester.weeks.size} 周，周次=${semester.weekNumbers}"
+                        )
+                    }
 
-                is SyncResult.LoginRequired -> {
-                    AppLog.w(TAG, "需要登录：${result.message}")
-                    _sync.value = SyncUi.NeedLogin(result.message)
-                }
+                    is SyncResult.LoginRequired -> {
+                        AppLog.w(TAG, "需要登录：${result.message}")
+                        _sync.value = SyncUi.NeedLogin(result.message)
+                    }
 
-                is SyncResult.Failure -> {
-                    AppLog.e(TAG, "同步失败：${result.message}", result.cause)
-                    _sync.value = if (silent) SyncUi.Idle else SyncUi.Error(result.message)
+                    is SyncResult.Failure -> {
+                        AppLog.e(TAG, "同步失败：${result.message}", result.cause)
+                        _sync.value = if (silent) SyncUi.Idle else SyncUi.Error(result.message)
+                    }
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                AppLog.e(TAG, "同步异常", e)
+                if (generationAtStart == currentGeneration()) {
+                    _sync.value = if (silent) SyncUi.Idle else SyncUi.Error(e.message ?: "Sync failed")
+                }
+            } finally {
+                if (generationAtStart == currentGeneration() && _sync.value is SyncUi.Running) {
+                    _sync.value = SyncUi.Idle
                 }
             }
         }
@@ -302,17 +317,6 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     /** 仅重新调度提醒（不联网） */
     fun rescheduleReminders() {
         scope.launch { runCatching { ReminderScheduler.reschedule(appContext) } }
-    }
-
-    /** 把「导入课程」并入课表（供缓存写入使用；未导入时原样返回） */
-    private fun withImported(semester: SemesterSchedule): SemesterSchedule {
-        ExtraCoursesStore.ensureLoaded(appContext)
-        val merged = ExtraCoursesStore.mergeInto(
-            semester,
-            ExtraCoursesStore.courses.value,
-            ExtraCoursesStore.anchorEpochDay.value,
-        )
-        return merged ?: semester
     }
 
     /** 仅删除本地保存的学号密码（保留网页会话与课表缓存，便于测试“无密码但有会话”场景） */
@@ -382,8 +386,8 @@ class ScheduleRepository private constructor(private val appContext: Context) {
             SettingsStore.clearAll(appContext)
             AppLog.i(TAG, "已清空全部设置与账号（学号密码 / 学期锚点 / 上次同步时间 / 语言 / 界面风格等）")
 
-            ScheduleCache.clear(appContext)
-            ExtraCoursesStore.clear(appContext)
+            ScheduleCache.clearAll(appContext)
+            ExtraCoursesStore.clearAll(appContext)
             CourseEditStore.clear(appContext)
             AppLog.i(TAG, "已清空课表缓存 / 导入课程 / 课程修改")
         }

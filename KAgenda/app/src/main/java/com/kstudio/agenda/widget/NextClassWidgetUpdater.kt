@@ -65,12 +65,12 @@ object NextClassWidgetUpdater {
 
     /** 更新全部小组件并安排下一次刷新（应用启动 / 同步完成 / 提醒触发 / 开机时调用） */
     fun updateAndSchedule(context: Context) {
-        updateAll(context)
-        scheduleNext(context)
+        try { updateAll(context) } finally { scheduleNext(context) }
     }
 
     /** 仅更新全部小组件 */
     fun updateAll(context: Context) {
+        runCatching { OverviewWidgetUpdater.updateAll(context) }.onFailure { com.kstudio.agenda.util.AppLog.e("Widget", "Overview update failed", it) }
         val manager = AppWidgetManager.getInstance(context) ?: return
         // 叠加用户课程修改后的课表（课程名/地点/时间可能被用户改过）
         val semester = CourseEditStore.appliedFromCache(context)
@@ -94,6 +94,7 @@ object NextClassWidgetUpdater {
 
     /** 是否存在任意尺寸的小组件 */
     fun hasAnyWidget(context: Context): Boolean {
+        if (OverviewWidgetUpdater.hasAny(context)) return true
         val manager = AppWidgetManager.getInstance(context) ?: return false
         for (spec in SPECS) {
             val ids = manager.getAppWidgetIds(ComponentName(context, spec.clazz))
@@ -132,8 +133,8 @@ object NextClassWidgetUpdater {
         val events = AgendaStore.events.value.filter { !it.isPlan }.map { it.upcomingView(now) }
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 1) }.orEmpty()
-        // “进行中”只适用于起止时间都精确的日程（模糊/无时间的条目仅显示倒计时）
-        val agendaOngoing = events.firstOrNull { it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now) }
+        // “进行中”：长日程按日期区间；短日程需精确开始时间，未设结束时持续到当天结束。
+        val agendaOngoing = events.firstOrNull { (it.isLong || it.hasPreciseStart) && it.isOngoing(now) }
         val agendaNext = events.filter { it.anchorDateTime().isAfter(now) }
             .minByOrNull { it.anchorDateTime() }
         val nextStarts = listOfNotNull(
@@ -200,7 +201,7 @@ object NextClassWidgetUpdater {
 
         // 自建日程：进行中 / 下一项（均不含计划；“进行中”仅限起止时间都精确的条目，
         // 模糊或无时间的条目只显示“距离还有多久”，不会显示“正在进行”）
-        val agendaOngoing = events.firstOrNull { it.hasPreciseStart && it.hasPreciseEnd && it.isOngoing(now) }
+        val agendaOngoing = events.firstOrNull { (it.isLong || it.hasPreciseStart) && it.isOngoing(now) }
         val agendaNext = events
             .filter { it.anchorDateTime().isAfter(now) }
             .minByOrNull { it.anchorDateTime() }

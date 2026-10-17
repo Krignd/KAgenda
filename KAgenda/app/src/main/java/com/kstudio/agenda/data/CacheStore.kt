@@ -24,69 +24,47 @@ object ScheduleCache {
     private val memLock = Any()
     private var memLoaded = false
     private var memValue: SemesterSchedule? = null
+    private var memSchool = ""
 
-    fun save(context: Context, semester: SemesterSchedule) {
-        synchronized(memLock) {
-            memValue = semester
-            memLoaded = true
-        }
+    fun save(context: Context, semester: SemesterSchedule): Boolean = synchronized(memLock) {
+        val school = Schools.currentId
         try {
-            context.openFileOutput(SCHEDULE_FILE, Context.MODE_PRIVATE).use { out ->
-                out.write(toJson(semester).toString().toByteArray(Charsets.UTF_8))
-            }
-        } catch (_: Throwable) {
-        }
+            SchoolFileScope.save(context.filesDir, SCHEDULE_FILE, school, toJson(semester))
+            memValue = semester; memLoaded = true; memSchool = school
+            true
+        } catch (_: Exception) { false }
     }
 
-    /** 读取课表缓存（首次调用读盘并解析，之后直接返回内存实例） */
-    fun load(context: Context): SemesterSchedule? {
-        synchronized(memLock) {
-            if (memLoaded) return memValue
-        }
-        var foreignSchool = false
-        val parsed = try {
-            val file = File(context.filesDir, SCHEDULE_FILE)
-            if (!file.exists()) {
-                null
-            } else {
-                val root = JSONObject(file.readText(Charsets.UTF_8))
-                val school = root.optString("school")
-                // 缓存属于另一所学校（刚切换学校、还没重新同步）：当作没有缓存，
-                // 并且**不写入内存缓存** —— 用户切回原学校时这份缓存还能直接用。
-                //
-                // 例外：冷启动时设置还没读出来（Schools.currentKnown=false），此刻 currentId
-                // 只是默认值，不能用它判定“属于别的学校”，否则江大用户冷启动会看到空白课表
-                // （2026-10-08 修复）。
-                if (school.isNotBlank() && school != Schools.currentId && Schools.currentKnown) {
-                    foreignSchool = true
-                    null
-                } else {
-                    fromJson(root)
-                }
-            }
-        } catch (_: Throwable) {
-            null
-        }
-        if (foreignSchool) return null
-        synchronized(memLock) {
-            if (!memLoaded) {
-                memValue = parsed
-                memLoaded = true
-            }
-            return memValue
-        }
+    /** 原学校缓存保留在独立目录，最近缓存继续用于旧备份兼容。 */
+    fun load(context: Context): SemesterSchedule? = synchronized(memLock) {
+        val school = if (Schools.currentKnown) Schools.currentId else runCatching {
+            JSONObject(File(context.filesDir, SCHEDULE_FILE).readText(Charsets.UTF_8)).optString("school").ifBlank { Schools.currentId }
+        }.getOrDefault(Schools.currentId)
+        if (memLoaded && memSchool == school) return@synchronized memValue
+        val parsed = runCatching {
+            SchoolFileScope.load(context.filesDir, SCHEDULE_FILE, school, allowUnowned = Schools.currentKnown)?.let(::fromJson)
+        }.getOrNull()
+        memValue = parsed; memLoaded = Schools.currentKnown; memSchool = school
+        parsed
     }
 
     fun clear(context: Context) {
         synchronized(memLock) {
             memValue = null
             memLoaded = true
+            memSchool = Schools.currentId
         }
         try {
-            File(context.filesDir, SCHEDULE_FILE).delete()
+            SchoolFileScope.clear(context.filesDir, SCHEDULE_FILE, Schools.currentId)
             File(context.filesDir, RAW_DIR).deleteRecursively()
         } catch (_: Throwable) {
         }
+    }
+
+    fun clearAll(context: Context) {
+        clear(context)
+        File(context.filesDir, "school_data").deleteRecursively()
+        File(context.filesDir, SCHEDULE_FILE).delete()
     }
 
     /** 丢弃内存缓存（下次 [load] 重新读盘；**不删文件**）——备份导入后使用 */
@@ -140,9 +118,9 @@ object ScheduleCache {
                 for (i in 0 until arr.length()) {
                     arr.optJSONObject(i)?.let { courses.add(courseFromJson(it)) }
                 }
-                if (courses.isNotEmpty()) weeks[weekNo] = courses
+                weeks[weekNo] = courses
             }
-            if (weeks.isEmpty()) return null
+            if (weeks.values.all { it.isEmpty() }) return null
             return SemesterSchedule(
                 semesterLabel = root.optString("semester"),
                 anchorEpochDay = root.optLong("anchorEpochDay"),

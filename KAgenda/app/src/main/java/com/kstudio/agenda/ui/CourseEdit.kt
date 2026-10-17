@@ -167,18 +167,18 @@ fun CourseDetailSheet(
  * @param dayCourseCount 该日期当天的课程数（调课里「整天的课」提示用）
  * @param onSave 保存（第二参数 = 是否套用到全部同一课程）
  * @param onDelete 删除（第一参数 = 要删掉的周次；第二参数 = 是否套用到全部同一课程）
- * @param onMove 调课（第一参数 = 是否整天一起调；第二参数 = 目标日期）
+ * @param onMove 调课（所选课程列表和目标日期）
  * @param onNoChange 内容与原来完全一致 / 未选择日期时提示
  */
 @Composable
 fun CourseEditDialog(
     initial: Course,
     sourceDate: LocalDate?,
-    dayCourseCount: Int,
+    dayCourses: List<Course>,
     onDismiss: () -> Unit,
-    onSave: (Course, Boolean) -> Unit,
+    onSave: (Course, Boolean, Set<Int>) -> Unit,
     onDelete: (Set<Int>, Boolean) -> Unit,
-    onMove: (Boolean, LocalDate) -> Unit,
+    onMove: (List<Course>, LocalDate) -> Unit,
     onNoChange: () -> Unit,
 ) {
     val t = LocalStrings.current
@@ -186,14 +186,17 @@ fun CourseEditDialog(
     var title by remember(initial) { mutableStateOf(initial.title) }
     var teacher by remember(initial) { mutableStateOf(initial.teacher) }
     var room by remember(initial) { mutableStateOf(initial.room) }
+    var colorArgb by remember(initial) { mutableStateOf(initial.colorArgb) }
     var weeks by remember(initial) { mutableStateOf(initial.weeksRaw) }
-    var day by remember(initial) { mutableStateOf(initial.dayOfWeek) }
+    var days by remember(initial) { mutableStateOf(initial.editWeekdays.ifEmpty { setOf(initial.dayOfWeek) }) }
     var startPeriod by remember(initial) { mutableStateOf(initial.startPeriod) }
     var endPeriod by remember(initial) { mutableStateOf(initial.endPeriod) }
     var applyAll by remember(initial) { mutableStateOf(false) }
     // 删除：默认选中该课程的全部周次（= 删除整门课）
     var delWeeks by remember(initial) { mutableStateOf(initial.weeksSet()) }
     // 调课：默认「只调这一门」，选完目标日期才能确定
+    val dayCourseCount = dayCourses.size
+    var selectedMoves by remember(initial, dayCourses) { mutableStateOf(setOf(initial.id)) }
     var moveWholeDay by remember(initial) { mutableStateOf(false) }
     var moveTarget by remember(initial) { mutableStateOf<LocalDate?>(null) }
     var showTargetPicker by remember { mutableStateOf(false) }
@@ -272,6 +275,8 @@ fun CourseEditDialog(
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Spacer(Modifier.height(12.dp))
+                    LocationSuggestions(onPick = { room = it })
+                    CourseColorPicker(colorArgb) { colorArgb = it }
                     // 星期
                     Text(
                         text = t.detailWeekday,
@@ -287,8 +292,8 @@ fun CourseEditDialog(
                         for (d in 1..7) {
                             ChoiceChip(
                                 label = t.weekdayShort(d),
-                                selected = day == d,
-                                onClick = { day = d },
+                                selected = d in days,
+                                onClick = { days = if (d in days) days - d else days + d },
                             )
                         }
                     }
@@ -400,6 +405,19 @@ fun CourseEditDialog(
                         selected = !moveWholeDay,
                         onSelect = { moveWholeDay = false },
                     )
+                    if (!moveWholeDay) {
+                        Text(t.chooseCourses, style = MaterialTheme.typography.labelLarge)
+                        dayCourses.forEach { candidate ->
+                            Row(Modifier.fillMaxWidth().clickable {
+                                selectedMoves = if (candidate.id in selectedMoves) selectedMoves - candidate.id else selectedMoves + candidate.id
+                            }, verticalAlignment = Alignment.CenterVertically) {
+                                Checkbox(checked = candidate.id in selectedMoves, onCheckedChange = { checked ->
+                                    selectedMoves = if (checked) selectedMoves + candidate.id else selectedMoves - candidate.id
+                                })
+                                Text("${candidate.title} · ${candidate.periodLabel}", modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(12.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
                     Spacer(Modifier.height(12.dp))
@@ -429,7 +447,9 @@ fun CourseEditDialog(
                     }
                     ACTION_MOVE -> {
                         val target = moveTarget
-                        if (target == null) onNoChange() else onMove(moveWholeDay, target)
+                        val selected = if (moveWholeDay) dayCourses else dayCourses.filter { it.id in selectedMoves }
+                        if (target == null || selected.isEmpty()) return@TextButton
+                        onMove(selected, target)
                     }
                     else -> {
                         val edited = initial.copy(
@@ -437,15 +457,17 @@ fun CourseEditDialog(
                             teacher = teacher.trim(),
                             room = room.trim(),
                             weeksRaw = weeks.trim(),
-                            dayOfWeek = day,
+                            dayOfWeek = days.minOrNull() ?: initial.dayOfWeek,
                             startPeriod = startPeriod,
                             endPeriod = endPeriod,
                             edited = false,
+                            colorArgb = colorArgb,
                         )
                         when {
+                            days.isEmpty() -> return@TextButton
                             edited.title.isBlank() -> onNoChange()
-                            edited.sameEditableContent(initial) -> onNoChange()
-                            else -> onSave(edited, applyAll)
+                            edited.sameEditableContent(initial) && edited.colorArgb == initial.colorArgb && days == initial.editWeekdays.ifEmpty { setOf(initial.dayOfWeek) } -> onNoChange()
+                            else -> onSave(edited, applyAll, days)
                         }
                     }
                 }
@@ -520,19 +542,22 @@ internal fun WeeksPicker(
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            for (w in 1..maxWeek) {
-                ChoiceChip(
-                    label = "$w",
-                    selected = w in weeks,
-                    onClick = { onChange(if (w in weeks) weeks - w else weeks + w) },
-                )
+        (1..maxWeek.coerceIn(1, 40)).toList().chunked(6).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                row.forEach { w ->
+                    androidx.compose.material3.Surface(
+                        color = if (w in weeks) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.weight(1f).clickable { onChange(if (w in weeks) weeks - w else weeks + w) },
+                    ) {
+                        Text("$w", textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                            color = if (w in weeks) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 10.dp))
+                    }
+                }
+                repeat(6 - row.size) { Spacer(Modifier.weight(1f)) }
             }
+            Spacer(Modifier.height(4.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { onChange((1..maxWeek).toSet()) }) { Text(t.weeksAll) }
@@ -564,6 +589,7 @@ fun CourseAddDialog(
     val t = LocalStrings.current
     var title by remember { mutableStateOf(initial?.title.orEmpty()) }
     var teacher by remember { mutableStateOf(initial?.teacher.orEmpty()) }
+    var colorArgb by remember { mutableStateOf(initial?.colorArgb ?: 0) }
     var room by remember { mutableStateOf(initial?.room.orEmpty()) }
     var day by remember { mutableStateOf((initial?.dayOfWeek ?: defaultDay).coerceIn(1, 7)) }
     var startPeriod by remember { mutableStateOf(initial?.startPeriod ?: 1) }
@@ -611,6 +637,8 @@ fun CourseAddDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                LocationSuggestions(onPick = { room = it })
+                CourseColorPicker(colorArgb) { colorArgb = it }
                 Spacer(Modifier.height(12.dp))
                 Text(
                     text = t.detailWeekday,
@@ -673,6 +701,7 @@ fun CourseAddDialog(
                 onSave(
                     Course(
                         title = name,
+                        colorArgb = colorArgb,
                         code = "",
                         teacher = teacher.trim(),
                         weeksRaw = Course.encodeWeeks(weeks),

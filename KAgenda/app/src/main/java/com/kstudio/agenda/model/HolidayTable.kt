@@ -2,16 +2,12 @@ package com.kstudio.agenda.model
 
 import java.time.LocalDate
 
-/**
- * 法定节假日表（用于周 / 日 / 月视图的节假日与双休日标注）。
- *
- * 说明：
- * - 放假区间依据公开惯例整理（含首尾）；如与国务院当年安排或学校校历不一致，
- *   **直接修改下面的 ranges 即可**（每行：开始日期、结束日期、名称）；
- * - 本表未包含“调休上班”信息；如需要，可仿照 ranges 扩展一个 workday 表；
- * - 双休日（周六/周日）无需在此表登记，由 [isWeekend] 自动判断。
+/** Official holiday and make-up workday marks.
+ * The bundled 2026 dates follow the State Council notice of 2025-11-04.
+ * OfficialHolidayStore can atomically replace a year using a validated official notice.
  */
 object HolidayTable {
+    val revision = kotlinx.coroutines.flow.MutableStateFlow(0L)
 
     /**
      * 用户设置：法定节假日是否照常显示课表。
@@ -27,13 +23,13 @@ object HolidayTable {
         private set
 
     fun setShowCoursesOnHoliday(enabled: Boolean) {
-        showCoursesOnHoliday = enabled
+        if (showCoursesOnHoliday != enabled) { showCoursesOnHoliday = enabled; revision.value++ }
     }
 
     /** (开始日期, 结束日期, 名称) —— 含首尾 */
     private val ranges: List<Triple<String, String, String>> = listOf(
         Triple("2026-01-01", "2026-01-03", "元旦"),
-        Triple("2026-02-16", "2026-02-22", "春节"),
+        Triple("2026-02-15", "2026-02-23", "春节"),
         Triple("2026-04-04", "2026-04-06", "清明"),
         Triple("2026-05-01", "2026-05-05", "劳动节"),
         Triple("2026-06-19", "2026-06-21", "端午"),
@@ -56,17 +52,36 @@ object HolidayTable {
         map
     }
 
+    @Volatile private var officialMarks: Map<Int, Map<Long, String>> = emptyMap()
+    @Volatile private var officialWorkdays: Map<Int, Set<Long>> = emptyMap()
+    private val builtInWorkdays = setOf("2026-01-04", "2026-02-14", "2026-02-28", "2026-05-09", "2026-09-20", "2026-10-10")
+        .map { LocalDate.parse(it).toEpochDay() }.toSet()
+    @Synchronized fun replaceYear(year: Int, holidays: Map<Long, String>, workdays: Set<Long>) {
+        officialMarks = officialMarks + (year to holidays)
+        officialWorkdays = officialWorkdays + (year to workdays)
+        revision.value++
+    }
+    fun hasOfficialYear(year: Int): Boolean = year == 2026 || officialMarks.containsKey(year)
+    fun isWorkday(date: LocalDate): Boolean = date.toEpochDay() in (officialWorkdays[date.year] ?: builtInWorkdays)
+    private fun holidayName(date: LocalDate): String? = (officialMarks[date.year] ?: marks)[date.toEpochDay()]
+
     /** 该日期是节假日则返回名称（如“中秋”），否则 null */
-    fun nameOf(date: LocalDate): String? = marks[date.toEpochDay()]
+    fun nameOf(date: LocalDate): String? = holidayName(date) ?: festivalName(date)
+
+    /** 农历日期核对来源：https://www.hko.gov.hk/tc/gts/time/calendar/pdf/files/2027.pdf */
+    fun festivalName(date: LocalDate): String? = when (date.toString()) {
+        "2027-02-06" -> "春节"
+        else -> null
+    }
 
     /** 是否法定节假日（放假中） */
-    fun isHoliday(date: LocalDate): Boolean = marks.containsKey(date.toEpochDay())
+    fun isHoliday(date: LocalDate): Boolean = holidayName(date) != null
 
     /** 是否双休日（周六 / 周日） */
     fun isWeekend(date: LocalDate): Boolean = date.dayOfWeek.value >= 6
 
     /** 是否休息日（双休或节假日） */
-    fun isRestDay(date: LocalDate): Boolean = isWeekend(date) || isHoliday(date)
+    fun isRestDay(date: LocalDate): Boolean = !isWorkday(date) && (isWeekend(date) || isHoliday(date))
 
     /**
      * 该日期是否应当**隐藏/跳过课程**（即“停课”）。

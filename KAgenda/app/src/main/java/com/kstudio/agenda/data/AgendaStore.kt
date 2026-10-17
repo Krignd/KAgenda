@@ -110,7 +110,7 @@ object AgendaStore {
     private fun persist(context: Context, list: List<AgendaEvent>) {
         // 写盘失败不再静默：提示性日志（内存状态仍已更新，但重启后可能丢失该次改动）
         runCatching {
-            File(context.filesDir, FILE_NAME).writeText(toJson(list), Charsets.UTF_8)
+            AtomicFileStore.write(File(context.filesDir, FILE_NAME), toJson(list))
         }.onFailure {
             AppLog.e("AgendaStore", "日程写盘失败（改动仅在内存中，重启后可能丢失）", it)
         }
@@ -125,8 +125,11 @@ object AgendaStore {
             val title = o.optString("title")
             val day = o.optLong("dateEpochDay", Long.MIN_VALUE)
             if (id.isBlank() || title.isBlank() || day == Long.MIN_VALUE) continue
+            if (runCatching { java.time.LocalDate.ofEpochDay(day) }.isFailure) continue
             val repeat = o.optString("repeat").takeIf { RepeatRules.isValid(it) } ?: ""
-            val endDay = if (o.has("endDateEpochDay")) o.optLong("endDateEpochDay") else null
+            val endDay = if (!o.isNull("endDateEpochDay")) o.optLong("endDateEpochDay").takeIf {
+                runCatching { java.time.LocalDate.ofEpochDay(it) }.isSuccess
+            } else null
             result.add(
                 AgendaEvent(
                     id = id,
@@ -145,6 +148,11 @@ object AgendaStore {
                     colorArgb = o.optInt("colorArgb", 0),
                     isPlan = o.optBoolean("isPlan", false),
                     repeatRule = repeat,
+                    followGlobalReminder = o.optBoolean("followGlobalReminder", true),
+                    notifyEnabled = o.optBoolean("notifyEnabled", true),
+                    reminderLeadMinutes = o.optInt("reminderLeadMinutes", 30).coerceIn(0, 10080),
+                    alarmEnabled = o.optBoolean("alarmEnabled", false),
+                    statusTag = o.optString("statusTag").takeIf { it in setOf("delayed", "advanced", "waiting") } ?: "",
                 )
             )
         }
@@ -171,6 +179,11 @@ object AgendaStore {
                     put("type", e.type)
                     put("colorArgb", e.colorArgb)
                     put("isPlan", e.isPlan)
+                    put("followGlobalReminder", e.followGlobalReminder)
+                    put("notifyEnabled", e.notifyEnabled)
+                    put("reminderLeadMinutes", e.reminderLeadMinutes)
+                    put("alarmEnabled", e.alarmEnabled)
+                    put("statusTag", e.statusTag)
                     if (e.repeatRule.isNotBlank()) put("repeat", e.repeatRule)
                 }
             )

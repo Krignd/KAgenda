@@ -48,6 +48,7 @@ data class CourseEdit(
      * 空串 = 旧数据（升级前写入的），为兼容一律视为对任何学校生效。
      */
     val schoolId: String = "",
+    val weekdays: Set<Int> = setOf(edited.dayOfWeek),
 ) {
     /** 是否属于当前使用的学校（旧记录视为通用） */
     fun belongsToCurrentSchool(): Boolean =
@@ -120,7 +121,7 @@ object CourseEditStore {
      * - 同一目标重复修改 → 覆盖旧记录，但**存档仍用第一次的原课程**（还原时要回到教务最初的样子）；
      * - 选择「全部同一课程」时，同一门课已有的「仅这一次」记录会被这条整体修改取代（避免互相打架）。
      */
-    fun save(context: Context, original: Course, edited: Course, applyAll: Boolean): CourseEdit {
+    fun save(context: Context, original: Course, edited: Course, applyAll: Boolean, weekdays: Set<Int> = setOf(edited.dayOfWeek)): CourseEdit {
         ensureLoaded(context)
         val candidate = CourseEdit(
             applyAll = applyAll,
@@ -128,14 +129,15 @@ object CourseEditStore {
             edited = edited.copy(edited = false),
             editedAtMillis = System.currentTimeMillis(),
             schoolId = Schools.currentId,
+            weekdays = weekdays.filter { it in 1..7 }.toSet().ifEmpty { setOf(edited.dayOfWeek) },
         )
         synchronized(this) {
-            val old = _edits.value.firstOrNull { it.targetKey == candidate.targetKey }
+            val old = _edits.value.firstOrNull { it.belongsToCurrentSchool() && (it.targetKey == original.editOriginKey.ifBlank { candidate.targetKey }) }
             // 保留最初的存档：用户反复修改同一门课时，存档要一直是「教务系统原本的样子」
-            val record = if (old != null) candidate.copy(original = old.original) else candidate
+            val record = if (old != null) candidate.copy(original = old.original, kind = old.kind) else candidate
             _edits.value = _edits.value.filterNot {
-                it.targetKey == record.targetKey ||
-                    (record.applyAll && !it.applyAll && it.original.sameSeriesAs(record.original))
+                it.belongsToCurrentSchool() && (it.targetKey == record.targetKey || it.targetKey == old?.targetKey ||
+                    (record.applyAll && !it.applyAll && it.original.sameSeriesAs(record.original)))
             } + listOf(record)
             persist(context)
             AppLog.i(TAG, "已保存课程修改：${record.edited.title}（applyAll=${record.applyAll}）")
@@ -148,7 +150,7 @@ object CourseEditStore {
         ensureLoaded(context)
         synchronized(this) {
             _edits.value = _edits.value.map {
-                if (it.targetKey == edit.targetKey) {
+                if (it.belongsToCurrentSchool() && it.targetKey == edit.targetKey) {
                     if (latest != null) {
                         // 存档换成最新教务版本：课程位置也可能变了，同步更新定位依据
                         it.copy(original = latest.copy(edited = false))
@@ -167,9 +169,15 @@ object CourseEditStore {
     fun remove(context: Context, targetKey: String) {
         ensureLoaded(context)
         synchronized(this) {
-            _edits.value = _edits.value.filterNot { it.targetKey == targetKey }
+            _edits.value = _edits.value.filterNot { it.belongsToCurrentSchool() && it.targetKey == targetKey }
             persist(context)
         }
+    }
+
+    @Synchronized fun removeSelected(context: Context, keys: Set<String>) {
+        ensureLoaded(context)
+        _edits.value = _edits.value.filterNot { it.belongsToCurrentSchool() && it.targetKey in keys }
+        persist(context)
     }
 
     /** 清空全部课程修改（设置里的「仅还原课程修改」/「与教务系统同步并清除」共用） */
@@ -191,12 +199,12 @@ object CourseEditStore {
     }
 
     /** 把一条记录放进列表：覆盖同目标；「全部同一课程」的修改会取代同门课的「仅这一次」记录 */
-    private fun merge(list: List<CourseEdit>, record: CourseEdit): List<CourseEdit> =
+    internal fun merge(list: List<CourseEdit>, record: CourseEdit): List<CourseEdit> =
         list.filterNot {
-            it.targetKey == record.targetKey ||
+            it.belongsToCurrentSchool() && (it.targetKey == record.targetKey ||
                 (record.kind == EDIT_KIND_MODIFY && record.applyAll &&
                     it.kind == EDIT_KIND_MODIFY && !it.applyAll &&
-                    it.original.sameSeriesAs(record.original))
+                    it.original.sameSeriesAs(record.original)))
         } + listOf(record)
 
     /**
@@ -239,7 +247,7 @@ object CourseEditStore {
             schoolId = Schools.currentId,
         )
         synchronized(this) {
-            val old = _edits.value.firstOrNull { it.targetKey == record.targetKey }
+            val old = _edits.value.firstOrNull { it.belongsToCurrentSchool() && it.targetKey == record.targetKey }
             val merged = if (old != null) record.copy(original = old.original) else record
             _edits.value = merge(_edits.value, merged)
             persist(context)
@@ -311,7 +319,7 @@ object CourseEditStore {
                 } else {
                     // 存档要保留「教务最初的样子」（与 save 一致）
                     val key = c.seriesKey + "#" + c.slotKey
-                    val old = list.firstOrNull { it.kind == EDIT_KIND_MODIFY && it.targetKey == key }
+                    val old = list.firstOrNull { it.belongsToCurrentSchool() && it.kind == EDIT_KIND_MODIFY && it.targetKey == key }
                     merge(
                         list,
                         CourseEdit(
@@ -376,23 +384,25 @@ object CourseEditStore {
             return if (!seriesPresent && add.occursInWeek(weekNo) &&
                 e.original.occursInWeek(weekNo) && kept.none { it.id == add.id }
             ) {
-                kept + add
+                kept + e.weekdays.sorted().map { day -> add.copy(dayOfWeek = day, editOriginKey = e.targetKey, editWeekdays = e.weekdays) }
             } else {
                 current
             }
         }
-        val patched = matched.map { m ->
+        val patched = matched.flatMap { m ->
             if (e.applyAll && m.slotKey != e.original.slotKey) {
-                m.copy(
+                listOf(m.copy(
                     title = e.edited.title,
                     code = e.edited.code,
                     teacher = e.edited.teacher,
                     room = e.edited.room,
                     weeksRaw = e.edited.weeksRaw,
+                    colorArgb = e.edited.colorArgb,
                     edited = true,
-                )
+                    editOriginKey = e.targetKey,
+                ))
             } else {
-                e.edited.copy(edited = true)
+                e.weekdays.sorted().map { day -> e.edited.copy(dayOfWeek = day, edited = true, editOriginKey = e.targetKey, editWeekdays = e.weekdays) }
             }
         }
         return kept + patched.filter { it.occursInWeek(weekNo) }
@@ -424,8 +434,8 @@ object CourseEditStore {
     private fun applyAdd(current: List<Course>, e: CourseEdit, weekNo: Int): List<Course> {
         val add = e.edited
         if (!add.occursInWeek(weekNo)) return current
-        if (current.any { it.slotKey == add.slotKey && it.sameEditableContent(add) }) return current
-        return current + add.copy(edited = true)
+        val additions = e.weekdays.sorted().map { day -> add.copy(dayOfWeek = day, edited = true, editOriginKey = e.targetKey, editWeekdays = e.weekdays) }
+        return current + additions.filter { candidate -> current.none { it.slotKey == candidate.slotKey && it.sameEditableContent(candidate) } }
     }
 
     /**
@@ -434,7 +444,8 @@ object CourseEditStore {
      */
     fun appliedFromCache(context: Context): SemesterSchedule? {
         ensureLoaded(context)
-        return apply(ScheduleCache.load(context))
+        ExtraCoursesStore.ensureLoaded(context)
+        return apply(ExtraCoursesStore.mergeInto(ScheduleCache.load(context), ExtraCoursesStore.courses.value, ExtraCoursesStore.anchorEpochDay.value))
     }
 
     /**
@@ -466,7 +477,7 @@ object CourseEditStore {
                     val dup = all.any {
                         it.slotKey == e.edited.slotKey && it.sameEditableContent(e.edited)
                     }
-                    if (dup) resolved++ else keep += e
+                    if (dup && e.edited.colorArgb == 0) resolved++ else keep += e
                     continue
                 }
                 EDIT_KIND_DELETE -> {
@@ -484,7 +495,8 @@ object CourseEditStore {
                 ?: pickLatest(e, all.filter { it.sameSeriesAs(e.original) })
             when {
                 // 教务系统已经改成了用户要的样子 → 修改已无意义，去掉标记与存档
-                latest != null && latest.sameEditableContent(e.edited) -> resolved++
+                latest != null && latest.sameEditableContent(e.edited) && e.edited.colorArgb == 0 && e.weekdays.size == 1 -> resolved++
+                latest != null && latest.sameEditableContent(e.edited) -> keep += e
                 // 教务系统没有变化（或已找不到这门课）→ 保留用户的修改，静默处理
                 latest == null || latest.sameEditableContent(e.original) -> keep += e
                 // 教务系统变过了，且与用户改的不同 → 需要用户决定
@@ -518,6 +530,7 @@ object CourseEditStore {
                             put(
                                 JSONObject().apply {
                                     put("applyAll", e.applyAll)
+                                    put("weekdays", JSONArray(e.weekdays.sorted()))
                                     put("at", e.editedAtMillis)
                                     put("kind", e.kind)
                                     if (e.schoolId.isNotBlank()) put("school", e.schoolId)
@@ -529,7 +542,7 @@ object CourseEditStore {
                     },
                 )
             }
-            File(context.filesDir, FILE_NAME).writeText(root.toString(), Charsets.UTF_8)
+            AtomicFileStore.write(File(context.filesDir, FILE_NAME), root.toString())
         }.onFailure { AppLog.e(TAG, "课程修改写盘失败", it) }
     }
 
@@ -549,6 +562,7 @@ object CourseEditStore {
                     editedAtMillis = o.optLong("at"),
                     kind = o.optString("kind").takeIf { it.isNotBlank() } ?: EDIT_KIND_MODIFY,
                     schoolId = o.optString("school"),
+                    weekdays = o.optJSONArray("weekdays")?.let { days -> (0 until days.length()).map { days.optInt(it) }.filter { it in 1..7 }.toSet() }?.ifEmpty { setOf(edited.dayOfWeek) } ?: setOf(edited.dayOfWeek),
                 )
             )
         }
@@ -565,6 +579,7 @@ object CourseEditStore {
         put("end", c.endPeriod)
         put("day", c.dayOfWeek)
         put("tag", c.tag)
+        put("colorArgb", c.colorArgb)
         if (c.extraInfo.isNotBlank()) put("extra", c.extraInfo)
     }
 
@@ -579,5 +594,6 @@ object CourseEditStore {
         dayOfWeek = o.optInt("day", 1),
         tag = o.optString("tag"),
         extraInfo = o.optString("extra"),
+        colorArgb = o.optInt("colorArgb", 0),
     )
 }

@@ -1,16 +1,96 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-  网络安全配置：默认继续禁止明文流量（与 application 的 usesCleartextTraffic="false" 一致），
-  仅对江大校内主机放行 http。
-
-  原因：开发者工具里的「内置浏览器」是普通浏览器，访问校内站点时可能会用到
-  http:// 地址（例如 http://xuanke.ujs.edu.cn/、http://jwxt.ujs.edu.cn/）；
-  若全局禁止明文，这类地址会直接被系统拦截成 ERR_CLEARTEXT_NOT_PERMITTED，
-  不利于排查。放行范围严格限定在 ujs.edu.cn 及其子域，不影响其它站点。
--->
+<!-- 默认禁止明文，仅兼容固定版本社区教务脚本声明的 HTTP 主机。 -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false" />
     <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">106.system.haue.edu.cn</domain>
+        <domain includeSubdomains="false">172.16.254.1</domain>
+        <domain includeSubdomains="false">192.168.73.155</domain>
+        <domain includeSubdomains="false">192.168.73.166</domain>
+        <domain includeSubdomains="false">202.115.194.60</domain>
+        <domain includeSubdomains="false">210.44.16.13</domain>
+        <domain includeSubdomains="false">211.64.47.165</domain>
+        <domain includeSubdomains="false">211.82.176.48</domain>
+        <domain includeSubdomains="false">211.86.128.194</domain>
+        <domain includeSubdomains="false">222.217.195.24</domain>
+        <domain includeSubdomains="false">39.164.230.243</domain>
+        <domain includeSubdomains="false">59.74.174.150</domain>
+        <domain includeSubdomains="false">61.182.88.214</domain>
+        <domain includeSubdomains="false">all.aufe.edu.cn</domain>
+        <domain includeSubdomains="false">dc.cqcivc.cn</domain>
+        <domain includeSubdomains="false">ehallapp.nnu.edu.cn</domain>
+        <domain includeSubdomains="false">hdjw.hnu.edu.cn</domain>
+        <domain includeSubdomains="false">jw.cqcst.edu.cn</domain>
+        <domain includeSubdomains="false">jw.cqepc.cn</domain>
+        <domain includeSubdomains="false">jw.gzist.edu.cn</domain>
+        <domain includeSubdomains="false">jw.huse.cn</domain>
+        <domain includeSubdomains="false">jw.imut.edu.cn</domain>
+        <domain includeSubdomains="false">jw.lidapoly.edu.cn</domain>
+        <domain includeSubdomains="false">jw.mtc.edu.cn</domain>
+        <domain includeSubdomains="false">jw.sctbc.edu.cn</domain>
+        <domain includeSubdomains="false">jw.sdufe.edu.cn</domain>
+        <domain includeSubdomains="false">jw.tellhowedu.com</domain>
+        <domain includeSubdomains="false">jw.wspc.edu.cn</domain>
+        <domain includeSubdomains="false">jw.xpaas.dlmu.edu.cn</domain>
+        <domain includeSubdomains="false">jwc-publish2.jwc.nchu.edu.cn</domain>
+        <domain includeSubdomains="false">jwc.czmec.cn</domain>
+        <domain includeSubdomains="false">jwcmis.hnie.edu.cn</domain>
+        <domain includeSubdomains="false">jwcxk2-aufe-edu-cn.vpn2.aufe.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.cuit.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.fafu.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.hhvtc.com.cn</domain>
+        <domain includeSubdomains="false">jwgl.hist.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.huayu.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.shxy.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.xaut.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl.xawl.edu.cn</domain>
+        <domain includeSubdomains="false">jwgl2018.xatu.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.huuc.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.qau.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.xzit.edu.cn</domain>
+        <domain includeSubdomains="false">jwglxt.zua.edu.cn</domain>
+        <domain includeSubdomains="false">jwk.lzu.edu.cn</domain>
+        <domain includeSubdomains="false">jwmis.cfec.edu.cn</domain>
+        <domain includeSubdomains="false">jwnew.cqust.edu.cn</domain>
+        <domain includeSubdomains="false">jwnew.cqust.edu.ex2.http.80.ipv6.cqust.edu.cn</domain>
+        <domain includeSubdomains="false">jwsso.xust.edu.cn</domain>
+        <domain includeSubdomains="false">jwstudent.lnu.edu.cn</domain>
+        <domain includeSubdomains="false">jwx.gzmtu.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.cqcivc.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.cqrk.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.ctgu.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.hnvcc.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.nbut.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.neu.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.qdhhc.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.qqhrit.com</domain>
+        <domain includeSubdomains="false">jwxt.sdnu.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.syist.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.tjau.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.tsu.edu.cn</domain>
+        <domain includeSubdomains="false">jwxt.ujs.edu.cn</domain>
+        <domain includeSubdomains="false">jwxtxs.tust.edu.cn</domain>
+        <domain includeSubdomains="false">jwzx.usc.edu.cn</domain>
+        <domain includeSubdomains="false">jx.hnxyjf.com</domain>
+        <domain includeSubdomains="false">jxgl.dlut.edu.cn</domain>
+        <domain includeSubdomains="false">mhub.hust.edu.cn</domain>
+        <domain includeSubdomains="false">oaa.fitedu.net</domain>
+        <domain includeSubdomains="false">one.qhnu.edu.cn</domain>
+        <domain includeSubdomains="false">qzjwxt.stcnchu.edu.cn</domain>
+        <domain includeSubdomains="false">szxy.cqtbi.edu.cn</domain>
+        <domain includeSubdomains="false">tysf.qqhrit.com</domain>
         <domain includeSubdomains="true">ujs.edu.cn</domain>
+        <domain includeSubdomains="false">urp.hebau.edu.cn</domain>
+        <domain includeSubdomains="false">vpn.aufe.edu.cn</domain>
+        <domain includeSubdomains="false">www.gdjw.zjut.edu.cn</domain>
+        <domain includeSubdomains="false">xk.jwc.zjsru.edu.cn</domain>
+        <domain includeSubdomains="false">xk.suda.edu.cn</domain>
+        <domain includeSubdomains="false">xsjw2018.jw.scut.edu.cn</domain>
+        <domain includeSubdomains="false">xsxk.hlju.edu.cn</domain>
+        <domain includeSubdomains="false">yjsgl-hit-edu-cn.ivpn.hit.edu.cn</domain>
+        <domain includeSubdomains="false">yjsgll.ujs.edu.cn</domain>
+        <domain includeSubdomains="false">zf.scetop.com</domain>
+        <domain includeSubdomains="false">zfjw.gingkoc.edu.cn</domain>
+        <domain includeSubdomains="false">zhjw.qfnu.edu.cn</domain>
     </domain-config>
 </network-security-config>

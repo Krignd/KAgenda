@@ -228,7 +228,7 @@ object ScheduleImageRenderer {
         // 课程块
         for (course in week.courses) {
             val d = course.dayOfWeek - 1
-            if (d !in 0..6) continue
+            if (d !in 0..6 || !course.occursInWeek(week.weekNo) || HolidayTable.hidesCourses(week.dateOfWeekday(course.dayOfWeek))) continue
             val color = CoursePalette.colorFor(course)
             val x = PAD + timeColW + d * dayW
             val top = gridTop + (course.startPeriod - 1) * rowH + 6f
@@ -240,14 +240,16 @@ object ScheduleImageRenderer {
 
             val textPaint = paintText(26f, TEXT_MAIN, bold = true)
             val maxW = rect.width() - 40f
-            var ty = rect.top + 46f
-            trimmedLines(markedTitle(course), textPaint, maxW, 3).forEach { line ->
+            // Start time has its own untrimmed line; a long title cannot hide it.
+            canvas.drawText(PeriodTimes.format(PeriodTimes.startOf(course.startPeriod)), rect.left + 20f, rect.top + 27f, paintText(22f, color, bold = true))
+            var ty = rect.top + 58f
+            val titleLines = ((rect.height() - 66f) / 30f).toInt().coerceIn(1, 3)
+            trimmedLines(markedTitle(course), textPaint, maxW, titleLines).forEach { line ->
                 canvas.drawText(line, rect.left + 26f, ty, textPaint)
-                ty += 34f
+                ty += 30f
             }
-            val subPaint = paintText(22f, TEXT_SUB)
-            trimmedLines(course.room, subPaint, maxW, 1).forEach { line ->
-                canvas.drawText(line, rect.left + 26f, ty + 6f, subPaint)
+            if (ty + 18f < rect.bottom) {
+                canvas.drawText(trim(course.room, 22f, maxW), rect.left + 26f, ty + 14f, paintText(22f, TEXT_SUB))
             }
         }
 
@@ -302,33 +304,38 @@ object ScheduleImageRenderer {
         val daysInMonth = monthStart.lengthOfMonth()
         val rows = (leading + daysInMonth + 6) / 7
         val gridTop = headerH + dayHeadH
+        val cellW = (W - PAD * 2) / 7f
+        val timeMeasure = paintText(20f, TEXT_MAIN, bold = true)
 
         // 先统计每天条目（课程 + 日程），用于自适应格子高度
-        val dayBars = HashMap<Int, MutableList<Pair<String, Int>>>()
-        var maxBars = 0
+        data class MonthBar(val title: String, val timeLines: List<com.kstudio.agenda.model.TimeRangeLayout.Line>, val color: Int) {
+            val step: Float get() = maxOf(48f, (timeLines.size + 1) * 24f + 12f)
+        }
+        fun bar(title: String, start: String, end: String, color: Int): MonthBar = MonthBar(title,
+            com.kstudio.agenda.model.TimeRangeLayout.lines(start, end, cellW - 32f) { text, size -> timeMeasure.textSize = size; timeMeasure.measureText(text) }, color)
+        val dayBars = HashMap<Int, MutableList<MonthBar>>()
         for (dayNum in 1..daysInMonth) {
             val date = monthStart.withDayOfMonth(dayNum)
-            val bars = mutableListOf<Pair<String, Int>>()
+            val bars = mutableListOf<MonthBar>()
             if (semester != null && !HolidayTable.hidesCourses(date)) {
                 val weekNo = semester.teachingWeekOf(date)
                 semester.weeks[weekNo]
                     ?.filter { it.dayOfWeek == date.dayOfWeek.value }
                     ?.sortedBy { it.startPeriod }
-                    ?.forEach { bars.add(markedTitle(it) to CoursePalette.colorFor(it)) }
+                    ?.filter { it.occursInWeek(weekNo) }
+                    ?.forEach { bars.add(bar(markedTitle(it), PeriodTimes.format(PeriodTimes.startOf(it.startPeriod)), PeriodTimes.format(PeriodTimes.endOf(it.endPeriod)), CoursePalette.colorFor(it))) }
             }
             // occursOn：重复日程要出现在每一个命中的日子（以前用 coversDate → 只在开始日）
             events.filter { it.occursOn(date) }
                 .sortedWith(compareBy({ com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
                 .forEach {
-                    // 时间标记：有开始时间时以 "HH:mm 标题" 完整展示
-                    val label = if (it.startTime.isNotBlank()) "${it.startTime} ${it.title}" else it.title
-                    bars.add(label to (if (it.displayColor != 0) it.displayColor else AGENDA_DEFAULT))
+                    bars.add(bar(it.title, it.startTime, it.endTime, if (it.displayColor != 0) it.displayColor else AGENDA_DEFAULT))
                 }
             dayBars[dayNum] = bars
-            if (bars.size > maxBars) maxBars = bars.size
         }
         // 格子高度随最多条目数自适应（不再出现 +N 截断）
-        val cellH = maxOf(150f, 74f + maxBars * 30f + 12f)
+        val maxContent = dayBars.values.maxOfOrNull { bars -> bars.sumOf { it.step.toDouble() }.toFloat() } ?: 0f
+        val cellH = maxOf(150f, 74f + maxContent + 12f)
 
         val height = (gridTop + rows * cellH + footerH).toInt()
         val bitmap = Bitmap.createBitmap(W, height, Bitmap.Config.ARGB_8888)
@@ -345,7 +352,6 @@ object ScheduleImageRenderer {
         drawBrand(canvas, 200f, t)
 
         // 星期表头
-        val cellW = (W - PAD * 2) / 7f
         for (i in 0 until 7) {
             val x = PAD + i * cellW
             canvas.drawText(
@@ -371,15 +377,20 @@ object ScheduleImageRenderer {
                     paintText(30f, TEXT_MAIN, bold = true)
                 )
 
+                val date = monthStart.withDayOfMonth(dayNum)
+                val holiday = HolidayTable.nameOf(date)?.let(t::holidayLabel) ?: if (HolidayTable.isWorkday(date)) t.workdayMark else null
+                if (holiday != null) canvas.drawText(trim(holiday, 18f, cellW - 60f), cellX + 58f, cellTop + 40f, paintText(18f, ACCENT))
                 var ty = cellTop + 74f
-                for ((text, color) in dayBars[dayNum].orEmpty()) {
-                    val barRect = RectF(cellX + 10f, ty - 24f, cellX + cellW - 10f, ty + 6f)
+                for (bar in dayBars[dayNum].orEmpty()) {
+                    val color = bar.color
+                    val barRect = RectF(cellX + 10f, ty - 24f, cellX + cellW - 10f, ty + bar.timeLines.size * 24f + 10f)
                     canvas.drawRoundRect(barRect, 8f, 8f, paintFill(CoursePalette.lightOf(color, 60)))
-                    canvas.drawText(
-                        trim(text, 20f, cellW - 44f),
-                        cellX + 16f, ty, paintText(20f, color)
-                    )
-                    ty += 30f
+                    // 优先一行显示起止时间，确实放不下时按可读字号换行，保留完整内容。
+                    bar.timeLines.forEachIndexed { index, line ->
+                        canvas.drawText(line.text, cellX + 16f, ty + index * 24f, paintText(line.fontSize, color, bold = true))
+                    }
+                    canvas.drawText(trim(bar.title.replace('\n', ' '), 20f, cellW - 44f), cellX + 16f, ty + bar.timeLines.size * 24f, paintText(20f, color))
+                    ty += bar.step
                 }
             }
         }

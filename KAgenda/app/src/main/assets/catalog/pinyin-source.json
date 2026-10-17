@@ -1,0 +1,11 @@
+{
+  "generator": "pypinyin",
+  "version": "0.55.0",
+  "repository": "https://github.com/mozillazg/python-pinyin",
+  "license": "MIT",
+  "scope": "offline school spelling and custom-name fallback",
+  "names": 3202,
+  "characters": 41923,
+  "sha256": "352255a12fad93387bb403f69803ee93c76207a8f28ca90057ae5ceb00ad8c24",
+  "overridesSha256": "6af6b3caf200913691c93458965036f2aeb95668927b6f01709132237e790277"
+}

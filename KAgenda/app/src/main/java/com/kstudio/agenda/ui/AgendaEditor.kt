@@ -161,6 +161,10 @@ fun AgendaCard(
                     }
                     TagChip(text = tagText, color = accent)
                 }
+                if (event.statusTag.isNotBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    TagChip(statusTagLabel(event.statusTag), accent)
+                }
                 val detail = listOfNotNull(
                     dateLabel,
                     event.rangeLabel.ifBlank { null },
@@ -236,6 +240,13 @@ fun AgendaEditorDialog(
     var startTime by rememberSaveable { mutableStateOf(initial?.startTime ?: "") }
     var endTime by rememberSaveable { mutableStateOf(initial?.endTime ?: "") }
     var location by rememberSaveable { mutableStateOf(initial?.location ?: "") }
+    var followReminder by rememberSaveable { mutableStateOf(initial?.followGlobalReminder ?: true) }
+    var notifyEnabled by rememberSaveable { mutableStateOf(initial?.notifyEnabled ?: true) }
+    var alarmEnabled by rememberSaveable { mutableStateOf(initial?.alarmEnabled ?: false) }
+    var leadMinutes by rememberSaveable { mutableStateOf(initial?.reminderLeadMinutes ?: 30) }
+    var statusTag by rememberSaveable { mutableStateOf(initial?.statusTag ?: "") }
+    val notificationLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
     var note by rememberSaveable { mutableStateOf(initial?.note ?: "") }
     var pasteText by rememberSaveable { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
@@ -257,12 +268,15 @@ fun AgendaEditorDialog(
             (initial?.endDate ?: (initial?.date ?: defaultDate)).toEpochDay().toString(),
             initial?.startTime ?: "", initial?.endTime ?: "",
             initial?.location ?: "", initial?.note ?: "",
+            (initial?.followGlobalReminder ?: true).toString(), (initial?.notifyEnabled ?: true).toString(),
+            (initial?.alarmEnabled ?: false).toString(), (initial?.reminderLeadMinutes ?: 30).toString(), initial?.statusTag ?: "",
         )
     }
     fun dirtyNow(): Boolean = listOf(
         title, type, colorArgb.toString(), isLong.toString(), repeatRule,
         startDateEpoch.toString(), endDateEpoch.toString(),
         startTime, endTime, location, note,
+        followReminder.toString(), notifyEnabled.toString(), alarmEnabled.toString(), leadMinutes.toString(), statusTag,
     ) != initialSnapshot
 
     AlertDialog(
@@ -541,6 +555,10 @@ fun AgendaEditorDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                LocationSuggestions(onPick = { location = it })
+                StatusTagPicker(statusTag) { statusTag = it }
+                ReminderOptions(followReminder, notifyEnabled, alarmEnabled, leadMinutes,
+                    { followReminder = it }, { notifyEnabled = it }, { alarmEnabled = it }, { leadMinutes = it })
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -585,6 +603,13 @@ fun AgendaEditorDialog(
                         return@TextButton
                     }
                 }
+                if (!followReminder && (notifyEnabled || alarmEnabled) && !com.kstudio.agenda.model.FuzzyTime.isPrecise(startTime)) {
+                    error = t.reminderNeedsTime
+                    return@TextButton
+                }
+                if ((!followReminder && (notifyEnabled || alarmEnabled)) && !com.kstudio.agenda.notif.Notifier.hasPermission(aiContext) && android.os.Build.VERSION.SDK_INT >= 33) {
+                    notificationLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
                 val base = initial ?: AgendaEvent(
                     id = UUID.randomUUID().toString(),
                     title = titleText,
@@ -610,6 +635,11 @@ fun AgendaEditorDialog(
                         colorArgb = colorArgb,
                         isPlan = initial?.isPlan ?: asPlan,
                         repeatRule = if (isLong) "" else repeatRule,
+                        followGlobalReminder = followReminder,
+                        notifyEnabled = notifyEnabled,
+                        alarmEnabled = alarmEnabled,
+                        reminderLeadMinutes = leadMinutes,
+                        statusTag = statusTag,
                     )
                 )
             }) { Text(t.save) }

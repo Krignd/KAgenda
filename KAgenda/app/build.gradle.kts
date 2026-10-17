@@ -67,9 +67,9 @@ android {
         // - 修订版：正式版之后用户又发现需要改的地方 → 版本号后加 `(revN)`，如 `2026.9 v2.0.8(rev1)`
         //   注意：(revN) 只接在版本号后，**不叠加在 (preN) 之后**；预览阶段自己发现的修复留在同一个 (preN) 里
         // - versionCode 只增不减：2026.10 预览版已用到 20261003（v1(pre3)），
-        //   正式版 20261004（v1）→ 修订版继续 +1 → 20261005
-        versionCode = 20261005
-        versionName = "2026.10 v1(rev1)"
+        //   正式版 20261004（v1）→ 修订版 20261005 → v1.1 继续 +1。
+        versionCode = 20261006
+        versionName = "2026.10 v1.1"
         // WebView 相关无 NDK 需求
     }
 
@@ -100,6 +100,13 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+    }
+
+    testOptions {
+        unitTests.all {
+            it.systemProperty("kagenda.assets", project.file("src/main/assets").absolutePath)
+            it.systemProperty("kagenda.runners", project.layout.buildDirectory.dir("reports/warehouse-runners").get().asFile.absolutePath)
+        }
     }
 
     buildFeatures {
@@ -138,4 +145,5 @@ dependencies {
 
     // 单元测试（解析器等纯 JVM 逻辑）
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }

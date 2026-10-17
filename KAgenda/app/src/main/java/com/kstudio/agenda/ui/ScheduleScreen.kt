@@ -90,7 +90,7 @@ fun ScheduleScreen(vm: AppViewModel) {
                 )
             }
         }
-        // 课程表模式（默认勾选）：整行可点（含文字），点按即切换
+        // 课程表模式（默认不勾选）：整行可点（含文字），点按即切换
         Row(
             modifier = Modifier
                 .fillMaxWidth()

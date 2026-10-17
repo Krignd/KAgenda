@@ -73,7 +73,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 供 MainActivity 绑定无界面 WebView 宿主 */
     val engine: WebScheduleEngine = repo.engine
 
-    val semester: StateFlow<SemesterSchedule?> = repo.semester
+    val semester: StateFlow<SemesterSchedule?> = combine(repo.semester, HolidayTable.revision) { sem, revision ->
+        sem?.copy(calendarRevision = revision)
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val syncState: StateFlow<SyncUi> = repo.sync
 
     /** 当前查看的教学周（哨兵 MIN_VALUE 表示未指定，自动选择当前教学周） */
@@ -82,7 +84,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 当前查看的周课表（由学期数据合成，供日/周视图与导出复用） */
     val weekSchedule: StateFlow<WeekSchedule?> =
-        combine(repo.semester, _selectedWeekNo) { sem, selected ->
+        combine(semester, _selectedWeekNo) { sem, selected ->
             sem?.let { it.week(resolveWeek(it, selected)) }
         }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -324,7 +326,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun syncNow() = repo.syncNow()
+    fun syncNow() {
+        val school = Schools.of(settings.value.schoolId)
+        if (school.warehouseId.isNotBlank()) {
+            getApplication<Application>().startActivity(android.content.Intent(getApplication(), WarehouseImportActivity::class.java)
+                .putExtra("schoolId", school.id).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        } else repo.syncNow()
+    }
 
     // 【已隐藏保留】网页登录返回回调：入口隐藏后暂无入口触发，代码保留未删除（恢复入口即可用）
     fun onWebLoginFinished(loggedIn: Boolean) {
@@ -336,6 +344,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveAccountAndSync(studentId: String, password: String?) {
+        if (Schools.of(settings.value.schoolId).warehouseId.isNotBlank()) { syncNow(); return }
         val id = studentId.trim()
         if (id.isBlank()) {
             message(t.msgNeedStudentId)
@@ -551,7 +560,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                             userPrompt = AiSkills.assistantUserPrompt(
                                 asked,
                                 LocalDate.now(),
-                                AiAssistant.contextLines(agenda.value),
+                                AiAssistant.contextLines(agenda.value, asked),
                                 settings.value.profileText,
                             ),
                         )
@@ -632,7 +641,11 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
             result.getOrNull()?.let { school ->
+                ExtraCoursesStore.ensureLoaded(getApplication())
                 SettingsStore.setSchool(getApplication(), school.id)
+                Schools.setCurrent(school.id)
+                _selectedWeekNo.value = Int.MIN_VALUE
+                repo.reloadFromCache()
                 message(t.adapterAdded(school.name))
             } ?: message(t.adapterInvalid(result.exceptionOrNull()?.message ?: "JSON"))
         }
@@ -642,14 +655,14 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun setSchool(id: String) {
         viewModelScope.launch {
             val previous = settings.value.schoolId
+            com.kstudio.agenda.data.ExtraCoursesStore.ensureLoaded(getApplication())
             SettingsStore.setSchool(getApplication(), id)
             Schools.setCurrent(id)
             if (previous != id) {
-                // 切换学校：旧学校的课表缓存/学期锚点都不再适用
-                // （缓存里有学校归属校验，不清理就只会读不到；锚点需主动清，否则会显示错误的教学周）
-                SettingsStore.clearSemesterAnchor(getApplication())
+                // 学校配置已原子切换；展示重新读取该校缓存。
                 _selectedWeekNo.value = Int.MIN_VALUE
-                if (settings.value.hasPassword && settings.value.autoRefresh) {
+                repo.reloadFromCache()
+                if (Schools.of(id).warehouseId.isBlank() && settings.value.hasPassword && settings.value.autoRefresh) {
                     repo.syncNow(silent = true)
                 }
             }
@@ -788,7 +801,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      *
      * @param applyAll true=修改全部同一课程；false=仅修改这一次
      */
-    fun saveCourseEdit(source: Course, edited: Course, applyAll: Boolean) {
+    fun saveCourseEdit(source: Course, edited: Course, applyAll: Boolean, weekdays: Set<Int> = setOf(edited.dayOfWeek)) {
         if (edited.title.isBlank()) return
         val app = getApplication<Application>()
         viewModelScope.launch {
@@ -801,8 +814,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     } else {
                         ExtraCoursesStore.replace(app, source.id, edited)
                     }
+                    ExtraCoursesStore.addAll(app, weekdays.filter { it != edited.dayOfWeek }.map { edited.copy(dayOfWeek = it) }, importedAnchor.value)
                 } else {
-                    CourseEditStore.save(app, source, edited, applyAll)
+                    CourseEditStore.save(app, source, edited, applyAll, weekdays)
                 }
             }
             // 导入课程走导入链路刷新；教务课程走课程修改链路（重排提醒 + 刷新小组件/常驻通知）
@@ -1016,10 +1030,49 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** 仅还原课程修改（不联网）：把全部课程恢复为教务系统存档的原样 */
-    fun restoreCourseEdits() {
+    val holidayFetching = MutableStateFlow(false)
+    val holidayStatus = MutableStateFlow("")
+    fun fetchOfficialHolidays(year: Int, url: String) {
+        if (holidayFetching.value) return
+        holidayFetching.value = true
+        holidayStatus.value = ""
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { CourseEditStore.clear(getApplication()) }
+            try {
+                val source = com.kstudio.agenda.data.OfficialHolidayStore.fetch(getApplication(), year, url)
+                repo.onCourseEditsChanged()
+                holidayStatus.value = t.holidayDone + " · " + source
+                message(t.holidayDone)
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                holidayStatus.value = t.holidayFailed
+                message(t.holidayFailed)
+            } finally { holidayFetching.value = false }
+        }
+    }
+    fun saveSchoolLocations(names: List<String>) {
+        val schoolId = settings.value.schoolId
+        viewModelScope.launch(Dispatchers.IO) {
+            com.kstudio.agenda.data.SchoolLocationsStore.save(getApplication(), schoolId, names)
+        }
+    }
+    fun setGlobalAlarm(enabled: Boolean) {
+        viewModelScope.launch {
+            SettingsStore.setAlarmEnabled(getApplication(), enabled)
+            repo.rescheduleReminders()
+        }
+    }
+    fun applyGlobalReminders() {
+        viewModelScope.launch(Dispatchers.IO) {
+            AgendaStore.upsertAll(getApplication(), agenda.value.map { it.copy(followGlobalReminder = true) })
+            repo.rescheduleReminders()
+            message(t.followGlobal)
+        }
+    }
+
+    /** 仅还原课程修改（不联网）：把全部课程恢复为教务系统存档的原样 */
+    fun restoreCourseEdits(keys: Set<String>) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { CourseEditStore.removeSelected(getApplication(), keys) }
             repo.dismissEditConflicts()
             repo.onCourseEditsChanged()
             message(t.msgCourseEditsRestored)
@@ -1221,8 +1274,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     /** 月课表导出（包含当月课程与日程；日程完整显示且不含计划） */
     fun saveMonthImage(monthStart: LocalDate) {
         val monthEnd = monthStart.plusDays(monthStart.lengthOfMonth().toLong() - 1)
-        val events = agenda.value.filter { ev ->
-            !ev.isPlan && !(ev.endDate.isBefore(monthStart) || ev.date.isAfter(monthEnd))
+        val events = if (settings.value.timetableMode) emptyList() else agenda.value.filter { ev ->
+            !ev.isPlan && (0 until monthStart.lengthOfMonth()).any { ev.occursOn(monthStart.plusDays(it.toLong())) }
         }
         val context = getApplication<Application>()
         withExportPermission {

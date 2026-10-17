@@ -130,6 +130,9 @@ object LocalSmartParser {
                         location = p.location,
                         note = block.trim().take(400),
                         repeat = repeat,
+                        alarm = if (Regex("闹钟|闹铃|叫醒|alarm", RegexOption.IGNORE_CASE).containsMatchIn(block))
+                            !Regex("不要.*(闹钟|闹铃)|取消.*(闹钟|闹铃)|no alarm", RegexOption.IGNORE_CASE).containsMatchIn(block) else null,
+                        leadMinutes = if (Regex("闹钟|闹铃|叫醒|alarm", RegexOption.IGNORE_CASE).containsMatchIn(block)) 0 else null,
                     )
                 )
             )

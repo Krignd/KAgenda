@@ -1,0 +1,4 @@
+# Fixed upstream assets retain their original bytes and formatting.
+KAgenda/app/src/main/assets/shiguang/scripts/** -text -whitespace
+KAgenda/app/src/main/assets/licenses/** -text -whitespace
+KAgenda/app/src/main/assets/catalog/pinyin*.json -text

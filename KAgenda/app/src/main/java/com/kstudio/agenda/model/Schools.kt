@@ -44,6 +44,11 @@ data class School(
     val scheduleUrl: String? = null,
     /** 是否用户添加的自定义学校 */
     val custom: Boolean = false,
+    val warehouseId: String = "",
+    val province: String = "",
+    val level: String = "",
+    val undergraduateOnly: Boolean = false,
+    val logoRes: Int = 0,
 ) {
     /** 教务系统主机名（用于 CAS 回跳判定） */
     val host: String get() = homeUrl.substringAfter("://").substringBefore("/")
@@ -94,6 +99,8 @@ object Schools {
     val ALL: List<School> = listOf(
         School(
             id = "buaa",
+            undergraduateOnly = true,
+            logoRes = com.kstudio.agenda.R.drawable.school_buaa,
             name = "北京航空航天大学",
             ssoUrl = "https://sso.buaa.edu.cn/login",
             homeUrl = "https://byxt.buaa.edu.cn/jwapp/sys/homeapp/home/index.html#/",
@@ -170,6 +177,8 @@ object Schools {
          */
         School(
             id = "ujs",
+            undergraduateOnly = true,
+            logoRes = com.kstudio.agenda.R.drawable.school_ujs,
             name = "江苏大学",
             ssoUrl = "https://webvpn.ujs.edu.cn/login",
             // 首屏：统一身份认证 CAS 登录页（一卡通账号的标准入口，
@@ -194,7 +203,11 @@ object Schools {
     fun of(id: String?): School = all().firstOrNull { it.id == id } ?: all().first()
 
     /** 内置 + 用户自定义（后者在前？否——保持内置在前，自定义追加到末尾） */
-    fun all(): List<School> = ALL + customList
+    @Volatile private var catalog: List<School> = emptyList()
+    fun loadCatalog(context: Context) {
+        catalog = runCatching { com.kstudio.agenda.data.SchoolCatalog.load(context, ALL) }.getOrDefault(ALL)
+    }
+    fun all(): List<School> = catalog.ifEmpty { ALL } + customList
 
     // ------------------------------------------------------------ 自定义学校（适配器）
 

@@ -29,6 +29,7 @@ data class AppSettings(
     val leadMinutes: Int = 30,
     /** 课前提醒开关开启时，是否也为自己添加的日程/计划（有精确开始时间）提醒；默认开 */
     val remindAgenda: Boolean = true,
+    val alarmEnabled: Boolean = false,
     val autoRefresh: Boolean = true,
     /** 是否自动检查更新（打开应用 / 进入「关于&反馈」时静默检查；默认开） */
     val autoCheckUpdate: Boolean = true,
@@ -36,7 +37,7 @@ data class AppSettings(
     val semesterLabel: String = "",
     val anchorEpochDay: Long? = null,
     /** 课程表模式（日程表页顶部勾选框；true=按节次等行显示） */
-    val timetableMode: Boolean = true,
+    val timetableMode: Boolean = false,
     /** 周视图默认显示天数：5=周一到周五；7=周一到周日（日程与计划周视图共用） */
     val weekDays: Int = 5,
     /** 应用语言：""=跟随系统；"zh"/"fr"/"en" */
@@ -145,6 +146,7 @@ object SettingsStore {
     private val KEY_PASSWORD_ENC = stringPreferencesKey("password_enc")
     private val KEY_REMINDER_ENABLED = booleanPreferencesKey("reminder_enabled")
     private val KEY_LEAD_MINUTES = intPreferencesKey("lead_minutes")
+    private val KEY_ALARM_ENABLED = booleanPreferencesKey("alarm_enabled")
     private val KEY_REMIND_AGENDA = booleanPreferencesKey("remind_agenda")
     private val KEY_AUTO_REFRESH = booleanPreferencesKey("auto_refresh")
     private val KEY_AUTO_CHECK_UPDATE = booleanPreferencesKey("auto_check_update")
@@ -183,14 +185,15 @@ object SettingsStore {
             studentId = p[KEY_STUDENT_ID] ?: "",
             hasPassword = !p[KEY_PASSWORD_ENC].isNullOrEmpty(),
             reminderEnabled = p[KEY_REMINDER_ENABLED] ?: false,
-            leadMinutes = p[KEY_LEAD_MINUTES] ?: 30,
+            leadMinutes = (p[KEY_LEAD_MINUTES] ?: 30).coerceIn(0, 120),
             remindAgenda = p[KEY_REMIND_AGENDA] ?: true,
+            alarmEnabled = p[KEY_ALARM_ENABLED] ?: false,
             autoRefresh = p[KEY_AUTO_REFRESH] ?: true,
             autoCheckUpdate = p[KEY_AUTO_CHECK_UPDATE] ?: true,
             lastSyncAtMillis = p[KEY_LAST_SYNC] ?: 0L,
             semesterLabel = p[KEY_SEMESTER] ?: "",
             anchorEpochDay = p[KEY_ANCHOR],
-            timetableMode = p[KEY_TIMETABLE_MODE] ?: true,
+            timetableMode = p[KEY_TIMETABLE_MODE] ?: false,
             weekDays = if ((p[KEY_WEEK_DAYS] ?: 5) == 7) 7 else 5,
             appLanguage = p[KEY_APP_LANGUAGE] ?: "",
             schoolId = p[KEY_SCHOOL] ?: "buaa",
@@ -220,6 +223,10 @@ object SettingsStore {
             profileGrade = p[KEY_PROFILE_GRADE] ?: "",
             profileClazz = p[KEY_PROFILE_CLAZZ] ?: "",
         )
+    }
+
+    suspend fun setAlarmEnabled(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_ALARM_ENABLED] = enabled }
     }
 
     suspend fun read(context: Context): AppSettings = settingsFlow(context).first()
@@ -343,8 +350,29 @@ object SettingsStore {
         }
     }
 
+    // 与学校一起原子切换学期/作息，避免社区导入的节次时间影响其它学校。
+    private val KEY_SCHOOL_PROFILES = stringPreferencesKey("school_profiles")
     suspend fun setSchool(context: Context, id: String) {
-        context.settingsDataStore.edit { it[KEY_SCHOOL] = id }
+        context.settingsDataStore.edit { p ->
+            val previous = p[KEY_SCHOOL] ?: com.kstudio.agenda.model.Schools.DEFAULT_ID
+            if (previous == id) return@edit
+            val profiles = runCatching { org.json.JSONObject(p[KEY_SCHOOL_PROFILES] ?: "{}") }.getOrDefault(org.json.JSONObject())
+            profiles.put(previous, org.json.JSONObject().apply {
+                put("times", p[KEY_PERIOD_TIMES] ?: "")
+                put("semester", p[KEY_SEMESTER] ?: "")
+                p[KEY_ANCHOR]?.let { put("anchor", it) }
+                put("lastSync", p[KEY_LAST_SYNC] ?: 0L)
+            })
+            val target = profiles.optJSONObject(id)
+            val raw = target?.optString("times").orEmpty()
+            if (raw.isBlank()) p.remove(KEY_PERIOD_TIMES) else p[KEY_PERIOD_TIMES] = raw
+            val semester = target?.optString("semester").orEmpty()
+            if (semester.isBlank()) p.remove(KEY_SEMESTER) else p[KEY_SEMESTER] = semester
+            if (target?.has("anchor") == true) p[KEY_ANCHOR] = target.getLong("anchor") else p.remove(KEY_ANCHOR)
+            p[KEY_LAST_SYNC] = target?.optLong("lastSync") ?: 0L
+            p[KEY_SCHOOL_PROFILES] = profiles.toString()
+            p[KEY_SCHOOL] = id
+        }
     }
 
     /** 保存 AI Key（null=清除；加密存储，与本机账密同一机制）。返回 false 表示加密失败（未保存） */
@@ -477,6 +505,7 @@ object SettingsStore {
         put(KEY_REMINDER_ENABLED, "reminder_enabled")
         put(KEY_LEAD_MINUTES, "lead_minutes")
         put(KEY_REMIND_AGENDA, "remind_agenda")
+        put(KEY_ALARM_ENABLED, "alarm_enabled")
         put(KEY_AUTO_REFRESH, "auto_refresh")
         put(KEY_AUTO_CHECK_UPDATE, "auto_check_update")
         put(KEY_LAST_SYNC, "last_sync_at")
@@ -486,6 +515,7 @@ object SettingsStore {
         put(KEY_WEEK_DAYS, "week_days")
         put(KEY_APP_LANGUAGE, "app_language")
         put(KEY_SCHOOL, "school_id")
+        put(KEY_SCHOOL_PROFILES, "school_profiles")
         put(KEY_AI_KEY_ENC, "ai_key_enc")
         put(KEY_AI_MODEL, "ai_model")
         put(KEY_USE_DEV_AI_KEY, "use_dev_ai_key")
@@ -518,6 +548,7 @@ object SettingsStore {
      */
     suspend fun importPreferences(context: Context, prefs: Map<String, Any>) {
         if (prefs.isEmpty()) return
+        require(prefs.all { (key, value) -> BackupSettings.validate(key, value) }) { "Invalid backup settings" }
         context.settingsDataStore.edit { p ->
             prefs.forEach { (key, value) ->
                 when (value) {

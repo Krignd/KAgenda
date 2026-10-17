@@ -1,0 +1,30 @@
+<?xml version='1.0' encoding='utf-8'?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@drawable/widget_bg" android:gravity="center_vertical" android:orientation="horizontal" android:paddingStart="14dp" android:paddingEnd="14dp" android:paddingTop="6dp" android:paddingBottom="6dp">
+
+    <ImageView android:id="@+id/widget_colorbar" android:layout_width="4dp" android:layout_height="match_parent" android:layout_marginEnd="10dp" android:scaleType="fitXY" android:src="@drawable/widget_colorbar" android:importantForAccessibility="no" />
+
+    <ImageView android:id="@+id/widget_icon" android:layout_width="22dp" android:layout_height="22dp" android:layout_marginEnd="8dp" android:src="@drawable/ic_type_course" android:importantForAccessibility="no" />
+
+    <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="3" android:orientation="vertical">
+
+        <TextView android:id="@+id/widget_title" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="#64748B" android:textSize="10sp" android:visibility="gone" android:text="@string/widget_sample_date" />
+
+        <TextView android:id="@+id/widget_name" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="#0F172A" android:textSize="14sp" android:textStyle="bold" android:text="@string/feature_preview_math" />
+
+        <TextView android:id="@+id/widget_info" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="#64748B" android:textSize="10sp" android:text="@string/widget_sample_time" />
+
+
+        <TextView android:id="@+id/widget_room" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="#64748B" android:textSize="10sp" android:text="@string/widget_sample_room" />
+
+
+        <TextView android:id="@+id/widget_teacher" android:layout_width="match_parent" android:layout_height="wrap_content" android:ellipsize="end" android:maxLines="1" android:textColor="#64748B" android:textSize="10sp" android:text="@string/feature_preview_teacher" />
+    </LinearLayout>
+
+
+    <LinearLayout android:layout_width="0dp" android:layout_weight="2" android:layout_height="wrap_content" android:gravity="end" android:orientation="vertical">
+
+        <TextView android:id="@+id/widget_remaining" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="10dp" android:maxLines="1" android:textColor="#1D4ED8" android:textSize="16sp" android:textStyle="bold" android:text="@string/feature_preview_remaining" />
+
+        <TextView android:id="@+id/widget_next2" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_gravity="end" android:layout_marginStart="10dp" android:layout_marginTop="2dp" android:ellipsize="end" android:maxLines="1" android:textColor="#64748B" android:textSize="10sp" android:visibility="visible" android:text="@string/feature_preview_next" />
+    </LinearLayout>
+</LinearLayout>

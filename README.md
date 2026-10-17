@@ -25,9 +25,10 @@ almost entirely through natural-language conversations with an AI coding assista
 - 🗓️ **本地日程与计划**：类型、颜色、跨天长日程、日历选择器；日历视图一键导出课表图片
 - ✨ **AI 助手**：粘贴一段文字自动拆解为多条日程 / 计划，也可一句话修改、删除已有条目；支持模糊时间（如“明天下午”）（默认可直接使用内置 Key，模型固定 deepseek-flash；也可切换自备 Key）
 - 🫧 **系统悬浮球**：显示在其他应用上层，拖动自动吸附屏幕侧边，原地唤起 AI 输入框
-- ⏰ **提醒与桌面小组件**：课前提醒（精确闹钟 + 降级兜底）、四尺寸桌面小组件、锁屏常驻状态通知
+- ⏰ **提醒与桌面小组件**：课前提醒（精确闹钟 + 降级兜底）、多尺寸桌面小组件（含今日与周概览）、锁屏常驻状态通知
 - 🌏 **三语言**：简体中文 / English / Français
-- 🔐 **隐私**：本地优先、无账号体系、不上传任何个人数据；AI 识别仅将你输入的文本发送至 DeepSeek 接口（默认内置 Key，可切换自备 Key）
+- 🏫 **学校目录与社区导入**：全屏搜索教育部内地高校目录，支持拼音、首字母搜索和右侧 A–Z 点按/滑动索引；右侧区分独立适配、拾光仓库及未支持。社区脚本先手动登录、提取，再核对课程与作息后确认导入，各校实际可用性需账号验证
+- 🔐 **隐私**：本地优先、无账号体系、不上传任何个人数据；AI 识别会将输入文本及现有日程的必要字段发送至 DeepSeek 接口，以便准确匹配修改目标（默认内置 Key，可切换自备 Key）
 
 ## 技术栈 / Tech Stack
 
@@ -41,7 +42,7 @@ cd KAgenda
 ./gradlew :app:assembleRelease   # Windows: .\gradlew.bat :app:assembleRelease
 ```
 
-要求 JDK 17。Release 包使用 debug 签名，可直接安装体验。
+要求 JDK 17。Release 优先使用本机配置的正式签名；未配置时回退 debug 签名。
 
 ## 自定义学校适配 / Custom School Adapter
 
@@ -71,3 +72,5 @@ cd KAgenda
 本项目采用 **MIT License** 开源，详见仓库根目录的 [`LICENSE`](LICENSE)。
 
 This project is licensed under the **MIT License** — see the [`LICENSE`](LICENSE) file for details.
+
+Bundled community scripts and emblem fonts retain their original licenses and author credits; see [third-party notices](THIRD_PARTY_NOTICES.md).

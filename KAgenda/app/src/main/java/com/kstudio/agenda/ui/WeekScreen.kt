@@ -9,6 +9,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -110,6 +112,7 @@ fun WeekScreen(
     val agendaAll by vm.agenda.collectAsState()
     val selDate by vm.selectedDate.collectAsState()
     val settings by vm.settings.collectAsState()
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
     var selected by remember { mutableStateOf<Course?>(null) }
     // 正在修改的课程（详情 → 「修改课程」）
@@ -319,19 +322,18 @@ fun WeekScreen(
         CourseEditDialog(
             initial = course,
             sourceDate = courseDate,
-            dayCourseCount = vm.coursesRawOnDate(courseDate).size,
+            dayCourses = vm.coursesRawOnDate(courseDate),
             onDismiss = { editingCourse = null },
-            onSave = { edited, applyAll ->
-                vm.saveCourseEdit(course, edited, applyAll)
+            onSave = { edited, applyAll, weekdays ->
+                vm.saveCourseEdit(course, edited, applyAll, weekdays)
                 editingCourse = null
             },
             onDelete = { weeks, applyAll ->
                 vm.deleteCourse(course, weeks, applyAll)
                 editingCourse = null
             },
-            onMove = { wholeDay, target ->
-                val day = vm.coursesRawOnDate(courseDate)
-                vm.moveCourses(courseDate, if (wholeDay) day else listOf(course), target)
+            onMove = { courses, target ->
+                vm.moveCourses(courseDate, courses, target)
                 editingCourse = null
             },
             onNoChange = {
@@ -401,13 +403,14 @@ private fun WeekHeaderRow(
     onLongPressDate: ((LocalDate) -> Unit)? = null,
 ) {
     val today = LocalDate.now()
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
     Row {
         Spacer(Modifier.width(timeColWidth))
         for (d in 1..7) {
             val date = week.dateOfWeekday(d)
             val isToday = date == today
-            val holiday = HolidayTable.nameOf(date)
+            val holiday = HolidayTable.nameOf(date)?.let(t::holidayLabel) ?: if (HolidayTable.isWorkday(date)) t.workdayMark else null
             val isWeekend = date.dayOfWeek.value >= 6
             val mainColor = when {
                 isToday -> MaterialTheme.colorScheme.primary
@@ -823,7 +826,8 @@ private fun TimelineDayColumn(
     }
     val restColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f)
 
-    Box(Modifier.width(width).height(height)) {
+    val placed = remember(ranges) { com.kstudio.agenda.model.TimelineLayout.place(ranges.map { (c, start, end) -> com.kstudio.agenda.model.TimelineLayout.Item(c, start, end) }) }
+    Box(Modifier.width(width).height(height).clipToBounds()) {
         // 休息时段底面：Canvas 一次绘制，只有较高的时段保留起止时间文字
         Canvas(Modifier.matchParentSize()) {
             val insetX = 2.dp.toPx()
@@ -855,21 +859,24 @@ private fun TimelineDayColumn(
                         text = timelineClock(r.start) + "-" + timelineClock(r.end),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis,
                     )
                 }
             }
         }
         // 课程块（高度与起止时间成正比；超出显示范围的会被裁剪）
-        for ((course, cs, ce) in ranges) {
+        for (positioned in placed) {
+            val (course, cs, ce) = positioned.item
+            val laneWidth = width / positioned.columns.toFloat()
             val mins = ce - cs
             val blockH = (mins * MINUTE_SCALE).dp
             val color = Color(CoursePalette.colorFor(course))
             val flashing = flashTitle.isNotBlank() && course.title.trim() == flashTitle
             val pulse = rememberFlashPulse(flashing)
-            Box(
+            BoxWithConstraints(
                 Modifier
-                    .offset(y = ((cs - startMin) * MINUTE_SCALE).dp)
-                    .fillMaxWidth()
+                    .offset(x = laneWidth * positioned.column, y = ((cs - startMin) * MINUTE_SCALE).dp)
+                    .width(laneWidth)
                     .height(blockH)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(10.dp))
@@ -877,34 +884,18 @@ private fun TimelineDayColumn(
                     .clickable { onSelect(course) }
                     .padding(5.dp)
             ) {
-                Column {
-                    Text(
-                        text = markedTitle(course),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = if (mins < 50) 1 else if (mins < 100) 3 else 5,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    if (blockH >= 46.dp && course.room.isNotBlank()) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = course.room,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    if (blockH >= 62.dp) {
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = course.timeRange,
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                            color = color.copy(alpha = 0.95f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                val density = androidx.compose.ui.platform.LocalDensity.current
+                val lineHeight = with(density) { 14.sp.toDp() }
+                val showTime = maxHeight >= lineHeight * 2
+                val showRoom = course.room.isNotBlank() && maxHeight >= lineHeight * 4
+                val reserved = (if (showTime) lineHeight else 0.dp) + (if (showRoom) lineHeight else 0.dp)
+                val titleLines = ((maxHeight - reserved) / lineHeight).toInt().coerceIn(1, 8)
+                Column(Modifier.fillMaxSize().clipToBounds()) {
+                    Text(markedTitle(course), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
+                        fontWeight = FontWeight.SemiBold, maxLines = titleLines, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false))
+                    if (showRoom) Text(course.room, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (showTime) Text(course.timeRange, fontSize = 9.sp, lineHeight = 12.sp, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

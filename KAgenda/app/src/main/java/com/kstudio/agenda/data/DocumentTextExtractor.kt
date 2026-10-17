@@ -69,7 +69,12 @@ object DocumentTextExtractor {
         val ext = extensionOf(name)
         val bytes = runCatching { readAll(context, uri) }
             .getOrElse { return Result.failure(it) }
+        return extractBytes(bytes, ext, mime)
+    }
+
+    internal fun extractBytes(bytes: ByteArray, ext: String, mime: String? = null): Result<String> {
         return runCatching {
+            require(bytes.size <= MAX_BYTES)
             when {
                 ext in TEXT_EXT || (ext.isEmpty() && mime.orEmpty().startsWith("text/")) ->
                     decodeText(bytes, ext)
@@ -101,20 +106,7 @@ object DocumentTextExtractor {
         val input: InputStream = context.contentResolver.openInputStream(uri)
             ?: error("无法打开文档")
         input.use { ins ->
-            val out = ByteArrayOutputStream()
-            val buf = ByteArray(16 * 1024)
-            var total = 0
-            while (true) {
-                val n = ins.read(buf)
-                if (n <= 0) break
-                total += n
-                if (total > MAX_BYTES) {
-                    out.write(buf, 0, n - (total - MAX_BYTES))
-                    break
-                }
-                out.write(buf, 0, n)
-            }
-            return out.toByteArray()
+            return BoundedInput.read(ins, MAX_BYTES)
         }
     }
 
@@ -143,9 +135,8 @@ object DocumentTextExtractor {
     }
 
     private fun stripXmlTags(xml: String): String {
-        var s = xml.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
-            .replace("&quot;", "\"").replace("&apos;", "'")
-        s = s.replace(Regex("<[^>]+>"), "")
+        // 先去标签再解实体，否则正文里的 &lt;文字&gt; 会被误删。
+        val s = unescapeXml(xml.replace(Regex("<[^>]+>"), ""))
         return s.replace(Regex("[ \\t]{2,}"), " ").replace(Regex("\\n{3,}"), "\n\n").trim()
     }
 
@@ -157,8 +148,13 @@ object DocumentTextExtractor {
     ): String {
         val sb = StringBuilder()
         ZipInputStream(bytes.inputStream()).use { zip ->
+            var remaining = MAX_BYTES
+            var entries = 0
             var entry = zip.nextEntry
             while (entry != null) {
+                require(++entries <= 2048)
+                val expanded = BoundedInput.read(zip, remaining)
+                remaining -= expanded.size
                 val name = entry.name
                 val wanted = when {
                     entryNames != null -> name in entryNames
@@ -166,7 +162,7 @@ object DocumentTextExtractor {
                     else -> false
                 }
                 if (wanted && !entry.isDirectory) {
-                    val text = transform(String(readEntry(zip), Charsets.UTF_8))
+                    val text = transform(String(expanded, Charsets.UTF_8))
                     if (text.isNotBlank()) {
                         sb.append(text).append('\n')
                     }
@@ -184,11 +180,16 @@ object DocumentTextExtractor {
         var shared = listOf<String>()
         val sheets = LinkedHashMap<String, String>()
         ZipInputStream(bytes.inputStream()).use { zip ->
+            var remaining = MAX_BYTES
+            var entries = 0
             var entry = zip.nextEntry
             while (entry != null) {
+                require(++entries <= 2048)
+                val expanded = BoundedInput.read(zip, remaining)
+                remaining -= expanded.size
                 val name = entry.name
                 if (!entry.isDirectory && name.endsWith(".xml")) {
-                    val content = String(readEntry(zip), Charsets.UTF_8)
+                    val content = String(expanded, Charsets.UTF_8)
                     when {
                         name == "xl/sharedStrings.xml" -> {
                             shared = Regex("<si>(.*?)</si>", RegexOption.DOT_MATCHES_ALL)
@@ -202,7 +203,7 @@ object DocumentTextExtractor {
                                 .toList()
                         }
                         name.startsWith("xl/worksheets/sheet") && name.endsWith(".xml") ->
-                            sheets[name] = parseSheet(content, shared)
+                            sheets[name] = content
                     }
                 }
                 zip.closeEntry()
@@ -210,7 +211,8 @@ object DocumentTextExtractor {
             }
         }
         if (sheets.isEmpty()) error("文档中未找到可读取的表格")
-        return sheets.values.filter { it.isNotBlank() }.joinToString("\n\n")
+        // ZIP 条目顺序不固定，共享字符串可能在工作表之后。
+        return sheets.values.map { parseSheet(it, shared) }.filter { it.isNotBlank() }.joinToString("\n\n")
     }
 
     /** 解析一个 worksheet：/row/c 的 r 属性决定列，t="s" 引用共享字符串 */
@@ -233,7 +235,7 @@ object DocumentTextExtractor {
                         .findAll(body).joinToString("") { it.groupValues[1] }
                     else -> Regex("<v>(.*?)</v>", RegexOption.DOT_MATCHES_ALL).find(body)?.groupValues?.get(1).orEmpty()
                 }
-                if (raw.isNotBlank()) cells.add(col to unescapeXml(raw))
+                if (raw.isNotBlank()) cells.add(col to if (type == "s") raw else unescapeXml(raw))
             }
             if (cells.isNotEmpty()) {
                 val maxCol = cells.maxOf { it.first }
@@ -249,24 +251,16 @@ object DocumentTextExtractor {
     private fun columnIndex(ref: String): Int {
         if (ref.isEmpty()) return 0
         var n = 0
-        for (ch in ref) n = n * 26 + (ch - 'A' + 1)
+        for (ch in ref) {
+            n = n * 26 + (ch - 'A' + 1)
+            require(n in 1..16384) { "Invalid worksheet column" }
+        }
         return (n - 1).coerceAtLeast(0)
     }
 
     private fun unescapeXml(s: String): String =
         s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
             .replace("&apos;", "'").replace("&amp;", "&")
-
-    private fun readEntry(zip: ZipInputStream): ByteArray {
-        val out = ByteArrayOutputStream()
-        val buf = ByteArray(8192)
-        while (true) {
-            val n = zip.read(buf)
-            if (n <= 0) break
-            out.write(buf, 0, n)
-        }
-        return out.toByteArray()
-    }
 
     // ------------------------------------------------------------ PDF（尽力而为）
 
@@ -278,6 +272,7 @@ object DocumentTextExtractor {
     private fun extractPdf(bytes: ByteArray): String {
         val sb = StringBuilder()
         var cursor = 0
+        var remaining = MAX_BYTES
         while (true) {
             val s = indexOf(bytes, "stream", cursor)
             if (s < 0) break
@@ -289,9 +284,13 @@ object DocumentTextExtractor {
             var end = e
             while (end > start && (bytes[end - 1] == 10.toByte() || bytes[end - 1] == 13.toByte())) end--
             val chunk = bytes.copyOfRange(start, end)
-            val content = runCatching { inflate(chunk) }.getOrNull()
+            val content = try { inflate(chunk, remaining) }
+                catch (e: BoundedInput.TooLarge) { throw e }
+                catch (_: Exception) { null }
                 ?: chunk.takeIf { looksLikeContentStream(it) }
             if (content != null) {
+                if (content.size > remaining) throw BoundedInput.TooLarge()
+                remaining -= content.size
                 val text = pdfTextFromContent(String(content, Charsets.ISO_8859_1))
                 if (text.isNotBlank()) sb.append(text).append('\n')
             }
@@ -307,17 +306,17 @@ object DocumentTextExtractor {
         return s.contains(" Tj") || s.contains(" TJ") || s.contains("BT")
     }
 
-    private fun inflate(data: ByteArray): ByteArray {
+    private fun inflate(data: ByteArray, limit: Int): ByteArray {
         val inflater = Inflater()
         inflater.setInput(data)
         val out = ByteArrayOutputStream()
         val buf = ByteArray(16 * 1024)
-        while (!inflater.finished()) {
+        try { while (!inflater.finished()) {
             val n = runCatching { inflater.inflate(buf) }.getOrDefault(-1)
             if (n <= 0) break
+            if (n > limit - out.size()) throw BoundedInput.TooLarge()
             out.write(buf, 0, n)
-        }
-        inflater.end()
+        } } finally { inflater.end() }
         val result = out.toByteArray()
         if (result.isEmpty()) error("empty")
         return result

@@ -37,20 +37,24 @@ object ExtraCoursesStore {
 
     @Volatile
     private var loaded = false
+    @Volatile private var loadedSchool = ""
 
     fun ensureLoaded(context: Context) {
-        if (loaded) return
+        val school = com.kstudio.agenda.model.Schools.currentId
+        if (loaded && loadedSchool == school) return
         synchronized(this) {
-            if (loaded) return
-            loaded = true
+            if (loaded && loadedSchool == school) return
+            _anchorEpochDay.value = null
+            _courses.value = emptyList()
             runCatching {
-                val f = File(context.filesDir, FILE_NAME)
-                if (f.exists()) {
-                    val o = JSONObject(f.readText(Charsets.UTF_8))
+                SchoolFileScope.load(context.filesDir, FILE_NAME, school,
+                    allowUnowned = com.kstudio.agenda.model.Schools.currentKnown)?.let { o ->
                     _anchorEpochDay.value = if (o.has("anchorEpochDay")) o.optLong("anchorEpochDay") else null
                     _courses.value = parseCourses(o.optJSONArray("courses"))
                 }
             }.onFailure { AppLog.e("ExtraCourses", "导入课程读取失败", it) }
+            loadedSchool = school
+            loaded = com.kstudio.agenda.model.Schools.currentKnown
         }
     }
 
@@ -134,6 +138,7 @@ object ExtraCoursesStore {
                         teacher = edited.teacher,
                         room = edited.room,
                         weeksRaw = edited.weeksRaw,
+                        colorArgb = edited.colorArgb,
                     )
                 }
             }
@@ -146,8 +151,14 @@ object ExtraCoursesStore {
         synchronized(this) {
             _courses.value = emptyList()
             _anchorEpochDay.value = null
-            runCatching { File(context.filesDir, FILE_NAME).delete() }
+            runCatching { SchoolFileScope.clear(context.filesDir, FILE_NAME, com.kstudio.agenda.model.Schools.currentId) }
         }
+    }
+
+    fun clearAll(context: Context) {
+        clear(context)
+        File(context.filesDir, FILE_NAME).delete()
+        File(context.filesDir, "school_data").listFiles()?.filter { it.isDirectory }?.forEach { File(it, FILE_NAME).delete() }
     }
 
     /** 丢弃内存状态，下次 [ensureLoaded] 重新读盘（备份导入后使用） */
@@ -178,6 +189,7 @@ object ExtraCoursesStore {
                                     put("endPeriod", c.endPeriod)
                                     put("dayOfWeek", c.dayOfWeek)
                                     put("tag", c.tag)
+                                    put("colorArgb", c.colorArgb)
                                     if (c.extraInfo.isNotBlank()) put("extra", c.extraInfo)
                                 }
                             )
@@ -185,7 +197,7 @@ object ExtraCoursesStore {
                     },
                 )
             }
-            File(context.filesDir, FILE_NAME).writeText(o.toString(), Charsets.UTF_8)
+            SchoolFileScope.save(context.filesDir, FILE_NAME, com.kstudio.agenda.model.Schools.currentId, o)
         }.onFailure { AppLog.e("ExtraCourses", "导入课程写盘失败", it) }
     }
 
@@ -211,6 +223,7 @@ object ExtraCoursesStore {
                     dayOfWeek = day,
                     tag = o.optString("tag"),
                     extraInfo = o.optString("extra"),
+                    colorArgb = o.optInt("colorArgb", 0),
                 )
             )
         }
@@ -239,7 +252,8 @@ object ExtraCoursesStore {
                 fetchedAtMillis = System.currentTimeMillis(),
             )
         }
-        val targetWeeks = semester.weeks.keys.ifEmpty { (1..40).toSet() }
+        // 导入课程可能落在尚未抓取的周；不能只遍历教务缓存已有的周次。
+        val targetWeeks = semester.weeks.keys + (1..40).filter { w -> extra.any { it.occursInWeek(w) } }
         val weeks = LinkedHashMap<Int, List<Course>>(semester.weeks)
         for (w in targetWeeks) {
             val add = extra.filter { it.occursInWeek(w) }

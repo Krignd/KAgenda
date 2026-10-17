@@ -1,5 +1,7 @@
 package com.kstudio.agenda.ui
 
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -61,7 +63,9 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
     var rescheduleSource by remember { mutableStateOf<LocalDate?>(null) }
     val semester by vm.semester.collectAsState()
     val agendaAll by vm.agenda.collectAsState()
+    val settings by vm.settings.collectAsState()
     val selected by vm.selectedDate.collectAsState()
+    val calendarRevision by HolidayTable.revision.collectAsState()
     val t = LocalStrings.current
 
     // 当前显示的月份（进入本页时对齐到选中日期所在月）
@@ -85,8 +89,8 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
         }
     }
 
-    val courseMap = remember(semester, monthStart) { buildCourseMap(semester, monthStart) }
-    val agendaMap = remember(agendaAll, monthStart) {
+    val courseMap = remember(semester, monthStart, calendarRevision) { buildCourseMap(semester, monthStart) }
+    val agendaMap = remember(agendaAll, monthStart, settings.timetableMode) {
         val monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth())
         val out = HashMap<Long, MutableList<AgendaEvent>>()
         var d = monthStart
@@ -94,7 +98,7 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
             // 「计划」归计划页，月视图只展示日程；
             // 用 occursOn 而不是按 dateEpochDay 归档 —— 否则重复日程、跨天长日程都只在开始日显示
             // （2026-10-08 修「取消课程表模式后月视图看不到日程」）
-            val list = agendaAll.filter { !it.isPlan && it.occursOn(d) }
+            val list = agendaAll.filter { !settings.timetableMode && !it.isPlan && it.occursOn(d) }
             if (list.isNotEmpty()) out[d.toEpochDay()] = list.toMutableList()
             d = d.plusDays(1)
         }
@@ -149,7 +153,7 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
         val daysInMonth = monthStart.lengthOfMonth()
         val rows = (leading + daysInMonth + 6) / 7
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 6.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             for (r in 0 until rows) {
@@ -224,7 +228,7 @@ internal fun MonthCell(
     val pulse = rememberFlashPulse(flash)
     Column(
         modifier = modifier
-            .height(84.dp)
+            .height(104.dp)
             .clip(RoundedCornerShape(10.dp))
             .background(bg)
             // 定位闪烁：底色深浅变化提醒（三下）
@@ -265,6 +269,9 @@ internal fun MonthCell(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
+            val mark = HolidayTable.nameOf(date)?.let { LocalStrings.current.holidayLabel(it) } ?: if (HolidayTable.isWorkday(date)) LocalStrings.current.workdayMark else ""
+            if (mark.isNotEmpty()) Text(mark, color = if (HolidayTable.isHoliday(date)) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                fontSize = 9.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
             val agendaDefault = MaterialTheme.colorScheme.tertiary
             val entries = mutableListOf<Pair<String, Color>>()
             // 已修改的课程（教务系统未更新）加记号，便于一眼区分

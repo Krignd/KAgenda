@@ -74,6 +74,7 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         title = { Text(t.qaTitle) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(t.aiContextNote, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 OutlinedTextField(
                     value = text,
                     onValueChange = {
@@ -243,13 +244,14 @@ fun aiOpSummary(
     existing: List<com.kstudio.agenda.model.AgendaEvent> = emptyList(),
 ): String {
     val matched = when (op) {
-        is AiSkills.AiOp.Update -> AiAssistant.findMatch(existing, op.matchTitle, op.matchDate)
-        is AiSkills.AiOp.Delete -> AiAssistant.findMatch(existing, op.matchTitle, op.matchDate)
+        is AiSkills.AiOp.Update -> AiAssistant.findMatch(existing, op.matchTitle, op.matchDate, op.matchId)
+        is AiSkills.AiOp.Delete -> AiAssistant.findMatch(existing, op.matchTitle, op.matchDate, op.matchId)
         is AiSkills.AiOp.Add -> null
     }
     return when (op) {
         is AiSkills.AiOp.Add -> buildString {
             append(op.item.title)
+            if (op.item.alarm == true) append(" · ").append(t.alarmEvent)
             op.item.date?.let { append(" · ${it.monthValue}/${it.dayOfMonth}") }
             if (op.item.startTime.isNotBlank()) append(" ").append(op.item.startTime)
             if (op.item.endTime.isNotBlank()) append("-").append(op.item.endTime)
@@ -259,6 +261,7 @@ fun aiOpSummary(
         }
         is AiSkills.AiOp.Update -> buildString {
             append("「").append(op.matchTitle).append("」")
+            if (op.set.alarm == true) append(" · ").append(t.alarmEvent)
             op.set.title?.let { append(" → ").append(it) }
             op.set.date?.let { append(" · ").append(it.monthValue).append("/").append(it.dayOfMonth) }
             op.set.startTime?.let { append(" ").append(it) }
@@ -301,6 +304,10 @@ private fun AiOpEditDialog(
     var nLoc by remember { mutableStateOf(upd?.set?.location.orEmpty()) }
     var rp by remember { mutableStateOf(add?.item?.repeat.orEmpty()) }
     var nRp by remember { mutableStateOf(upd?.set?.repeat?.takeIf { it.isNotBlank() }.orEmpty()) }
+    var followReminder by remember { mutableStateOf(if (add != null) add.item.notify == null && add.item.alarm == null && add.item.leadMinutes == null else upd?.set?.let { it.notify == null && it.alarm == null && it.leadMinutes == null } ?: true) }
+    var notify by remember { mutableStateOf(add?.item?.notify ?: upd?.set?.notify ?: true) }
+    var alarm by remember { mutableStateOf(add?.item?.alarm ?: upd?.set?.alarm ?: false) }
+    var lead by remember { mutableStateOf(add?.item?.leadMinutes ?: upd?.set?.leadMinutes ?: 0) }
     var errMsg by remember { mutableStateOf("") }
 
     fun parseDate(s: String): LocalDate? = runCatching { LocalDate.parse(s.trim()) }.getOrNull()
@@ -346,6 +353,8 @@ private fun AiOpEditDialog(
                         OutlinedTextField(value = nRp, onValueChange = { nRp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
                 }
+                if (del == null) ReminderOptions(followReminder, notify, alarm, lead,
+                    { followReminder = it }, { notify = it }, { alarm = it }, { lead = it })
                 if (errMsg.isNotBlank()) {
                     Text(
                         text = errMsg,
@@ -374,6 +383,9 @@ private fun AiOpEditDialog(
                             op.item.copy(
                                 title = title.trim().ifBlank { op.item.title },
                                 isPlan = isPlan,
+                                notify = if (followReminder) null else notify,
+                                alarm = if (followReminder) null else alarm,
+                                leadMinutes = if (followReminder) null else lead,
                                 date = parsedDate,
                                 startTime = start.trim(),
                                 endTime = end.trim(),
@@ -413,6 +425,7 @@ private fun AiOpEditDialog(
                         AiSkills.AiOp.Update(
                             matchTitle = matchTitle.trim().ifBlank { op.matchTitle },
                             matchDate = parsedMatchDate,
+                            matchId = op.matchId.takeIf { matchTitle.trim() == op.matchTitle && parsedMatchDate == op.matchDate },
                             set = AiSkills.AiSet(
                                 title = nTitle.trim().takeIf { it.isNotBlank() },
                                 date = parsedNewDate,
@@ -420,6 +433,10 @@ private fun AiOpEditDialog(
                                 endTime = nEnd.trim().takeIf { it.isNotBlank() },
                                 location = nLoc.trim().takeIf { it.isNotBlank() },
                                 note = op.set.note,
+                                notify = if (followReminder) null else notify,
+                                alarm = if (followReminder) null else alarm,
+                                leadMinutes = if (followReminder) null else lead,
+                                statusTag = op.set.statusTag,
                                 repeat = if (nRp.isBlank()) op.set.repeat else (RepeatRules.parse(nRp) ?: op.set.repeat),
                             ),
                         )
@@ -439,6 +456,7 @@ private fun AiOpEditDialog(
                         AiSkills.AiOp.Delete(
                             matchTitle = matchTitle.trim().ifBlank { op.matchTitle },
                             matchDate = parsedMatchDate,
+                            matchId = op.matchId.takeIf { matchTitle.trim() == op.matchTitle && parsedMatchDate == op.matchDate },
                         )
                     }
                 }

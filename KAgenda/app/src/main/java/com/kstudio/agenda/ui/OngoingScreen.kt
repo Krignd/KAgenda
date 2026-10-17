@@ -36,12 +36,16 @@ fun OngoingScreen(vm: AppViewModel) {
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
     var editorOpen by remember { mutableStateOf(false) }
 
-    val now = LocalDateTime.now()
+    val now by androidx.compose.runtime.produceState(LocalDateTime.now()) {
+        while (true) { kotlinx.coroutines.delay(30_000); value = LocalDateTime.now() }
+    }
     val ongoing = agenda
         .filter { it.isLong && it.isOngoing(now) }
         .sortedBy { it.endDateTime() }
 
-    if (ongoing.isEmpty()) {
+    val todo = agenda.filter { it.statusTag.isNotBlank() && it !in ongoing }
+        .sortedWith(compareBy({ it.dateEpochDay }, { it.startTime }))
+    if (ongoing.isEmpty() && todo.isEmpty()) {
         Column(Modifier.fillMaxSize().padding(20.dp)) {
             EmptyState(
                 title = t.ongoingEmptyTitle,
@@ -53,7 +57,7 @@ fun OngoingScreen(vm: AppViewModel) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            item(key = "header") {
+            if (ongoing.isNotEmpty()) item(key = "header") {
                 Text(
                     text = t.ongoingHeader(ongoing.size),
                     style = MaterialTheme.typography.titleSmall,
@@ -69,6 +73,12 @@ fun OngoingScreen(vm: AppViewModel) {
                         editorOpen = true
                     },
                 )
+            }
+            if (todo.isNotEmpty()) item(key = "todo-header") {
+                Text(t.todoHeader, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            items(todo, key = { "todo-" + it.id }) { event ->
+                AgendaCard(event, dateLabel = event.date.toString(), onClick = { editing = event; editorOpen = true })
             }
         }
     }

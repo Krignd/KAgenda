@@ -1,0 +1,11 @@
+{
+  "source": "https://www.moe.gov.cn/jyb_xxgk/s5743/s5744/202606/t20260618_1441074.html",
+  "asOf": "2026-06-17",
+  "ordinary": 2952,
+  "adult": 244,
+  "scope": "mainland",
+  "files": {
+    "ordinary-schools.xls": "29c40f083b639888e429cf40b68f9a75782d1ce81131c99aabca65b65b36eaea",
+    "adult-schools.xls": "34765edba0ceda935ca7d4455bc2eb105b94eee8d8d4d7c9150fba327cf11bbf"
+  }
+}

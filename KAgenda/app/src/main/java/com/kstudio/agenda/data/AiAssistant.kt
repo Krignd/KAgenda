@@ -23,17 +23,21 @@ object AiAssistant {
     )
 
     /** 供 AI 提示词的“现有条目”清单（标题 + 日期时间，最多取一部分） */
-    fun contextLines(events: List<AgendaEvent>): List<String> =
-        events
-            .sortedWith(compareBy({ it.dateEpochDay }, { com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
-            .map { e ->
-                buildString {
-                    append(e.date.monthValue).append('/').append(e.date.dayOfMonth)
-                    if (e.startTime.isNotBlank()) append(' ').append(e.startTime)
-                    append(' ').append(e.title)
-                    if (e.isPlan) append("（计划）")
-                }
-            }
+    fun contextLines(events: List<AgendaEvent>, query: String = "", today: LocalDate = LocalDate.now()): List<String> =
+        events.sortedWith(compareBy<AgendaEvent>(
+            { if (query.contains(it.title) && it.title.isNotBlank()) 0 else 1 },
+            { if (it.isOngoing(today.atTime(12, 0))) 0 else 1 },
+            { if (it.repeatRule.isNotBlank() || !it.endDate.isBefore(today)) 0 else 1 },
+            { abs(it.dateEpochDay - today.toEpochDay()) },
+        )).map { e ->
+            org.json.JSONObject().apply {
+                put("id", e.id); put("t", e.title); put("d", e.date.toString()); put("s", e.startTime); put("e", e.endTime)
+                put("l", e.location); put("rp", e.repeatRule); put("lg", e.isLong)
+                put("ed", e.endDateEpochDay?.let { LocalDate.ofEpochDay(it).toString() }.orEmpty())
+                put("tg", if (e.isPlan) "plan" else "agenda"); put("tag", e.statusTag)
+                put("notify", e.notifyEnabled); put("alarm", e.alarmEnabled); put("global", e.followGlobalReminder)
+            }.toString()
+        }
 
     /** 由 AI 解析条目构建本地事件 */
     fun buildEvent(item: AiSkills.AiItem): AgendaEvent {
@@ -61,6 +65,11 @@ object AiAssistant {
             },
             // 重复规则：日程与计划同样支持（“每周二四六”这类周期性描述不能丢）
             repeatRule = repeat,
+            followGlobalReminder = item.notify == null && item.alarm == null && item.leadMinutes == null,
+            notifyEnabled = item.notify ?: true,
+            alarmEnabled = item.alarm ?: false,
+            reminderLeadMinutes = item.leadMinutes ?: 0,
+            statusTag = item.statusTag,
         )
     }
 
@@ -84,7 +93,7 @@ object AiAssistant {
                     added++
                 }
                 is AiSkills.AiOp.Update -> {
-                    val target = findMatch(working, op.matchTitle, op.matchDate)
+                    val target = findMatch(working, op.matchTitle, op.matchDate, op.matchId)
                     if (target == null) {
                         unmatched++
                     } else {
@@ -96,7 +105,7 @@ object AiAssistant {
                     }
                 }
                 is AiSkills.AiOp.Delete -> {
-                    val target = findMatch(working, op.matchTitle, op.matchDate)
+                    val target = findMatch(working, op.matchTitle, op.matchDate, op.matchId)
                     if (target == null) {
                         unmatched++
                     } else {
@@ -113,7 +122,8 @@ object AiAssistant {
     }
 
     /** 匹配目标条目：标题完全一致优先，其次“包含”；再按日期（或今天）就近取 */
-    fun findMatch(all: List<AgendaEvent>, title: String, date: LocalDate?): AgendaEvent? {
+    fun findMatch(all: List<AgendaEvent>, title: String, date: LocalDate?, id: String? = null): AgendaEvent? {
+        if (id != null) return all.firstOrNull { it.id == id }
         val t = title.trim()
         if (t.isBlank()) return null
         val exact = all.filter { it.title.trim() == t }
@@ -123,14 +133,20 @@ object AiAssistant {
             all.filter { it.title.contains(t) || t.contains(it.title.trim()) }
         }
         if (pool.isEmpty()) return null
-        date?.let { d -> pool.firstOrNull { it.date == d }?.let { return it } }
-        val pivot = (date ?: LocalDate.now()).toEpochDay()
-        return pool.minByOrNull { abs(it.date.toEpochDay() - pivot) }
+        if (date != null) return pool.filter { it.occursOn(date) }.singleOrNull()
+        val pivot = LocalDate.now().toEpochDay()
+        val distance = pool.minOf { abs(it.dateEpochDay - pivot) }
+        return pool.filter { abs(it.dateEpochDay - pivot) == distance }.singleOrNull()
     }
 
     /** 把“仅修改字段”应用到事件（null=不变） */
     fun applySet(e: AgendaEvent, s: AiSkills.AiSet): AgendaEvent = e.copy(
         title = s.title ?: e.title,
+        followGlobalReminder = if (s.notify != null || s.alarm != null || s.leadMinutes != null) false else e.followGlobalReminder,
+        notifyEnabled = s.notify ?: e.notifyEnabled,
+        alarmEnabled = s.alarm ?: e.alarmEnabled,
+        reminderLeadMinutes = s.leadMinutes ?: e.reminderLeadMinutes,
+        statusTag = s.statusTag ?: e.statusTag,
         dateEpochDay = s.date?.toEpochDay() ?: e.dateEpochDay,
         startTime = s.startTime ?: e.startTime,
         endTime = s.endTime ?: e.endTime,

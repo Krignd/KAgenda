@@ -22,7 +22,7 @@ object CoursePalette {
         return base[h % base.size]
     }
 
-    fun colorFor(course: Course): Int = colorFor(course.code.ifBlank { course.title })
+    fun colorFor(course: Course): Int = course.colorArgb.takeIf { it != 0 } ?: colorFor(course.code.ifBlank { course.title })
 
     /** 同色系的浅色填充 */
     fun lightOf(color: Int, alpha: Int = 46): Int =

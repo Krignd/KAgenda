@@ -20,7 +20,6 @@ import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.MessageDigest
 
 /** 更新站点返回的版本信息（`latest.json`）。字段说明见「相关文件\更新站点部署指南.md」 */
 data class UpdateInfo(
@@ -123,7 +122,7 @@ object AppUpdater {
      * @param auto true = 应用启动时的自动检查：按 [AUTO_CHECK_INTERVAL_MS] 节流，
      *             失败不打扰用户；false = 用户手动点击，每次都真正请求并把错误显示出来。
      */
-    fun check(context: Context, auto: Boolean = false) {
+    @Synchronized fun check(context: Context, auto: Boolean = false) {
         val appContext = context.applicationContext
         if (auto) {
             val last = prefs(appContext).getLong(KEY_LAST_AUTO_CHECK, 0L)
@@ -131,7 +130,7 @@ object AppUpdater {
         }
         // 正在下载/已下载完成时不要用「检查结果」覆盖当前状态（否则下载进度会丢）
         val cur = _state.value
-        if (cur is UpdateUi.Downloading || cur is UpdateUi.Downloaded) return
+        if (cur is UpdateUi.Checking || cur is UpdateUi.Downloading || cur is UpdateUi.Downloaded) return
 
         job?.cancel()
         _state.value = UpdateUi.Checking
@@ -150,8 +149,7 @@ object AppUpdater {
                 // 界面就显示“已下载（包体大小未知）”，点安装报错，还得再点一次下载
                 // （2026-10-08 修复）。不完整的包直接删掉，回到「有新版本」状态。
                 val existing = downloadedFile(appContext, info.versionCode)?.takeIf { f ->
-                    f.exists() && f.length() > 0L &&
-                        (info.sizeBytes <= 0L || f.length() == info.sizeBytes)
+                    UpdateIntegrity.matches(f, info.sizeBytes, info.sha256)
                 }
                 cleanDownloaded(appContext, keepVersionCode = if (existing != null) info.versionCode else 0)
                 if (existing != null) {
@@ -170,7 +168,7 @@ object AppUpdater {
     }
 
     /** 下载最新版本的 APK（需先处于 [UpdateUi.Available]） */
-    fun download(context: Context) {
+    @Synchronized fun download(context: Context) {
         val appContext = context.applicationContext
         val info = (_state.value as? UpdateUi.Available)?.info ?: return
         job?.cancel()
@@ -185,6 +183,7 @@ object AppUpdater {
                 val conn = open(info.apkUrl)
                 try {
                     val total = conn.contentLengthLong.takeIf { it > 0 } ?: info.sizeBytes
+                    require(total <= UpdateIntegrity.MAX_APK_BYTES) { "Update package too large" }
                     conn.inputStream.use { input ->
                         part.outputStream().use { out ->
                             val buf = ByteArray(64 * 1024)
@@ -194,6 +193,7 @@ object AppUpdater {
                                 if (n <= 0) break
                                 out.write(buf, 0, n)
                                 read += n
+                                require(read <= UpdateIntegrity.MAX_APK_BYTES) { "Update package too large" }
                                 val percent = if (total > 0) {
                                     ((read * 100) / total).toInt().coerceIn(0, 100)
                                 } else {
@@ -215,12 +215,7 @@ object AppUpdater {
                 if (info.sizeBytes > 0 && read != info.sizeBytes) {
                     throw IllegalStateException("下载不完整（$read/${info.sizeBytes} 字节）")
                 }
-                if (info.sha256.isNotBlank()) {
-                    val actual = sha256Of(part)
-                    if (!actual.equals(info.sha256.trim(), ignoreCase = true)) {
-                        throw IllegalStateException("校验失败（sha256 不一致）")
-                    }
-                }
+                check(UpdateIntegrity.matches(part, info.sizeBytes, info.sha256)) { "校验失败（sha256 / size）" }
                 if (target.exists()) target.delete()
                 if (!part.renameTo(target)) throw IllegalStateException("无法保存下载文件")
                 cleanDownloaded(appContext, keepVersionCode = info.versionCode)
@@ -327,13 +322,15 @@ object AppUpdater {
         val conn = open(MANIFEST_URL)
         val text = try {
             if (conn.responseCode !in 200..299) throw IllegalStateException("HTTP ${conn.responseCode}")
-            conn.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
+            conn.inputStream.use { BoundedInput.read(it, 1024 * 1024).toString(Charsets.UTF_8) }
         } finally {
             runCatching { conn.disconnect() }
         }
         val o = JSONObject(text)
         val apkUrl = o.optString("apkUrl").trim()
-        require(apkUrl.startsWith("https://")) { "latest.json 的 apkUrl 必须是 https 地址" }
+        UpdateIntegrity.requireHttps(apkUrl)
+        require(o.optLong("sizeBytes", 0L) in 0..UpdateIntegrity.MAX_APK_BYTES)
+        require(o.optString("sha256").trim().let { it.isBlank() || it.matches(Regex("[a-fA-F0-9]{64}")) })
         val code = o.optInt("versionCode", 0)
         require(code > 0) { "latest.json 缺少合法的 versionCode" }
         return UpdateInfo(
@@ -346,27 +343,34 @@ object AppUpdater {
         )
     }
 
-    private fun open(url: String): HttpURLConnection =
-        (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = CONNECT_TIMEOUT_MS
-            readTimeout = READ_TIMEOUT_MS
-            instanceFollowRedirects = true
-            requestMethod = "GET"
-            setRequestProperty("Accept", "application/json, application/octet-stream, */*")
-            // 便于站点排查匿名请求量（不含任何个人信息）
-            setRequestProperty("User-Agent", "KAgenda/${BuildConfig.VERSION_NAME} (Android)")
-        }
-
-    private fun sha256Of(file: File): String {
-        val md = MessageDigest.getInstance("SHA-256")
-        file.inputStream().use { input ->
-            val buf = ByteArray(64 * 1024)
-            while (true) {
-                val n = input.read(buf)
-                if (n <= 0) break
-                md.update(buf, 0, n)
+    private fun open(url: String): HttpURLConnection {
+        var target = url
+        repeat(6) {
+            UpdateIntegrity.requireHttps(target)
+            val connection = (URL(target).openConnection() as HttpURLConnection).apply {
+                connectTimeout = CONNECT_TIMEOUT_MS
+                readTimeout = READ_TIMEOUT_MS
+                instanceFollowRedirects = false
+                requestMethod = "GET"
+                setRequestProperty("Accept", "application/json, application/octet-stream, */*")
+                // 便于站点排查匿名请求量（不含任何个人信息）
+                setRequestProperty("User-Agent", "KAgenda/${BuildConfig.VERSION_NAME} (Android)")
             }
+            try {
+                val code = connection.responseCode
+                if (code in setOf(301, 302, 303, 307, 308)) {
+                    val location = connection.getHeaderField("Location") ?: error("Missing redirect URL")
+                    target = URL(URL(target), location).toString()
+                } else {
+                    check(code in 200..299) { "HTTP $code" }
+                    return connection
+                }
+            } catch (e: Exception) {
+                connection.disconnect()
+                throw e
+            }
+            connection.disconnect()
         }
-        return md.digest().joinToString("") { "%02x".format(it) }
+        error("Too many redirects")
     }
 }

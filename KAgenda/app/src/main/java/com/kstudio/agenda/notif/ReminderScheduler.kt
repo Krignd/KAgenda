@@ -14,6 +14,8 @@ import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.PeriodTimes
 import org.json.JSONArray
 import java.io.File
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
@@ -31,13 +33,10 @@ object ReminderScheduler {
     private const val LOOKAHEAD_DAYS = 7
     private const val CODES_FILE = "scheduled_alarms.json"
 
-    suspend fun reschedule(context: Context) {
+    private val scheduleMutex = Mutex()
+    suspend fun reschedule(context: Context) = scheduleMutex.withLock { rescheduleInternal(context) }
+    private suspend fun rescheduleInternal(context: Context) {
         val settings = SettingsStore.read(context)
-        if (!settings.reminderEnabled) {
-            // 关闭提醒时，清掉已排闹钟，避免残留通知
-            cancelAll(context)
-            return
-        }
 
         // 课表统一走 CourseEditStore：用户手动修改过的课程（时间/地点等）也要按修改后排提醒
         val semester = CourseEditStore.appliedFromCache(context)
@@ -49,7 +48,7 @@ object ReminderScheduler {
         val nowMillis = System.currentTimeMillis()
 
         // 课表缓存不存在（尚未同步 / 已被“清缓存”清掉）时跳过课程，但仍可为日程排提醒
-        if (semester != null) {
+        if (settings.reminderEnabled && semester != null) {
             for (offset in 0..LOOKAHEAD_DAYS) {
                 val date = today.plusDays(offset.toLong())
                 val weekNo = semester.teachingWeekOf(date)
@@ -61,30 +60,33 @@ object ReminderScheduler {
                 for (course in courses) {
                     val triggerAt = PeriodTimes.startMillisEpoch(date, course.startPeriod) -
                         settings.leadMinutes * 60_000L
-                    if (triggerAt <= nowMillis + 30_000L) continue   // 已过时或即将发生
-                    scheduledCodes.add(scheduleOne(context, am, triggerAt, course, date))
+                    if (triggerAt <= nowMillis) continue   // 已过时或即将发生
+                    scheduledCodes.add(scheduleOne(context, am, triggerAt, course, date, settings.alarmEnabled))
                 }
             }
         }
 
         // 自建日程/计划：有精确开始时刻（HH:mm）的条目，同样按开始时刻提前 [leadMinutes] 提醒
-        if (settings.remindAgenda) {
+        run {
             AgendaStore.ensureLoaded(context)
             for (ev in AgendaStore.events.value) {
-                if (!ev.hasPreciseStart) continue
+                val policy = com.kstudio.agenda.model.ReminderPolicy.forEvent(ev, settings.reminderEnabled, settings.remindAgenda, settings.alarmEnabled, settings.leadMinutes)
+                if (!policy.enabled || !ev.hasPreciseStart) continue
                 val startTime = runCatching { LocalTime.parse(ev.startTime) }.getOrNull() ?: continue
                 // 长日程只在开始日提醒一次；其余（含重复）按命中的日期各排一次
                 val dates = if (ev.isLong) {
                     listOf(ev.date)
                 } else {
-                    (0..LOOKAHEAD_DAYS).map { today.plusDays(it.toLong()) }.filter { ev.occursOn(it) }
+                    // 提前一周的提醒仍要覆盖未来一周的触发时刻，而非只看事件日期。
+                    val extraDays = (policy.leadMinutes + 1439) / 1440
+                    (0..LOOKAHEAD_DAYS + extraDays).map { today.plusDays(it.toLong()) }.filter { ev.occursOn(it) }
                 }
                 for (date in dates) {
                     val startAt = date.atTime(startTime)
                         .atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
-                    val triggerAt = startAt - settings.leadMinutes * 60_000L
-                    if (triggerAt <= nowMillis + 30_000L) continue
-                    scheduledCodes.add(scheduleAgenda(context, am, triggerAt, ev, date))
+                    val triggerAt = startAt - policy.leadMinutes * 60_000L
+                    if (triggerAt <= nowMillis) continue
+                    scheduledCodes.add(scheduleAgenda(context, am, triggerAt, ev, date, policy.alarm, policy.notify))
                 }
             }
         }
@@ -97,9 +99,13 @@ object ReminderScheduler {
         triggerAtMillis: Long,
         course: Course,
         date: LocalDate,
+        alarm: Boolean = false,
+        notify: Boolean = true,
     ): Int {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra(ReminderReceiver.EXTRA_TITLE, course.title)
+            putExtra(ReminderReceiver.EXTRA_ALARM, alarm)
+            putExtra(ReminderReceiver.EXTRA_NOTIFY, notify)
             putExtra(ReminderReceiver.EXTRA_ROOM, course.room)
             putExtra(ReminderReceiver.EXTRA_TIME_RANGE, course.timeRange)
             putExtra(ReminderReceiver.EXTRA_PERIOD_LABEL, course.periodLabel)
@@ -116,9 +122,14 @@ object ReminderScheduler {
         triggerAtMillis: Long,
         event: AgendaEvent,
         date: LocalDate,
+        alarm: Boolean = false,
+        notify: Boolean = true,
     ): Int {
         val intent = Intent(context, ReminderReceiver::class.java).apply {
             putExtra(ReminderReceiver.EXTRA_TITLE, event.title)
+            putExtra(ReminderReceiver.EXTRA_EVENT_ID, event.id)
+            putExtra(ReminderReceiver.EXTRA_ALARM, alarm)
+            putExtra(ReminderReceiver.EXTRA_NOTIFY, notify)
             putExtra(ReminderReceiver.EXTRA_ROOM, event.location)
             putExtra(ReminderReceiver.EXTRA_TIME_RANGE, event.timeLabel)
             putExtra(ReminderReceiver.EXTRA_PERIOD_LABEL, "")
@@ -144,7 +155,12 @@ object ReminderScheduler {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         try {
-            if (canExact(am)) {
+            if (canExact(am) && intent.getBooleanExtra(ReminderReceiver.EXTRA_ALARM, false)) {
+                val open = PendingIntent.getActivity(context, requestCode,
+                    Intent(context, com.kstudio.agenda.ui.MainActivity::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                am.setAlarmClock(AlarmManager.AlarmClockInfo(triggerAtMillis, open), pi)
+            } else if (canExact(am)) {
                 am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
             } else {
                 // 未授予“闹钟和提醒”权限时降级：低功耗下仍可唤醒（比 setWindow 更可靠，无 10 分钟窗口延迟）

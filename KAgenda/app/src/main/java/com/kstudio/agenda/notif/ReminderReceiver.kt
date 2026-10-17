@@ -15,6 +15,9 @@ import kotlinx.coroutines.launch
 class ReminderReceiver : BroadcastReceiver() {
 
     companion object {
+        const val EXTRA_EVENT_ID = "eventId"
+        const val EXTRA_ALARM = "alarm"
+        const val EXTRA_NOTIFY = "notify"
         const val EXTRA_TITLE = "title"
         const val EXTRA_ROOM = "room"
         const val EXTRA_TIME_RANGE = "timeRange"
@@ -34,8 +37,30 @@ class ReminderReceiver : BroadcastReceiver() {
             try {
                 val settings = SettingsStore.read(appContext)
                 val isTest = intent.getBooleanExtra(EXTRA_TEST, false)
-                if (!settings.reminderEnabled && !isTest) return@launch
-                Notifier.show(
+                val eventId = intent.getStringExtra(EXTRA_EVENT_ID)
+                var allowNotify = intent.getBooleanExtra(EXTRA_NOTIFY, true)
+                var allowAlarm = intent.getBooleanExtra(EXTRA_ALARM, false)
+                if (!isTest) {
+                    if (eventId != null) {
+                        com.kstudio.agenda.data.AgendaStore.ensureLoaded(appContext)
+                        val event = com.kstudio.agenda.data.AgendaStore.events.value.firstOrNull { it.id == eventId } ?: return@launch
+                        val policy = com.kstudio.agenda.model.ReminderPolicy.forEvent(event, settings.reminderEnabled, settings.remindAgenda, settings.alarmEnabled, settings.leadMinutes)
+                        if (!policy.enabled) return@launch
+                        allowNotify = allowNotify && policy.notify
+                        allowAlarm = allowAlarm && policy.alarm
+                    } else {
+                        if (!settings.reminderEnabled) return@launch
+                        allowAlarm = allowAlarm && settings.alarmEnabled
+                    }
+                }
+                if (allowAlarm) {
+                    val alarmIntent = Intent(appContext, AgendaAlarmService::class.java)
+                        .putExtra(EXTRA_TITLE, intent.getStringExtra(EXTRA_TITLE))
+                        .putExtra(EXTRA_TIME_RANGE, intent.getStringExtra(EXTRA_TIME_RANGE))
+                    runCatching { androidx.core.content.ContextCompat.startForegroundService(appContext, alarmIntent) }
+                        .onFailure { com.kstudio.agenda.util.AppLog.e("Alarm", "Unable to start alarm", it) }
+                }
+                if (allowNotify) Notifier.show(
                     context = appContext,
                     title = intent.getStringExtra(EXTRA_TITLE) ?: "课程",
                     room = intent.getStringExtra(EXTRA_ROOM) ?: "",

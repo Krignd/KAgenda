@@ -36,6 +36,12 @@ data class AgendaEvent(
     val isPlan: Boolean = false,
     /** 重复规则 token（见 [RepeatRules]；空串=不重复；仅短日程使用） */
     val repeatRule: String = "",
+    val followGlobalReminder: Boolean = true,
+    val notifyEnabled: Boolean = true,
+    val reminderLeadMinutes: Int = 30,
+    val alarmEnabled: Boolean = false,
+    /** delayed / advanced / waiting，空串表示无标签 */
+    val statusTag: String = "",
 ) {
     val date: LocalDate get() = LocalDate.ofEpochDay(dateEpochDay)
 
@@ -90,9 +96,16 @@ data class AgendaEvent(
      */
     fun upcomingView(now: LocalDateTime = LocalDateTime.now(), limitDays: Int = 400): AgendaEvent {
         if (repeatRule.isBlank()) return this
+        if (occursOn(now.toLocalDate())) {
+            val today = copy(dateEpochDay = now.toLocalDate().toEpochDay(), endDateEpochDay = null, repeatRule = "")
+            if (hasPreciseStart && today.isOngoing(now)) return today
+        }
         var d = if (now.toLocalDate().isAfter(date)) now.toLocalDate() else date
         for (i in 0..limitDays) {
-            if (occursOn(d) && anchorDateTimeOn(d).isAfter(now)) return copy(dateEpochDay = d.toEpochDay())
+            if (occursOn(d) && anchorDateTimeOn(d).isAfter(now)) {
+                // 投影是单次发生：截止日期和重复相位都属于原事件，不能充当这次的结束日期。
+                return copy(dateEpochDay = d.toEpochDay(), endDateEpochDay = null, repeatRule = "")
+            }
             d = d.plusDays(1)
         }
         return this
@@ -103,8 +116,15 @@ data class AgendaEvent(
     fun endDateTime(): LocalDateTime = endDate.atTime(parseTime(endTime) ?: LocalTime.MAX)
 
     /** 当前是否正在进行（长日程跨天适用；短日程按当天时刻判断） */
-    fun isOngoing(now: LocalDateTime = LocalDateTime.now()): Boolean =
-        !now.isBefore(startDateTime()) && !now.isAfter(endDateTime())
+    fun isOngoing(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        if (repeatRule.isNotBlank() && !isLong) {
+            if (!occursOn(now.toLocalDate())) return false
+            val start = now.toLocalDate().atTime(parseTime(startTime) ?: LocalTime.MIN)
+            val end = now.toLocalDate().atTime(parseTime(endTime) ?: LocalTime.MAX)
+            return !now.isBefore(start) && now.isBefore(end)
+        }
+        return !now.isBefore(startDateTime()) && now.isBefore(endDateTime())
+    }
 
     /** 是否覆盖指定日期（短日程=当天；长日程=起止日期之间任意一天） */
     fun coversDate(d: LocalDate): Boolean {

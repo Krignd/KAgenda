@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/overview_row"
+    android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal" android:paddingTop="6dp" android:paddingBottom="6dp">
+    <TextView android:id="@+id/overview_time" android:layout_width="58dp" android:layout_height="wrap_content"
+        android:text="08:00" android:textSize="12sp" android:textStyle="bold" android:textColor="#1D4ED8" />
+    <LinearLayout android:layout_width="0dp" android:layout_weight="1" android:layout_height="wrap_content" android:orientation="vertical">
+        <TextView android:id="@+id/overview_name" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="@string/feature_sample_course" android:textSize="13sp" android:textColor="#0F172A" android:maxLines="2" android:ellipsize="end" />
+        <TextView android:id="@+id/overview_location" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="08:00–09:35" android:textSize="10sp" android:textColor="#64748B" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>

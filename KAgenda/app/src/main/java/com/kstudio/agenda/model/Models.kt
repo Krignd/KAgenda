@@ -24,6 +24,9 @@ data class Course(
     val tag: String = "",
     val edited: Boolean = false,
     val extraInfo: String = "",
+    val colorArgb: Int = 0,
+    val editOriginKey: String = "",
+    val editWeekdays: Set<Int> = emptySet(),
 ) {
     /** 稳定标识：用于提醒的 requestCode / 图片配色 */
     val id: String
@@ -139,6 +142,7 @@ data class WeekSchedule(
     val anchorEpochDay: Long,
     val courses: List<Course>,
     val fetchedAtMillis: Long,
+    val calendarRevision: Long = 0,
 ) {
     /** 第 1 教学周周一（其余周次均以此为基准推算） */
     val firstMonday: LocalDate
@@ -199,6 +203,7 @@ data class SemesterSchedule(
     val anchorEpochDay: Long,
     val weeks: Map<Int, List<Course>>,
     val fetchedAtMillis: Long,
+    val calendarRevision: Long = 0,
 ) {
     /** 已抓取到的所有周次（升序） */
     val weekNumbers: List<Int>
@@ -232,6 +237,7 @@ data class SemesterSchedule(
         anchorEpochDay = anchorEpochDay,
         courses = weeks[weekNo].orEmpty(),
         fetchedAtMillis = fetchedAtMillis,
+        calendarRevision = calendarRevision,
     )
 
     private fun rangeLabelOf(weekNo: Int): String {
