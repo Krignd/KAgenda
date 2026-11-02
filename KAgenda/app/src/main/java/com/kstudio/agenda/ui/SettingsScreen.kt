@@ -2,6 +2,8 @@
 
 package com.kstudio.agenda.ui
 
+import com.kstudio.agenda.data.SchoolCatalog
+
 import android.Manifest
 import android.content.Context
 import android.content.Intent
@@ -41,8 +43,8 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
+import com.kstudio.agenda.ui.components.AppButton as Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,13 +52,19 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.kstudio.agenda.ui.components.PreferenceSlider
+import com.kstudio.agenda.ui.components.PreferenceSliderScale
+import com.kstudio.agenda.i18n.LocalAiText.text as tr
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import kotlin.math.roundToInt
+import com.kstudio.agenda.ui.components.AppOutlinedButton as OutlinedButton
+import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
+import com.kstudio.agenda.ui.theme.FrostedSurface as Surface
+import com.kstudio.agenda.ui.components.AppSwitch as Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -68,6 +76,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -103,6 +113,12 @@ import com.kstudio.agenda.ui.components.CollapsibleSectionCard
 import com.kstudio.agenda.ui.components.SectionCard
 import com.kstudio.agenda.ui.components.TrailingChevron
 import com.kstudio.agenda.ui.components.cardGlassBorder
+import com.kstudio.agenda.ui.theme.glassSheen
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+import com.kstudio.agenda.ui.components.subtleDividerColor
+import com.kstudio.agenda.ui.components.pageEntrance
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -134,7 +150,6 @@ private fun sizeLabel(bytes: Long, unknown: String): String =
 fun SettingsScreen(
     vm: AppViewModel,
     onWebLogin: () -> Unit,
-    onOpenDocImport: () -> Unit = {},
 ) {
     val settings by vm.settings.collectAsState()
     val selectedDate by vm.selectedDate.collectAsState()
@@ -153,6 +168,8 @@ fun SettingsScreen(
     }
     // 开发者工具：独立页面打开
     var showDevTools by remember { mutableStateOf(false) }
+    // null = 关闭；空字符串 = 问题列表；其他值 = 直接展开对应问题。
+    var helpTopic by rememberSaveable { mutableStateOf<String?>(null) }
     var showClearCredConfirm by remember { mutableStateOf(false) }
     var showSchoolPicker by remember { mutableStateOf(false) }
     var showAdapterDialog by remember { mutableStateOf(false) }
@@ -186,7 +203,7 @@ fun SettingsScreen(
 
     // ---------------- 分类与卡片展开状态 ----------------
     // -1 = 分类菜单（设置页首屏）；0 学校&账号 / 1 功能&权限 / 2 用户自定义 / 3 数据&图片
-    //   / 4 课程修改 / 5 语言 / 6 关于&反馈
+    //   / 4 课程修改 / 5 语言 / 6 关于&反馈 / 8 课表导入
     // 首屏只列分类入口，点进某一类后才显示该类目的具体选项（二级页可返回）
     var settingsTab by rememberSaveable { mutableStateOf(-1) }
     var expPermissions by rememberSaveable { mutableStateOf(false) }
@@ -201,6 +218,8 @@ fun SettingsScreen(
     var expPeriodTimes by rememberSaveable { mutableStateOf(true) }
     var expUiStyle by rememberSaveable { mutableStateOf(true) }
     var expData by rememberSaveable { mutableStateOf(true) }
+    var showHolidayMarks by rememberSaveable { mutableStateOf(false) }
+    if (showHolidayMarks) HolidayMarksEditor(vm, selectedDate) { showHolidayMarks = false }
     var expHoliday by rememberSaveable { mutableStateOf(true) }
     var expBackup by rememberSaveable { mutableStateOf(true) }
     var expDocs by rememberSaveable { mutableStateOf(true) }
@@ -241,6 +260,7 @@ fun SettingsScreen(
         t.secCourseEdits,
         t.secLang,
         t.settingsTabAboutFeedback,
+        t.helpTitle,
     )
     val categorySubs = listOf(
         t.settingsTabAccountSub,
@@ -250,6 +270,7 @@ fun SettingsScreen(
         t.secCourseEditsSub,
         t.secLangSub,
         t.aboutSub,
+        t.helpSubtitle,
     )
 
     // 存储权限（仅 Android 8.0–9 导出图片需要）当前是否已授予
@@ -338,6 +359,16 @@ fun SettingsScreen(
         return
     }
 
+    if (settingsTab == 8) {
+        androidx.activity.compose.BackHandler { settingsTab = -1 }
+        Column(Modifier.fillMaxSize()) {
+            SettingsSubHeader(com.kstudio.agenda.i18n.ImportText.title, onBack = { settingsTab = -1 })
+            HorizontalDivider(color = subtleDividerColor(0.5f), thickness = 1.dp)
+            DocumentImportScreen(vm, embedded = true, onClose = { settingsTab = -1 })
+        }
+        return
+    }
+
     Column(Modifier.fillMaxSize()) {
         // 首屏只显示分类入口；进入某个分类后顶部显示「返回 + 分类名」
         if (settingsTab >= 0) {
@@ -347,22 +378,29 @@ fun SettingsScreen(
             )
             // 二级页顶栏与内容之间的分隔线（提高层级可辨认度）
             HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                color = subtleDividerColor(0.5f),
                 thickness = 1.dp,
             )
         }
         LazyColumn(
             state = listState,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).pageEntrance(settingsTab),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
         // ---------------------------------------------------------- 设置首屏：分类菜单
         if (settingsTab < 0) item {
             SettingsCategoryMenu(
-                titles = categoryTitles,
-                subs = categorySubs,
-                onOpen = { settingsTab = it },
+                titles = categoryTitles.take(1) + com.kstudio.agenda.i18n.ImportText.title + categoryTitles.drop(1),
+                subs = categorySubs.take(1) + com.kstudio.agenda.i18n.ImportText.subtitle + categorySubs.drop(1),
+                onOpen = { index ->
+                    when {
+                        index == 0 -> settingsTab = 0
+                        index == 1 -> settingsTab = 8
+                        index - 1 == categoryTitles.lastIndex -> helpTopic = ""
+                        else -> settingsTab = index - 1
+                    }
+                },
             )
         }
         // ---------------------------------------------------------- 【选项卡 0】学校&账号：学校（可切换）
@@ -444,13 +482,16 @@ fun SettingsScreen(
         }
         // ---------------------------------------------------------- 【选项卡 0】学校&账号：账号
         // 独立适配沿用原登录；社区协议使用可见浏览器与预览确认。
-        if (settingsTab == 0 && Schools.of(settings.schoolId).warehouseId.isNotBlank()) item {
-            CollapsibleSectionCard(t.warehouseImport, t.warehouseSupport, expanded = true, onToggle = {}) {
+        if (settingsTab == 0 && SchoolCatalog.usesBrowserImport(Schools.of(settings.schoolId))) item {
+            CollapsibleSectionCard(com.kstudio.agenda.i18n.AcademicText.current.importTitle,
+                com.kstudio.agenda.i18n.AcademicText.schoolSupportLabel(Schools.of(settings.schoolId)),
+                expanded = true, onToggle = {}) {
                 Text(t.warehouseInstructions, style = MaterialTheme.typography.bodySmall)
+                Text(com.kstudio.agenda.i18n.AcademicText.current.unverified, style = MaterialTheme.typography.bodySmall)
                 Button(onClick = { vm.syncNow() }) { Text(t.warehouseImport) }
             }
         }
-        if (settingsTab == 0 && Schools.of(settings.schoolId).warehouseId.isBlank()) item {
+        if (settingsTab == 0 && !SchoolCatalog.usesBrowserImport(Schools.of(settings.schoolId))) item {
             CollapsibleSectionCard(
                 t.secAccount,
                 t.secAccountSubOf(settings.schoolId, Schools.of(settings.schoolId).name),
@@ -568,7 +609,6 @@ fun SettingsScreen(
         if (settingsTab == 1) item {
             CollapsibleSectionCard(
                 t.secPermissions,
-                t.secPermissionsSub,
                 expanded = expPermissions,
                 onToggle = { expPermissions = !expPermissions },
                 trailing = if (missingPermCount == 0) t.permGranted
@@ -824,12 +864,6 @@ fun SettingsScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) { Text(t.btnSyncClearCourseEdits) }
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = t.courseEditsHint,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
 
@@ -848,6 +882,9 @@ fun SettingsScreen(
                         checked = settings.showHolidayCourses,
                         onCheckedChange = { vm.setShowHolidayCourses(it) },
                     )
+                }
+                OutlinedButton(onClick = { showHolidayMarks = true }, modifier = Modifier.fillMaxWidth()) {
+                    Text(tr("修改节假日标记", "Edit holiday marks", "Modifier les jours fériés"))
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
@@ -970,64 +1007,52 @@ fun SettingsScreen(
                 expanded = expAi,
                 onToggle = { expAi = !expAi },
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = settings.useDevAiKey,
-                        onCheckedChange = { vm.setUseDevAiKey(it) },
-                    )
-                    Text(t.aiUseDevKey)
-                }
-                if (settings.useDevAiKey) {
-                    Text(
-                        text = t.aiDevKeyInUse,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
+                LocalAiSettings(settings) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = settings.useDevAiKey,
+                            onCheckedChange = { vm.setUseDevAiKey(it) },
+                        )
+                        Text(t.aiUseDevKey)
+                    }
+                    if (!settings.useDevAiKey) {
+                        OutlinedTextField(
+                            value = aiKeyInput,
+                            onValueChange = { aiKeyInput = it },
+                            label = { Text(t.aiKeyLabel) },
+                            placeholder = { if (settings.aiKeySet) Text(t.aiKeyKeepHint) },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    Spacer(Modifier.height(10.dp))
                     OutlinedTextField(
-                        value = aiKeyInput,
-                        onValueChange = { aiKeyInput = it },
-                        label = { Text(t.aiKeyLabel) },
-                        placeholder = { if (settings.aiKeySet) Text(t.aiKeyKeepHint) },
+                        value = if (settings.useDevAiKey) SettingsStore.DEV_AI_MODEL else aiModel,
+                        onValueChange = { if (!settings.useDevAiKey) aiModel = it },
+                        label = { Text(t.aiModelLabel) },
                         singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        enabled = !settings.useDevAiKey,
                         modifier = Modifier.fillMaxWidth(),
                     )
-                }
-                Spacer(Modifier.height(10.dp))
-                OutlinedTextField(
-                    value = if (settings.useDevAiKey) SettingsStore.DEV_AI_MODEL else aiModel,
-                    onValueChange = { if (!settings.useDevAiKey) aiModel = it },
-                    label = { Text(t.aiModelLabel) },
-                    singleLine = true,
-                    enabled = !settings.useDevAiKey,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                if (settings.useDevAiKey) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = t.aiDevModelFixed,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-                if (!settings.useDevAiKey) {
-                    Spacer(Modifier.height(12.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = {
-                            vm.setAiModel(aiModel)
-                            if (aiKeyInput.isNotBlank()) {
-                                vm.setAiKey(aiKeyInput.trim())
-                                aiKeyInput = ""
-                            } else {
-                                vm.message(t.aiSavedToast)
-                            }
-                        }) { Text(t.aiSave) }
-                        OutlinedButton(
-                            onClick = { vm.setAiKey(null) },
-                            enabled = settings.aiKeySet,
-                        ) { Text(t.aiClear) }
+                    if (!settings.useDevAiKey) {
+                        Spacer(Modifier.height(12.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = {
+                                vm.setAiModel(aiModel)
+                                if (aiKeyInput.isNotBlank()) {
+                                    vm.setAiKey(aiKeyInput.trim())
+                                    aiKeyInput = ""
+                                } else {
+                                    vm.message(t.aiSavedToast)
+                                }
+                            }) { Text(t.aiSave) }
+                            OutlinedButton(
+                                onClick = { vm.setAiKey(null) },
+                                enabled = settings.aiKeySet,
+                            ) { Text(t.aiClear) }
+                        }
                     }
                 }
             }
@@ -1149,30 +1174,13 @@ fun SettingsScreen(
                     )
                 }
                 Spacer(Modifier.height(4.dp))
-                Text(
-                    text = t.lockScreenHint,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                // 部分系统（MIUI/HyperOS、EMUI 等）默认隐藏“静默通知”，只能由用户在系统里开启
-                TextButton(onClick = {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                putExtra(
-                                    Settings.EXTRA_CHANNEL_ID,
-                                    com.kstudio.agenda.notif.StatusNotification.CHANNEL_ID,
-                                )
-                            }
-                        )
-                    }
-                }) { Text(t.btnOpenNotifSettings) }
-                Text(
-                    text = t.statusHint,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                TextButton(onClick = { helpTopic = "lock_screen" }) {
+                    Text(
+                        text = t.lockScreenHint,
+                        color = if (MaterialTheme.colorScheme.surface.luminance() > 0.5f)
+                            Color(0xFF1565C0) else Color(0xFF90CAF9),
+                    )
+                }
             }
         }
 
@@ -1197,6 +1205,53 @@ fun SettingsScreen(
                     selected = settings.glassUi,
                     onClick = { vm.setUiStyle(com.kstudio.agenda.data.UI_STYLE_GLASS) },
                 )
+                Spacer(Modifier.height(16.dp))
+                var motionValue by remember(settings.motionSpeedPercent) { mutableStateOf(settings.motionSpeedPercent.toFloat()) }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(tr("动效速度", "Animation speed", "Vitesse des animations"), modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleSmall)
+                    Text("%.2f×".format(java.util.Locale.ROOT, motionValue / 100f), color = MaterialTheme.colorScheme.primary)
+                }
+                Text(tr("页面、日期、弹窗、液态导航及背景流动 · 默认 1×", "Pages, dates, dialogs, navigation and background · default 1×", "Pages, dates, fenêtres, navigation et fond · défaut 1×"),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                PreferenceSlider(value = motionValue, range = 25f..400f,
+                    label = tr("动效速度", "Animation speed", "Vitesse des animations"),
+                    onChange = { motionValue = it }, onFinished = { vm.setMotionSpeed(motionValue.roundToInt()) })
+                PreferenceSliderScale(range = 25f..400f, startLabel = "0.25×", endLabel = "4×",
+                    referenceValue = 100f, referenceLabel = tr("标准 1×", "Standard 1×", "Standard 1×"),
+                    referenceEnabled = settings.motionSpeedPercent != 100, onReference = { vm.setMotionSpeed(100) })
+                if (settings.glassUi) {
+                    Spacer(Modifier.height(16.dp))
+                    var depthValue by remember(settings.glassColorDepth) {
+                        mutableStateOf(settings.glassColorDepth.toFloat())
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(t.glassColorDepth, modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleSmall)
+                        Text("${depthValue.roundToInt()}%", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                    Text(t.glassDepthHint, style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    PreferenceSlider(value = depthValue, range = 0f..200f, label = t.glassColorDepth,
+                        onChange = { depthValue = it }, onFinished = { vm.setGlassColorDepth(depthValue.roundToInt()) })
+                    Row(Modifier.fillMaxWidth()) {
+                        Text(t.glassDepthLight, style = MaterialTheme.typography.labelMedium)
+                        Spacer(Modifier.weight(1f))
+                        Text(t.glassDepthRich, style = MaterialTheme.typography.labelMedium)
+                    }
+                    TextButton(onClick = { vm.setGlassColorDepth(0) }, enabled = settings.glassColorDepth != 0) {
+                        Text(t.glassDepthReset)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(t.glassBackgroundMotion)
+                            Text(t.glassBackgroundMotionHint, style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = settings.glassBackgroundMotion,
+                            onCheckedChange = vm::setGlassBackgroundMotion)
+                    }
+                }
             }
         }
 
@@ -1261,7 +1316,6 @@ fun SettingsScreen(
         if (settingsTab == 3) item {
             CollapsibleSectionCard(
                 t.secBackup,
-                t.secBackupSub,
                 expanded = expBackup,
                 onToggle = { expBackup = !expBackup },
             ) {
@@ -1296,12 +1350,6 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = t.backupIncludes,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
 
@@ -1319,7 +1367,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(8.dp))
-                OutlinedButton(onClick = onOpenDocImport) { Text(t.docTitle) }
+                OutlinedButton(onClick = { settingsTab = 8 }) { Text(t.docTitle) }
             }
         }
 
@@ -1438,7 +1486,7 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(10.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                HorizontalDivider(color = subtleDividerColor(0.3f))
                 // 官方入口：应用下载/介绍页 + 公开仓库（可点开浏览器）
                 val uriHandler = LocalUriHandler.current
                 listOf(
@@ -1548,6 +1596,7 @@ fun SettingsScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .glassSheen()
                         .clickable { showDevTools = true }
                         .padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -1585,7 +1634,7 @@ fun SettingsScreen(
                 shadowElevation = com.kstudio.agenda.ui.components.cardShadowElevation(),
             ) {
                 Row(
-                    modifier = Modifier.padding(18.dp),
+                    modifier = Modifier.glassSheen().padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -1895,6 +1944,10 @@ fun SettingsScreen(
         )
     }
 
+    helpTopic?.let { topic ->
+        HelpScreen(initialTopic = topic, onClose = { helpTopic = null })
+    }
+
     // 安装更新但系统未允许本应用「安装未知应用」：引导用户去系统设置开启
     if (showInstallPermDialog) {
         AlertDialog(
@@ -2165,6 +2218,7 @@ private fun SettingsCategoryMenu(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .glassSheen()
                         .clickable { onOpen(index) }
                         .padding(horizontal = 18.dp, vertical = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -2201,7 +2255,7 @@ private fun SettingsCategoryMenu(
 
 /** 二级页顶栏：返回箭头 + 分类名（返回分类菜单） */
 @Composable
-private fun SettingsSubHeader(title: String, onBack: () -> Unit) {
+internal fun SettingsSubHeader(title: String, onBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -2211,7 +2265,7 @@ private fun SettingsSubHeader(title: String, onBack: () -> Unit) {
         IconButton(onClick = onBack) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = null,
+                contentDescription = LocalStrings.current.back,
             )
         }
         Text(
@@ -2236,7 +2290,8 @@ private fun UiStyleOption(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
-            .clickable { onClick() }
+            .background(if (selected && LocalGlassEnabled.current) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+            .selectable(selected, role = Role.RadioButton, onClick = onClick)
             .padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

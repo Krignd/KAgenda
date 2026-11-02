@@ -61,12 +61,21 @@ object HolidayTable {
         officialWorkdays = officialWorkdays + (year to workdays)
         revision.value++
     }
+    @Volatile var overrides: Map<Long, HolidayOverride> = emptyMap()
+        private set
+    @Synchronized fun replaceOverrides(values: Map<Long, HolidayOverride>) {
+        if (overrides != values) { overrides = values.toMap(); revision.value++ }
+    }
     fun hasOfficialYear(year: Int): Boolean = year == 2026 || officialMarks.containsKey(year)
-    fun isWorkday(date: LocalDate): Boolean = date.toEpochDay() in (officialWorkdays[date.year] ?: builtInWorkdays)
-    private fun holidayName(date: LocalDate): String? = (officialMarks[date.year] ?: marks)[date.toEpochDay()]
+    fun isWorkday(date: LocalDate): Boolean = overrides[date.toEpochDay()]?.let { it.kind == HolidayKind.WORKDAY }
+        ?: (date.toEpochDay() in (officialWorkdays[date.year] ?: builtInWorkdays))
+    private fun holidayName(date: LocalDate): String? {
+        overrides[date.toEpochDay()]?.let { return if (it.kind == HolidayKind.HOLIDAY) it.name else null }
+        return (officialMarks[date.year] ?: marks)[date.toEpochDay()]
+    }
 
     /** 该日期是节假日则返回名称（如“中秋”），否则 null */
-    fun nameOf(date: LocalDate): String? = holidayName(date) ?: festivalName(date)
+    fun nameOf(date: LocalDate): String? = holidayName(date) ?: if (overrides.containsKey(date.toEpochDay())) null else festivalName(date)
 
     /** 农历日期核对来源：https://www.hko.gov.hk/tc/gts/time/calendar/pdf/files/2027.pdf */
     fun festivalName(date: LocalDate): String? = when (date.toString()) {

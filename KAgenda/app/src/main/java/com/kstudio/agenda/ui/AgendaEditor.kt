@@ -2,6 +2,8 @@
 
 package com.kstudio.agenda.ui
 
+import com.kstudio.agenda.ui.theme.glassFrost
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -32,8 +34,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
+import com.kstudio.agenda.ui.components.AppButton as Button
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,15 +43,15 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.kstudio.agenda.ui.components.AppOutlinedButton as OutlinedButton
+import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
+import com.kstudio.agenda.ui.theme.FrostedSurface as Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -67,15 +69,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.AgendaTextParser
-import com.kstudio.agenda.data.AiClient
-import com.kstudio.agenda.data.AiSkills
-import com.kstudio.agenda.data.SettingsStore
+import com.kstudio.agenda.data.AiInference
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.AgendaTypes
 import com.kstudio.agenda.ui.components.RepeatRulePicker
 import com.kstudio.agenda.ui.components.TagChip
 import com.kstudio.agenda.ui.components.cardBaseColor
+import com.kstudio.agenda.ui.components.cardGlassBorder
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+import com.kstudio.agenda.ui.theme.glassAccentColor
+import com.kstudio.agenda.ui.theme.glassSheen
 import com.kstudio.agenda.ui.components.cardShadowElevation
 import com.kstudio.agenda.ui.components.cardTonalElevation
 import com.kstudio.agenda.ui.components.rememberFlashPulse
@@ -129,18 +133,17 @@ fun AgendaCard(
                     2.dp,
                     accent.copy(alpha = 0.35f + 0.65f * pulse),
                     RoundedCornerShape(18.dp),
-                ) else Modifier.border(
-                    // 深色玻璃：描边透明（用户要求）；其余主题保持 outline 45%（与课程卡片一致）
+                ) else if (LocalGlassEnabled.current) Modifier.cardGlassBorder()
+                else Modifier.border(
                     1.dp,
-                    if (com.kstudio.agenda.ui.components.isDarkGlass()) Color.Transparent
-                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
                     RoundedCornerShape(18.dp),
                 )
             )
             .clip(RoundedCornerShape(18.dp))
             .clickable(onClick = onClick),
     ) {
-        Row(Modifier.height(IntrinsicSize.Min)) {
+        Row(Modifier.glassSheen().height(IntrinsicSize.Min)) {
             Box(
                 Modifier
                     .width(6.dp)
@@ -175,7 +178,7 @@ fun AgendaCard(
                     Text(
                         text = detail,
                         style = MaterialTheme.typography.labelLarge,
-                        color = accent,
+                        color = glassAccentColor(accent),
                     )
                 }
                 if (!extraLine.isNullOrBlank()) {
@@ -220,6 +223,7 @@ fun AgendaEditorDialog(
     onSave: (AgendaEvent) -> Unit,
     onDelete: (String) -> Unit,
     asPlan: Boolean = false,
+    origin: androidx.compose.ui.geometry.Rect? = null,
 ) {
     val t = LocalStrings.current
     // 计划语境：用于“短/长计划”“重复规则”等仅计划适用的文案与选项
@@ -248,6 +252,7 @@ fun AgendaEditorDialog(
     val notificationLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
     var note by rememberSaveable { mutableStateOf(initial?.note ?: "") }
+    var originalText by rememberSaveable { mutableStateOf(initial?.originalText ?: "") }
     var pasteText by rememberSaveable { mutableStateOf("") }
     var error by remember { mutableStateOf("") }
     var askDelete by remember { mutableStateOf(false) }
@@ -269,17 +274,19 @@ fun AgendaEditorDialog(
             initial?.startTime ?: "", initial?.endTime ?: "",
             initial?.location ?: "", initial?.note ?: "",
             (initial?.followGlobalReminder ?: true).toString(), (initial?.notifyEnabled ?: true).toString(),
-            (initial?.alarmEnabled ?: false).toString(), (initial?.reminderLeadMinutes ?: 30).toString(), initial?.statusTag ?: "",
+            (initial?.alarmEnabled ?: false).toString(), (initial?.reminderLeadMinutes ?: 30).toString(), initial?.statusTag ?: "", initial?.originalText ?: "",
         )
     }
     fun dirtyNow(): Boolean = listOf(
         title, type, colorArgb.toString(), isLong.toString(), repeatRule,
         startDateEpoch.toString(), endDateEpoch.toString(),
         startTime, endTime, location, note,
-        followReminder.toString(), notifyEnabled.toString(), alarmEnabled.toString(), leadMinutes.toString(), statusTag,
+        followReminder.toString(), notifyEnabled.toString(), alarmEnabled.toString(), leadMinutes.toString(), statusTag, originalText,
     ) != initialSnapshot
 
     AlertDialog(
+        origin = origin,
+        scrollText = false,
         onDismissRequest = { if (dirtyNow()) confirmDiscard = true else onDismiss() },
         title = {
             Text(
@@ -309,6 +316,9 @@ fun AgendaEditorDialog(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                        if (pasteText.isNotBlank()) TextButton(onClick = { originalText = pasteText }) {
+                            Text(com.kstudio.agenda.i18n.LocalAiText.keepOriginal)
+                        }
                         OutlinedTextField(
                             value = pasteText,
                             onValueChange = { pasteText = it },
@@ -353,19 +363,7 @@ fun AgendaEditorDialog(
                                     parseMsg = t.aiRunning
                                     scope.launch {
                                         try {
-                                            val key = SettingsStore.effectiveAiKey(aiContext)
-                                            if (key.isNullOrBlank()) {
-                                                parseMsg = t.aiNeedKey
-                                                return@launch
-                                            }
-                                            val model = SettingsStore.effectiveAiModel(aiContext)
-                                            val reply = AiClient.chat(
-                                                apiKey = key,
-                                                model = model,
-                                                systemPrompt = AiSkills.parseEventSystemPrompt,
-                                                userPrompt = AiSkills.userPrompt(pasteText, startDate),
-                                            )
-                                            val ev = AiSkills.parseReply(reply)
+                                            val ev = AiInference.parseEvent(aiContext, pasteText, startDate)
                                             if (ev == null) {
                                                 parseMsg = t.parseFail
                                             } else {
@@ -566,6 +564,11 @@ fun AgendaEditorDialog(
                     maxLines = 3,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                OutlinedTextField(
+                    value = originalText, onValueChange = { originalText = it },
+                    label = { Text(com.kstudio.agenda.i18n.LocalAiText.originalText) },
+                    minLines = 2, maxLines = 6, modifier = Modifier.fillMaxWidth(),
+                )
                 if (error.isNotBlank()) {
                     Text(
                         text = error,
@@ -623,6 +626,7 @@ fun AgendaEditorDialog(
                         endTime = endTime,
                         location = location.trim(),
                         note = note.trim(),
+                        originalText = originalText,
                         isLong = isLong,
                         // 短日程：选了重复规则时，结束日期 = 重复截止日期
                         // （未填 / 与开始同日 / 早于开始日 = 不限、持续延伸 → 存 null）
@@ -679,6 +683,7 @@ fun AgendaEditorDialog(
             initialSelectedDateMillis = pickerInit.toEpochDay() * 86_400_000L
         )
         DatePickerDialog(
+            modifier = Modifier.glassFrost(RoundedCornerShape(28.dp), popup = true),
             onDismissRequest = { picker = "" },
             confirmButton = {
                 TextButton(onClick = {

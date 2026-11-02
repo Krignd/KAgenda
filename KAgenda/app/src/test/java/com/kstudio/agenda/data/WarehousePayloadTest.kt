@@ -5,6 +5,14 @@ import org.junit.Test
 import java.time.LocalDate
 
 class WarehousePayloadTest {
+    @Test fun `class details survive deduplication of equal timetable facts`() {
+        val raw="""[{"name":"同名课","teacher":"甲","position":"A101","day":1,"startSection":1,"endSection":2,"weeks":[1],"extraInfo":"教学班：A"},{"name":"同名课","teacher":"甲","position":"A101","day":1,"startSection":1,"endSection":2,"weeks":[1],"extraInfo":"教学班：B"}]"""
+        val batch=WarehousePayload.parse(raw,"","""{"semesterTotalWeeks":18}""")
+        assertEquals("教学班：A\n\n教学班：B",batch.courses.single().extraInfo)
+    }
+    @Test(expected=IllegalArgumentException::class) fun `nontext class details reject the batch`() {
+        WarehousePayload.parse("""[{"name":"课","day":1,"startSection":1,"endSection":2,"weeks":[1],"extraInfo":{"class":"A"}}]""","", "")
+    }
     private val slots = """[{"number":2,"startTime":"08:50","endTime":"09:35"},{"number":1,"startTime":"08:00","endTime":"08:45"}]"""
     private val courses = """[{"name":"数学","teacher":"老师","position":"A201","day":3,"startSection":1,"endSection":2,"weeks":[1,3,5,5]}]"""
     @Test fun `odd weeks rooms and reordered time slots survive import`() {

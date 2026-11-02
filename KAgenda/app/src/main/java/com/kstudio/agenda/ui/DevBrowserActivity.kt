@@ -3,8 +3,22 @@
 package com.kstudio.agenda.ui
 
 import android.os.Bundle
+import android.app.Activity
+import android.content.Intent
+import com.kstudio.agenda.data.SchedulePageCapture
+import com.kstudio.agenda.i18n.ImportText
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import org.json.JSONTokener
+import org.json.JSONObject
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
+import android.webkit.ConsoleMessage
+import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
+import android.webkit.WebResourceError
+import com.kstudio.agenda.data.WebViewLanguageDiagnostics
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -27,15 +41,15 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -75,22 +89,30 @@ import java.util.Locale
  * - 这里会记录访问历史（可回看、可点回、可清空），登录窗口不记录。
  */
 class DevBrowserActivity : ComponentActivity() {
+    companion object {
+        const val EXTRA_IMPORT = "schedule_import_mode"
+        const val EXTRA_PAGE = "schedule_page_text"
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             KAgendaTheme {
-                DevBrowserScreen(onClose = { finish() })
+                DevBrowserScreen(onClose = { finish() }, importMode = intent.getBooleanExtra(EXTRA_IMPORT, false),
+                    onCaptured = { page -> setResult(Activity.RESULT_OK, Intent().putExtra(EXTRA_PAGE, page)); finish() })
             }
         }
     }
 }
 
 @Composable
-private fun DevBrowserScreen(onClose: () -> Unit) {
+private fun DevBrowserScreen(onClose: () -> Unit, importMode: Boolean = false, onCaptured: (String) -> Unit = {}) {
     val t = LocalStrings.current
     val context = LocalContext.current
+    var captureError by remember { mutableStateOf("") }
+    var capturing by remember { mutableStateOf(false) }
 
     var webView by remember { mutableStateOf<WebView?>(null) }
     /** 起始地址：江苏大学用 WebVPN 门户，其它学校用其教务首页；读完设置后再生效 */
@@ -112,7 +134,12 @@ private fun DevBrowserScreen(onClose: () -> Unit) {
     fun go(raw: String) {
         val v = webView ?: return
         val url = normalizeUrl(raw)
-        if (url.isBlank()) return
+        val parsed = runCatching { java.net.URI(url) }.getOrNull()
+        if (parsed?.scheme !in listOf("https", "http") || parsed?.host.isNullOrBlank() || parsed?.userInfo != null) {
+            captureError = ImportText.badAddress
+            return
+        }
+        captureError = ""
         v.loadUrl(url)
     }
 
@@ -145,7 +172,7 @@ private fun DevBrowserScreen(onClose: () -> Unit) {
             TopAppBar(
                 title = {
                     Text(
-                        text = t.devBrowserTitle,
+                        text = if (importMode) ImportText.browser else t.devBrowserTitle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
@@ -198,13 +225,35 @@ private fun DevBrowserScreen(onClose: () -> Unit) {
                 TextButton(onClick = { go(addressInput) }) { Text(t.devBrowserGo) }
             }
 
-            // 普通 WebView：开启 JS / 本地存储 / 缩放，不注入任何脚本
+            if (importMode) {
+                Text(ImportText.browserHint, Modifier.padding(horizontal = 12.dp), style = MaterialTheme.typography.bodySmall)
+                TextButton(enabled = !capturing, onClick = {
+                    val current = webView ?: return@TextButton
+                    capturing = true
+                    captureError = ""
+                    current.evaluateJavascript(SchedulePageCapture.script) { result ->
+                        capturing = false
+                        runCatching {
+                            val json = JSONObject(JSONTokener(result).nextValue() as String)
+                            require(!json.has("error")) { ImportText.tooLong }
+                            val page = json.optString("text")
+                            require(page.isNotBlank()) { ImportText.noText }
+                            onCaptured(page)
+                        }.onFailure { captureError = it.message ?: ImportText.failed }
+                    }
+                }) { Text(if (capturing) ImportText.parsing else ImportText.capture) }
+            }
+            if (captureError.isNotBlank()) Text(captureError, Modifier.padding(12.dp), color = MaterialTheme.colorScheme.error)
+
+            // 普通 WebView：开启 JS / 本地存储 / 缩放；只读语言探针不改页面或请求。
             AndroidView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
                 factory = { ctx ->
                     WebView(ctx).apply {
+                        settings.allowFileAccess = false
+                        settings.allowContentAccess = false
                         settings.javaScriptEnabled = true
                         settings.domStorageEnabled = true
                         settings.databaseEnabled = true
@@ -213,7 +262,27 @@ private fun DevBrowserScreen(onClose: () -> Unit) {
                         settings.displayZoomControls = false
                         settings.useWideViewPort = true
                         settings.loadWithOverviewMode = true
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                                WebViewLanguageDiagnostics.console(message, "DevBrowser")
+                                return super.onConsoleMessage(message)
+                            }
+                        }
                         webViewClient = object : WebViewClient() {
+                            override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                                WebViewLanguageDiagnostics.request(request, "DevBrowser")
+                                return super.shouldInterceptRequest(view, request)
+                            }
+
+                            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                                WebViewLanguageDiagnostics.resourceError(request, error.errorCode, false, "DevBrowser")
+                                super.onReceivedError(view, request, error)
+                            }
+
+                            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                                WebViewLanguageDiagnostics.resourceError(request, response.statusCode, true, "DevBrowser")
+                                super.onReceivedHttpError(view, request, response)
+                            }
                             override fun onPageStarted(
                                 view: WebView,
                                 url: String?,
@@ -230,6 +299,7 @@ private fun DevBrowserScreen(onClose: () -> Unit) {
 
                             override fun onPageFinished(view: WebView, url: String?) {
                                 super.onPageFinished(view, url)
+                                WebViewLanguageDiagnostics.environment(view, "DevBrowser")
                                 if (url != null) {
                                     addressInput = url
                                     BrowserHistoryStore.updateTitle(context, url, view.title.orEmpty())

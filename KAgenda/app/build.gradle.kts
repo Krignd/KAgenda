@@ -60,6 +60,8 @@ android {
         applicationId = "com.kstudio.agenda"
         minSdk = 26          // Android 8.0+（向下兼容；悬浮窗 TYPE_APPLICATION_OVERLAY 即 API 26 起）
         targetSdk = 35
+        testInstrumentationRunner = providers.gradleProperty("kagenda.testRunner")
+            .getOrElse("com.kstudio.agenda.LocalAiDeviceTestRunner")
         // 版本命名逻辑（2026.9 起）：年份.月份 v序号；versionCode = 年×10000 + 月×100 + 序号
         // - 正式版：无后缀，如 `2026.9 v2.0.7`；补丁：`2026.9 v2.0.7.1`
         // - 预览版：用户要求加功能、能跑但用户还没自己检查 → 版本号后加 `(preN)`（N 递增），如 `2026.9 v2.0.8(pre1)`
@@ -68,9 +70,16 @@ android {
         //   注意：(revN) 只接在版本号后，**不叠加在 (preN) 之后**；预览阶段自己发现的修复留在同一个 (preN) 里
         // - versionCode 只增不减：2026.10 预览版已用到 20261003（v1(pre3)），
         //   正式版 20261004（v1）→ 修订版 20261005 → v1.1 继续 +1。
-        versionCode = 20261006
-        versionName = "2026.10 v1.1"
-        // WebView 相关无 NDK 需求
+        versionCode = 20261101
+        versionName = "2026.11 v1"
+        externalNativeBuild {
+            cmake {
+                arguments += "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
+                providers.gradleProperty("kagenda.llamaSource").orNull?.let {
+                    arguments += "-DKAGENDA_LLAMA_SOURCE=$it"
+                }
+            }
+        }
     }
 
     buildTypes {
@@ -114,6 +123,14 @@ android {
         buildConfig = true
     }
 
+    ndkVersion = "27.2.12479018"
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -135,6 +152,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
+    implementation(libs.haze)
     debugImplementation(libs.androidx.ui.tooling)
 
     // 设置存储
@@ -144,6 +162,10 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     // 单元测试（解析器等纯 JVM 逻辑）
+    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
+    implementation("org.jsoup:jsoup:1.23.2")
+    implementation("com.google.code.gson:gson:2.11.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
 }

@@ -54,9 +54,22 @@ object WarehousePayload {
             val ws = row.getJSONArray("weeks")
             val active = (0 until ws.length()).map { ws.getInt(it) }.distinct().sorted()
             require(active.isNotEmpty() && active.all { it in 1..Course.MAX_WEEK })
+            val importedInfo = if (row.isNull("extraInfo")) "" else {
+                require(row.get("extraInfo") is String) { "Course details must be text" }
+                row.getString("extraInfo").trim().also { require(it.length <= 4000) }
+            }
+            val creditInfo = row.optString("credit").takeIf { it.isNotBlank() && it != "null" }
+                ?.let { "${com.kstudio.agenda.i18n.AppText.current.importCreditLabel}: $it" }.orEmpty()
             Course(name, "", if (row.isNull("teacher")) "" else row.optString("teacher"), Course.encodeWeeks(active), if (row.isNull("position")) "" else row.optString("position"), first, last, day,
-                extraInfo = row.optString("credit").takeIf { it.isNotBlank() && it != "null" }?.let { "${com.kstudio.agenda.i18n.AppText.current.importCreditLabel}: $it" }.orEmpty())
-        }.distinctBy { listOf(it.id, it.weeksRaw, it.teacher) }
+                extraInfo = listOf(importedInfo, creditInfo).filter { it.isNotBlank() }.distinct().joinToString("\n"))
+        }.groupBy { listOf(it.title, it.code, it.teacher, it.weeksRaw, it.room, it.startPeriod, it.endPeriod, it.dayOfWeek) }
+            .values.map { equivalent ->
+                // Identical timetable facts can carry multiple teaching-class
+                // descriptions. Keep every distinct block in one occurrence.
+                val details = equivalent.map { it.extraInfo }.filter { it.isNotBlank() }.distinct().joinToString("\n\n")
+                require(details.length <= 4000) { "Combined course details exceed supported size" }
+                equivalent.first().copy(extraInfo = details)
+            }
         return Batch(courses, slots, monday, maxOf(weeks, courses.maxOf { it.weeksSet().maxOrNull() ?: 1 }))
     }
 }

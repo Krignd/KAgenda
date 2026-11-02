@@ -42,6 +42,7 @@ data class AgendaEvent(
     val alarmEnabled: Boolean = false,
     /** delayed / advanced / waiting，空串表示无标签 */
     val statusTag: String = "",
+    val originalText: String = "",
 ) {
     val date: LocalDate get() = LocalDate.ofEpochDay(dateEpochDay)
 
@@ -117,6 +118,7 @@ data class AgendaEvent(
 
     /** 当前是否正在进行（长日程跨天适用；短日程按当天时刻判断） */
     fun isOngoing(now: LocalDateTime = LocalDateTime.now()): Boolean {
+        if (!isLong && (!hasPreciseStart || !hasPreciseEnd)) return false
         if (repeatRule.isNotBlank() && !isLong) {
             if (!occursOn(now.toLocalDate())) return false
             val start = now.toLocalDate().atTime(parseTime(startTime) ?: LocalTime.MIN)

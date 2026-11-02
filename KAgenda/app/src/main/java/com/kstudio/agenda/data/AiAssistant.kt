@@ -23,13 +23,14 @@ object AiAssistant {
     )
 
     /** 供 AI 提示词的“现有条目”清单（标题 + 日期时间，最多取一部分） */
-    fun contextLines(events: List<AgendaEvent>, query: String = "", today: LocalDate = LocalDate.now()): List<String> =
+    fun contextLines(events: List<AgendaEvent>, query: String = "", today: LocalDate = LocalDate.now(), limit: Int = Int.MAX_VALUE): List<String> =
         events.sortedWith(compareBy<AgendaEvent>(
             { if (query.contains(it.title) && it.title.isNotBlank()) 0 else 1 },
+            { if (query.contains(it.title) && it.title.isNotBlank()) -it.title.length else 0 },
             { if (it.isOngoing(today.atTime(12, 0))) 0 else 1 },
             { if (it.repeatRule.isNotBlank() || !it.endDate.isBefore(today)) 0 else 1 },
             { abs(it.dateEpochDay - today.toEpochDay()) },
-        )).map { e ->
+        )).take(limit).map { e ->
             org.json.JSONObject().apply {
                 put("id", e.id); put("t", e.title); put("d", e.date.toString()); put("s", e.startTime); put("e", e.endTime)
                 put("l", e.location); put("rp", e.repeatRule); put("lg", e.isLong)
@@ -54,6 +55,7 @@ object AiAssistant {
             endTime = item.endTime,
             location = item.location,
             note = item.note,
+            originalText = item.originalText,
             type = item.type.takeIf { key -> key in AgendaTypes.ORDER } ?: "",
             isPlan = item.isPlan,
             // 长日程 / 长计划：AI 解析出的跨天区间必须带上，否则会被压成一天

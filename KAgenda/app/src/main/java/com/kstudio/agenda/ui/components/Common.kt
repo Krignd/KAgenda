@@ -1,6 +1,9 @@
 package com.kstudio.agenda.ui.components
 
+import com.kstudio.agenda.ui.theme.LocalMotionSettings
+
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -17,16 +20,19 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.kstudio.agenda.ui.theme.FrostedSurface as Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,11 +41,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+import com.kstudio.agenda.ui.theme.glassSheen
+import com.kstudio.agenda.ui.theme.glassAccentColor
 
 /**
  * 卡片底色（白天 / 夜间 / 液态玻璃统一口径）：
@@ -63,7 +75,7 @@ fun cardBaseColor(): Color =
 fun cardTonalElevation(): Dp =
     if (isSystemInDarkTheme() && !LocalGlassEnabled.current) 2.dp else 0.dp
 
-/** 配合 [cardBaseColor] 的阴影：白天给极淡投影（不带主色染色），夜间/玻璃不需要 */
+/** Translucent glass avoids elevation shadows bleeding through its interior. */
 @Composable
 fun cardShadowElevation(): Dp =
     if (isSystemInDarkTheme() || LocalGlassEnabled.current) 0.dp else 1.dp
@@ -72,6 +84,13 @@ fun cardShadowElevation(): Dp =
 @Composable
 fun segmentedStrokeColor(): Color =
     if (isDarkGlass()) Color.Transparent else MaterialTheme.colorScheme.outline
+
+/** Multiply translucent outlines rather than accidentally making them opaque. */
+@Composable
+fun subtleDividerColor(defaultAlpha: Float): Color {
+    val outline = MaterialTheme.colorScheme.outline
+    return outline.copy(alpha = if (LocalGlassEnabled.current) outline.alpha * defaultAlpha else defaultAlpha)
+}
 
 /**
  * 是否处于「深色 + 液态玻璃」。
@@ -101,8 +120,14 @@ fun cardBorderColor(): Color =
 @Composable
 fun Modifier.cardGlassBorder(
     shape: androidx.compose.ui.graphics.Shape = RoundedCornerShape(18.dp),
-): Modifier =
-    if (LocalGlassEnabled.current) this.border(1.dp, cardBorderColor(), shape) else this
+): Modifier = when {
+    !LocalGlassEnabled.current || isDarkGlass() -> this
+    else -> this.border(
+        1.dp,
+        Brush.linearGradient(listOf(Color.White.copy(alpha = 0.65f), Color.White.copy(alpha = 0.12f))),
+        shape,
+    )
+}
 
 /** 小标签（本 / 研 / 周次等） */
 @Composable
@@ -115,7 +140,7 @@ fun TagChip(text: String, color: Color, modifier: Modifier = Modifier) {
     ) {
         Text(
             text = text,
-            color = color,
+            color = glassAccentColor(color, color.copy(alpha = 0.15f).compositeOver(cardBaseColor())),
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.Medium,
         )
@@ -133,9 +158,12 @@ fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
         else -> MaterialTheme.colorScheme.surfaceVariant
     }
     val fg = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
+    val motion = LocalMotionSettings.current
+    val animatedBg by animateColorAsState(bg, tween(if (glass) motion.duration(180) else 0), label = "choiceBackground")
+    val animatedFg by animateColorAsState(fg, tween(if (glass) motion.duration(180) else 0), label = "choiceForeground")
     Surface(
         shape = RoundedCornerShape(50),
-        color = bg,
+        color = animatedBg,
         modifier = modifier
             .clip(RoundedCornerShape(50))
             .then(
@@ -149,16 +177,26 @@ fun ChoiceChip(label: String, selected: Boolean, onClick: () -> Unit, modifier: 
                     Modifier
                 }
             )
-            .clickable { onClick() },
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
     ) {
         Text(
             text = label,
-            color = fg,
+            color = animatedFg,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            modifier = Modifier
+                .then(if (!selected) Modifier.glassSheen() else Modifier)
+                .then(if (glass) Modifier.heightIn(min = 48.dp) else Modifier)
+                .padding(horizontal = 14.dp, vertical = if (glass) 12.dp else 8.dp),
         )
     }
+}
+
+/** Shared day/week/month control; equal targets and explicit selection semantics. */
+@Composable
+fun GlassViewSwitcher(labels: List<String>, selectedIndex: Int, onSelect: (Int) -> Unit) {
+    LiquidNavigation(labels, selectedIndex, onSelect,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp))
 }
 
 /** 分组卡片 */
@@ -176,7 +214,7 @@ fun SectionCard(
         tonalElevation = cardTonalElevation(),
         shadowElevation = cardShadowElevation(),
     ) {
-        Column(Modifier.padding(18.dp)) {
+        Column(Modifier.glassSheen().padding(18.dp)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
@@ -207,22 +245,26 @@ fun CollapsibleSectionCard(
     expanded: Boolean,
     onToggle: () -> Unit,
     trailing: String? = null,
+    containerColor: Color = cardBaseColor(),
+    contentColor: Color = MaterialTheme.colorScheme.onSurface,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth().cardGlassBorder(),
         // 默认主题：白底、无描边、18dp 圆角（与课程卡片一致）；玻璃：多一圈微光边
         shape = RoundedCornerShape(18.dp),
-        color = cardBaseColor(),
+        color = containerColor,
+        contentColor = contentColor,
         tonalElevation = cardTonalElevation(),
         shadowElevation = cardShadowElevation(),
     ) {
-        Column(Modifier.padding(18.dp)) {
+        Column(Modifier.glassSheen().padding(18.dp)) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable { onToggle() },
+                    .clickable { onToggle() }
+                    .then(if (LocalGlassEnabled.current) Modifier.heightIn(min = 48.dp) else Modifier),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
@@ -253,10 +295,11 @@ fun CollapsibleSectionCard(
                 ExpandArrow(expanded)
             }
             // 展开/折叠动画：高度伸缩 + 淡入淡出，避免内容突然出现或消失
+            val motion = LocalMotionSettings.current
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically(animationSpec = tween(220)) + fadeIn(tween(180)),
-                exit = shrinkVertically(animationSpec = tween(200)) + fadeOut(tween(140)),
+                enter = expandVertically(animationSpec = tween(motion.duration(220))) + fadeIn(tween(motion.duration(180))),
+                exit = shrinkVertically(animationSpec = tween(motion.duration(200))) + fadeOut(tween(motion.duration(140))),
             ) {
                 Column(Modifier.padding(top = 14.dp)) {
                     content()
@@ -271,6 +314,7 @@ fun CollapsibleSectionCard(
 fun ExpandArrow(expanded: Boolean, modifier: Modifier = Modifier) {
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 0f else -90f,
+        animationSpec = tween(LocalMotionSettings.current.duration(250)),
         label = "expandArrow",
     )
     Icon(

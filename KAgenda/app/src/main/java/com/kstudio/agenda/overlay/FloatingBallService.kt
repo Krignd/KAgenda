@@ -30,7 +30,6 @@ import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.kstudio.agenda.R
 import com.kstudio.agenda.data.AgendaStore
-import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.i18n.AppText
@@ -40,6 +39,7 @@ import com.kstudio.agenda.ui.MainActivity
 import com.kstudio.agenda.ui.aiOpBadgeLabel
 import com.kstudio.agenda.ui.aiOpSummary
 import com.kstudio.agenda.data.AiAssistant
+import com.kstudio.agenda.data.AiInference
 import com.kstudio.agenda.notif.ReminderScheduler
 import com.kstudio.agenda.util.AppPresence
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
@@ -59,7 +59,7 @@ import kotlin.math.min
 /**
  * 系统级 AI 悬浮球（TYPE_APPLICATION_OVERLAY，可显示在其他应用之上）：
  * - 悬浮球：拖动移动；松手后自动吸附到最近的屏幕侧边；点按打开快速输入面板；长按打开 App；
- * - 输入面板：直接在当前应用上方输入文字 → DeepSeek 多条目识别 → 全部添加到本地日程/计划，
+ * - 输入面板：直接在当前应用上方输入文字 → 智能识别 → 确认日程/计划操作，
  *   全程无需离开当前应用（亦可一键转去 App 内界面）；
  * - 前台服务常驻，随「设置 → 悬浮球」开关启停；需「显示在其他应用上层」权限。
  */
@@ -75,7 +75,7 @@ class FloatingBallService : Service() {
         private const val KEY_PANEL_X = "panel_x"
         private const val KEY_PANEL_Y = "panel_y"
         /** 闲置（未触摸/未拖动）时的透明度：数值越小越通透，避免遮挡其他应用内容 */
-        private const val REST_ALPHA = 0.55f
+        private const val REST_ALPHA = 0.78f
 
         /** 悬浮窗权限轮询间隔：权限被系统/用户收回后立即隐藏悬浮球 */
         private const val PERMISSION_POLL_MS = 3_000L
@@ -125,7 +125,9 @@ class FloatingBallService : Service() {
     private var permissionJob: Job? = null
     private var surfaceJob: Job? = null
 
-    private val ballSizePx: Int get() = dp(54)
+    // 图标缩小，点击和拖动区域仍保留 48dp，避免小图标难以操作。
+    private val ballSizePx: Int get() = dp(48)
+    private val ballIconSizePx: Int get() = dp(40)
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
 
@@ -253,7 +255,7 @@ class FloatingBallService : Service() {
         icon.setImageResource(R.drawable.ic_overlay_ball_icon)
         frame.addView(
             icon,
-            FrameLayout.LayoutParams(ballSizePx, ballSizePx, Gravity.CENTER),
+            FrameLayout.LayoutParams(ballIconSizePx, ballIconSizePx, Gravity.CENTER),
         )
         frame.elevation = dp(6).toFloat()
         frame.alpha = REST_ALPHA
@@ -387,6 +389,9 @@ class FloatingBallService : Service() {
         val addBtn = v.findViewById<Button>(R.id.overlay_add)
         val msg = v.findViewById<TextView>(R.id.overlay_msg)
 
+        val keepOriginal = v.findViewById<android.widget.CheckBox>(R.id.overlay_keep_original)
+        keepOriginal.text = com.kstudio.agenda.i18n.LocalAiText.keepOriginal
+        keepOriginal.setTextColor(textColor)
         title.text = t.qaTitle
         title.setTextColor(textColor)
         close.setTextColor(subColor)
@@ -453,28 +458,13 @@ class FloatingBallService : Service() {
             setMsg(t.aiRunning)
             requestJob = scope.launch {
                 try {
-                    val key = SettingsStore.effectiveAiKey(this@FloatingBallService)
-                    if (key.isNullOrBlank()) {
-                        setMsg(t.aiNeedKey)
-                        return@launch
-                    }
-                    val model = SettingsStore.effectiveAiModel(this@FloatingBallService)
-                    val reply = AiClient.chat(
-                        apiKey = key,
-                        model = model,
-                        systemPrompt = AiSkills.assistantSystemPrompt,
-                        userPrompt = AiSkills.assistantUserPrompt(
-                            text,
-                            LocalDate.now(),
-                            AiAssistant.contextLines(AgendaStore.events.value),
-                        ),
-                    )
+                    val parsed = AiInference.recognize(this@FloatingBallService, text, AgendaStore.events.value)
                     // 等待期间用户改了文字：本次结果作废（防止与当前内容不符的操作入库）
                     if (text != input.text?.toString().orEmpty()) {
                         setMsg(t.qaStaleResult)
                         return@launch
                     }
-                    val list = AiSkills.parseOpsReply(reply)
+                    val list = parsed.ops
                     if (list.isEmpty()) {
                         parsedOps = emptyList()
                         setMsg(t.qaNothing)
@@ -483,9 +473,9 @@ class FloatingBallService : Service() {
                         // 反馈中标注每条是「日程」还是「计划」，避免用户分不清去向
                         val existing = AgendaStore.events.value
                         setMsg(
-                            list.joinToString("\n") { op ->
+                            listOf(parsed.note, list.joinToString("\n") { op ->
                                 "[" + aiOpBadgeLabel(op, t) + "] " + aiOpSummary(op, t, existing)
-                            }
+                            }).filter { it.isNotBlank() }.joinToString("\n")
                         )
                     }
                 } catch (e: kotlinx.coroutines.CancellationException) {
@@ -500,7 +490,10 @@ class FloatingBallService : Service() {
             }
         }
         addBtn.setOnClickListener {
-            val list = parsedOps
+            val source = input.text.toString()
+            val list = parsedOps.map { op ->
+                if (keepOriginal.isChecked && op is AiSkills.AiOp.Add) op.copy(item = op.item.copy(originalText = source)) else op
+            }
             if (list.isEmpty() || busy) return@setOnClickListener
             busy = true
             addBtn.isEnabled = false
@@ -530,7 +523,7 @@ class FloatingBallService : Service() {
         val prefs = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         val screenW = resources.displayMetrics.widthPixels
         val screenH = resources.displayMetrics.heightPixels
-        val width = min(screenW - dp(28), dp(360)).coerceAtLeast(dp(240))
+        val width = min(screenW - dp(24), dp(336)).coerceAtLeast(1)
         val lp = WindowManager.LayoutParams(
             width,
             WindowManager.LayoutParams.WRAP_CONTENT,
@@ -640,11 +633,18 @@ class FloatingBallService : Service() {
     }
 
     private fun openApp() {
+        val origin = ball?.takeIf { it.isAttachedToWindow && it.width > 0 && it.height > 0 }?.let { view ->
+            val location = IntArray(2)
+            view.getLocationOnScreen(location)
+            floatArrayOf(location[0].toFloat(), location[1].toFloat(),
+                (location[0] + view.width).toFloat(), (location[1] + view.height).toFloat())
+        }
         runCatching {
             startActivity(
                 Intent(this, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                     putExtra(MainActivity.EXTRA_QUICK_ADD, true)
+                    origin?.let { putExtra(MainActivity.EXTRA_AI_ORIGIN_BOUNDS, it) }
                 }
             )
         }

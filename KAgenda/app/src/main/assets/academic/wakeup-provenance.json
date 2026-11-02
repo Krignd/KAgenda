@@ -1,0 +1,117 @@
+{
+  "repository": "https://github.com/Matey-ace/wakeup-course-schedule",
+  "commit": "43631a54cb70ceb2d983a4d646022d84352c9d85",
+  "snapshotDate": "2026-08-29",
+  "originalProject": "https://github.com/YZune/WakeupSchedule_Kotlin",
+  "originalVersion": "3.612",
+  "license": "Apache-2.0",
+  "files": {
+    "parser/BNUZParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/BNUZParser.kt",
+      "upstreamSha256": "9a157f5724c91cd7aa45ced1c6517612d83c31efaf51f1be85e81f50d97abbd8",
+      "vendoredSha256": "360ad06cf7abf38894c059d76b7f68b6edc9e24da02a2d5fabae99321067a671"
+    },
+    "parser/ChengFangParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/ChengFangParser.kt",
+      "upstreamSha256": "30597f2cb725f114d2e309a1298643ed874a2980c68438fc326772e31733760c",
+      "vendoredSha256": "78a499698d1c236f05659770c1bfb80f6c3f04dd1206082ac3eaa1911f8b78d7"
+    },
+    "parser/HNIUParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/HNIUParser.kt",
+      "upstreamSha256": "ae1fa76431be8763433f09b697a88a830b748cad71e9beb8af98650e2b94c9d8",
+      "vendoredSha256": "79adb343f23ada9094551becc5c0475cb9a01471611acded4faeb6249462a227"
+    },
+    "parser/HNUSTParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/HNUSTParser.kt",
+      "upstreamSha256": "a8f31a22faf75bc57e352b54a97127618c6afcd3eb573094cae0c09b9c04a1b3",
+      "vendoredSha256": "65ff327fe9072c3e27bf7a2659331d02ca8c95cc2a8d4a16701316e765dc406c"
+    },
+    "parser/JNUParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/JNUParser.kt",
+      "upstreamSha256": "934555e12e81bcc385bb9ee8c3e82946c7b23f0d24387deefe4f74ad3904d7fe",
+      "vendoredSha256": "6293e52363cbb3a2eee84700a2bf825014c94bdde29ce55d1aa87ee3cfca3a75"
+    },
+    "parser/NewUrpParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/NewUrpParser.kt",
+      "upstreamSha256": "7c8c53bfb21e27ed80b5cdaeb434c0970f57db9b06155625587c35e3e13cd163",
+      "vendoredSha256": "a968e605afa2bfa65cdad1493e9053a8a3870aaa6e510280c673b9ddc21e31d7"
+    },
+    "parser/NewZFParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/NewZFParser.kt",
+      "upstreamSha256": "2ae8974d55fd0c79727d92a0229670f571daf9034dd78def86211bda8837c86a",
+      "vendoredSha256": "7d07d9a8824f2442b4507e7185648ea9bff48a3d46667a2a1055192c7684ff53"
+    },
+    "parser/OldQzParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/OldQzParser.kt",
+      "upstreamSha256": "da8d4f3a1d04b0be8e4ad50524fff6242b19b73b0a064e89e64b3339532af392",
+      "vendoredSha256": "ba416bb35f7b87eef9b87f557bcfb4d4c47248dd92af98835736b68e294c1d92"
+    },
+    "parser/PekingParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/PekingParser.kt",
+      "upstreamSha256": "a642910b7cf5f684e5d3ce7078d7b35712a31ad65a8ebc15c9e090c1c7582f1d",
+      "vendoredSha256": "6d804d190ff2db5ecdc60244e0cb63c278324e452ccee3250a18c133ea8f15a7"
+    },
+    "parser/UrpParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/UrpParser.kt",
+      "upstreamSha256": "2091a3a501a6deff3f6114e6170fb0d2d391689842ea90b59c148f6edcb46557",
+      "vendoredSha256": "d7934df407c7dc495763852261cda6b0f572d55a72b846460f774405e7764163"
+    },
+    "parser/ZhengFangParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/ZhengFangParser.kt",
+      "upstreamSha256": "58e3ee347baafc26b003456b690f95821e04f46bd9cb17a9a071f7a1c7914f17",
+      "vendoredSha256": "070a1d5c980d5aa75a910bc73345d6fd5be0a103b4915f838ddd478c91c9c888"
+    },
+    "parser/qz/QzBrParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/qz/QzBrParser.kt",
+      "upstreamSha256": "cfa8140ac110e9c8c3249d12494383c86b02648478097783eae8fb7a7ef6602e",
+      "vendoredSha256": "2cf042b2fc3ae9680d0a6e0fe363eae573902280d20bd617509137b9aa4af6b1"
+    },
+    "parser/qz/QzCrazyParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/qz/QzCrazyParser.kt",
+      "upstreamSha256": "98465c123189396643f2b75f87512a70f583680c3d827672de2a21bc566e028d",
+      "vendoredSha256": "6e30f02f62e6177cfed8d9eda9479487ab6c4d90ebe00c9873f47532a7472bbc"
+    },
+    "parser/qz/QzParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/qz/QzParser.kt",
+      "upstreamSha256": "c82b7857dcfc73765a173e080e6a49107e265483ed6ac1cc86e6e48877656ca5",
+      "vendoredSha256": "108ee87d7900df161d404c84388589df5c40b9601a2590d9e7b94e37cece0a31"
+    },
+    "parser/qz/QzWithNodeParser.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/parser/qz/QzWithNodeParser.kt",
+      "upstreamSha256": "a28aea52728b88c459ea2e1854f21142b17036b8634dadabf42d1182f8cd16ce",
+      "vendoredSha256": "0ab132b0e9dd2a829e8c7972d4dd5fe472a80f3a3c275d5a4e0924563d5308d7"
+    },
+    "Common.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/Common.kt",
+      "upstreamSha256": "036b893d76ff360445d4ce52e7d99a28408a2f0bc96a7b8fef33b4113af3b5b2",
+      "vendoredSha256": "b3d41b9980a2f60565ae2f004d0a4b82ab462b9f8b657999e72aaeb8f200c35a"
+    },
+    "bean/ChengFangInfo.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/bean/ChengFangInfo.kt",
+      "upstreamSha256": "3afbc68063852852cc92ad47d6951faa5e29b189b8ee43af5907125904078dd2",
+      "vendoredSha256": "43fe4cdf3aab4666fecfc18c105b9668f2214c4bc25868e7204ff93bd6a113df"
+    },
+    "bean/Course.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/bean/Course.kt",
+      "upstreamSha256": "d0c8ad9aaff78146b50853e9a72d4a8a3564cdb99fc1f1d89f5dd4446d3f417c",
+      "vendoredSha256": "239e74fc7b95a1d54324e194c25b972ad04712a0266eecfa70c33e5b45fb773a"
+    },
+    "bean/NewUrpCourseInfo.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/bean/NewUrpCourseInfo.kt",
+      "upstreamSha256": "bf86235000076cfdfb73c916f8a2f20fdf562c0e2e84790ee739a7132ce77d46",
+      "vendoredSha256": "8d670002b7135cc27d1d89aaa0109fd1671dedadfe636852b7a8fe8837dfa67c"
+    },
+    "bean/SchoolInfo.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/bean/SchoolInfo.kt",
+      "upstreamSha256": "cd83856dc4ed726af4e71f92fe805bc08c6f636349e88cc75beec02425c1dff8",
+      "vendoredSha256": "c56a6eb105d325ed0d978a3e59fb33a3a0fd48f51d5eb47b94fb644e5b30ce93"
+    },
+    "bean/WeekBean.kt": {
+      "upstreamPath": "app/src/main/java/com/suda/yzune/wakeupschedule/schedule_import/bean/WeekBean.kt",
+      "upstreamSha256": "72f8be8a4e38934f2660039bc13c3d81bb533cdbcdff2614d154eb2d5f500fb8",
+      "vendoredSha256": "d2107dbdf6abbb3b30156b69a871c52eb3ba6ff8dfac84c7523702a9509b8836"
+    }
+  },
+  "directorySha256": "9c217ba502c73e16fc2dc301287fed6f0ad63b95cd496963e65ae1fbb6ac1db5",
+  "note": "Snapshot date is not a claim that legacy parsers or portal URLs were updated in 2026."
+}

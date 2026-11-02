@@ -1,8 +1,12 @@
 {
   "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
-  "commit": "1dc0772566ba610f495906410734db4e7b8ef0c1",
+  "commit": "c4a35feb061a3f6db2d6c122927083c067c61309",
   "protocol": 2,
   "scripts": {
+    "zhengfang_jiaowu/zhengfang_01.js": "7ff8986595aafef0b6cbe3aa2f3dad4470afe445f2b79c85598939ea3c940a0c",
+    "chaoxing_jiaowu/chaoxing.js": "cd64e3e4c541fef60fb1e36deb7e0e0a1729b2d6eb4ecd4909643acb35880131",
+    "qingguo_jiaowu/qingguo_01.js": "66b66d0a2adb6086f744f822ac47185693273de10b528a0ba2814251cc29eca4",
+    "urp_jiaowu/urp_01.js": "0554d32e455f351507582ca11fc4ff7fcc74b22f0c8263746fc0ef8164314f6f",
     "BBGU/bbgu.js": "955c6770b49ec68a36ea0372ee646777c2cc14ee06ed10284aeba08c4afd6248",
     "BUPT/bupt_01.js": "480d2a11b861b224f29030f62e52410e9ed4e7286c5047ffc42803be1c40c716",
     "CQU/cqu.js": "4b2a01ef29179bb34a58b4036cfb8e5930e486eadec8de9f203e924c1e14383c",
@@ -190,7 +194,7 @@
     "LUT/LUT.js": "756ebb91c4fac224677e815274e650430f1276d6d997c093ae13a1a493f2fc69",
     "LZU/lzu.js": "e3b784ff3e834a2c0107b6855c27446d238e135ef046bbc8f9e06367972834c9",
     "SYSU/sysu.js": "ebc7670fc01437b02624ab584f5d49dc1e35ce762db477ce5554672a0ba0326f",
-    "SYSU/sysu_01.js": "3ed10017dfd43e343cc94708bd2b4d13d397e5bec609b6565495079ff37efc5f",
+    "SYSU/sysu_01.js": "e1f9329b8bc15b3a5125e1136057f100b41cce55a6f6c5c569e6535811bb99ac",
     "SXDZKJ/sxdzkj.js": "6782e5b61e9bd7836906fc54776af31bee5baec1989a389b9f82ba7278246417",
     "ZZVCAE/zzvcae.js": "b389211d3b06f7982ceb5fb00cfc8d69f85189130c1eaf04455aac52503e12a0",
     "LNU/LNU_01.js": "bcaacd7d97f2f0747b7c83fd350363b86f9c923653fa0b6d871b8c9c59aac92b",
@@ -268,6 +272,1370 @@
     "ZWU/zwu_01.js": "1b8f70febb4b892b15555cf6cdb663c88c0a85b3ba54c84d2612c10a96b943d6",
     "HEBEU/hebeu.js": "f903198f0d94115fca6c685843d012b68ad9e02d00de14559218d7e2e8b6e3c2",
     "LIDAPOLY/lidapoly.js": "94eabee57e57a8539e65d1e5e30c90352b10f1ef149124cd2a0ff1420b6c17bd",
-    "BJTU/bjtu.js": "5af7d14993a33bf647e831500a3d2764448c9ff9062f0f4ee19dc1b5335eed9f"
+    "SWFU/swfu.js": "b2f369ce50c5edb51db5077d62127fbe3ddc10d3bee57ebfbca10334b80753d8",
+    "BJTU/bjtu.js": "5af7d14993a33bf647e831500a3d2764448c9ff9062f0f4ee19dc1b5335eed9f",
+    "NWAFU/nwafu.js": "31af7fa1d866b135b1f1e9c68a79d0cac20a49b3083bfc6befe2d407b146fbf9"
+  },
+  "files": {
+    "zhengfang_jiaowu/zhengfang_01.js": {
+      "path": "resources/zhengfang_jiaowu/zhengfang_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/zhengfang_jiaowu/zhengfang_01.js"
+    },
+    "chaoxing_jiaowu/chaoxing.js": {
+      "path": "resources/chaoxing_jiaowu/chaoxing.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/chaoxing_jiaowu/chaoxing.js"
+    },
+    "qingguo_jiaowu/qingguo_01.js": {
+      "path": "resources/qingguo_jiaowu/qingguo_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/qingguo_jiaowu/qingguo_01.js"
+    },
+    "urp_jiaowu/urp_01.js": {
+      "path": "resources/urp_jiaowu/urp_01.js",
+      "updated": "2026-08-30T18:16:19+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/urp_jiaowu/urp_01.js"
+    },
+    "BBGU/bbgu.js": {
+      "path": "resources/BBGU/bbgu.js",
+      "updated": "2026-09-06T14:39:14+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/BBGU/bbgu.js"
+    },
+    "BUPT/bupt_01.js": {
+      "path": "resources/BUPT/bupt_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/BUPT/bupt_01.js"
+    },
+    "CQU/cqu.js": {
+      "path": "resources/CQU/cqu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQU/cqu.js"
+    },
+    "CQJTU/cqjtu.js": {
+      "path": "resources/CQJTU/cqjtu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQJTU/cqjtu.js"
+    },
+    "CQCST/cqcst_01.js": {
+      "path": "resources/CQCST/cqcst_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQCST/cqcst_01.js"
+    },
+    "CQUT/cqut_01.js": {
+      "path": "resources/CQUT/cqut_01.js",
+      "updated": "2026-08-23T22:06:34+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQUT/cqut_01.js"
+    },
+    "CQUST/cqust_01.js": {
+      "path": "resources/CQUST/cqust_01.js",
+      "updated": "2026-09-16T22:07:43+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQUST/cqust_01.js"
+    },
+    "CQTBI/cqtbi.js": {
+      "path": "resources/CQTBI/cqtbi.js",
+      "updated": "2026-09-10T12:57:28+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQTBI/cqtbi.js"
+    },
+    "CUST/cust_chaoyang.js": {
+      "path": "resources/CUST/cust_chaoyang.js",
+      "updated": "2026-10-01T23:20:44+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUST/cust_chaoyang.js"
+    },
+    "CUIT/cuit_bk_new.js": {
+      "path": "resources/CUIT/cuit_bk_new.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUIT/cuit_bk_new.js"
+    },
+    "CUIT/cuit_bk_old.js": {
+      "path": "resources/CUIT/cuit_bk_old.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUIT/cuit_bk_old.js"
+    },
+    "CDUTCM/cdutcm_01.js": {
+      "path": "resources/CDUTCM/cdutcm_01.js",
+      "updated": "2026-09-08T14:42:34+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CDUTCM/cdutcm_01.js"
+    },
+    "SHZQ/shzq.js": {
+      "path": "resources/SHZQ/shzq.js",
+      "updated": "2026-10-08T22:53:33+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SHZQ/shzq.js"
+    },
+    "SANYEDU/sany.js": {
+      "path": "resources/SANYEDU/sany.js",
+      "updated": "2026-09-28T20:17:41+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SANYEDU/sany.js"
+    },
+    "HNZY/hnzy.js": {
+      "path": "resources/HNZY/hnzy.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNZY/hnzy.js"
+    },
+    "JYVTC/jyvtc.js": {
+      "path": "resources/JYVTC/jyvtc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JYVTC/jyvtc.js"
+    },
+    "YNUFE/ynufe.js": {
+      "path": "resources/YNUFE/ynufe.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YNUFE/ynufe.js"
+    },
+    "HNSF/hnsf_01.js": {
+      "path": "resources/HNSF/hnsf_01.js",
+      "updated": "2026-09-09T21:28:10+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNSF/hnsf_01.js"
+    },
+    "HNSF/hnsf_02.js": {
+      "path": "resources/HNSF/hnsf_02.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNSF/hnsf_02.js"
+    },
+    "HIST/hist_01.js": {
+      "path": "resources/HIST/hist_01.js",
+      "updated": "2026-09-06T21:25:23+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HIST/hist_01.js"
+    },
+    "HNNU/hnnu_01.js": {
+      "path": "resources/HNNU/hnnu_01.js",
+      "updated": "2026-09-02T20:22:35+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNNU/hnnu_01.js"
+    },
+    "TARU/taru_01.js": {
+      "path": "resources/TARU/taru_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TARU/taru_01.js"
+    },
+    "MASU/masu.js": {
+      "path": "resources/MASU/masu.js",
+      "updated": "2026-09-07T13:21:04+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/MASU/masu.js"
+    },
+    "MMPT/mmpt.js": {
+      "path": "resources/MMPT/mmpt.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/MMPT/mmpt.js"
+    },
+    "MYSY/mysy.js": {
+      "path": "resources/MYSY/mysy.js",
+      "updated": "2026-09-08T15:15:04+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/MYSY/mysy.js"
+    },
+    "MKU/mku.js": {
+      "path": "resources/MKU/mku.js",
+      "updated": "2026-09-08T14:49:13+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/MKU/mku.js"
+    },
+    "SWJTU/swjtu_yhxt.js": {
+      "path": "resources/SWJTU/swjtu_yhxt.js",
+      "updated": "2026-09-06T21:41:53+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SWJTU/swjtu_yhxt.js"
+    },
+    "SXGCXY/sxgcxy_01.js": {
+      "path": "resources/SXGCXY/sxgcxy_01.js",
+      "updated": "2026-09-08T20:44:52+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SXGCXY/sxgcxy_01.js"
+    },
+    "XAWL/xawl_01.js": {
+      "path": "resources/XAWL/xawl_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XAWL/xawl_01.js"
+    },
+    "HNVCC/HNVCC_01.js": {
+      "path": "resources/HNVCC/HNVCC_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNVCC/HNVCC_01.js"
+    },
+    "HNPTC/hnptc_01.js": {
+      "path": "resources/HNPTC/hnptc_01.js",
+      "updated": "2026-09-28T20:10:45+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNPTC/hnptc_01.js"
+    },
+    "IMUT/IMUT_01.js": {
+      "path": "resources/IMUT/IMUT_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/IMUT/IMUT_01.js"
+    },
+    "KSU/ksu_01.js": {
+      "path": "resources/KSU/ksu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/KSU/ksu_01.js"
+    },
+    "WHCB/WHCB.js": {
+      "path": "resources/WHCB/WHCB.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/WHCB/WHCB.js"
+    },
+    "CTGU/ctgu.js": {
+      "path": "resources/CTGU/ctgu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CTGU/ctgu.js"
+    },
+    "JXUST/jxust.js": {
+      "path": "resources/JXUST/jxust.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JXUST/jxust.js"
+    },
+    "GZST/gzst.js": {
+      "path": "resources/GZST/gzst.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GZST/gzst.js"
+    },
+    "GZIST/gzist_01.js": {
+      "path": "resources/GZIST/gzist_01.js",
+      "updated": "2026-10-14T23:37:01+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GZIST/gzist_01.js"
+    },
+    "FJCPC/fjcpc.js": {
+      "path": "resources/FJCPC/fjcpc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FJCPC/fjcpc.js"
+    },
+    "FAFU/FAFU.js": {
+      "path": "resources/FAFU/FAFU.js",
+      "updated": "2026-09-02T20:11:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FAFU/FAFU.js"
+    },
+    "FJPIT/fjpit_01.js": {
+      "path": "resources/FJPIT/fjpit_01.js",
+      "updated": "2026-09-27T23:16:44+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FJPIT/fjpit_01.js"
+    },
+    "FVTI/fvti_01.js": {
+      "path": "resources/FVTI/fvti_01.js",
+      "updated": "2026-10-02T19:41:58+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FVTI/fvti_01.js"
+    },
+    "FOSU/fosu_01.js": {
+      "path": "resources/FOSU/fosu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FOSU/fosu_01.js"
+    },
+    "SDDFVC/sddfvc.js": {
+      "path": "resources/SDDFVC/sddfvc.js",
+      "updated": "2026-10-04T20:34:39+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SDDFVC/sddfvc.js"
+    },
+    "SDLIVC/sdlivc.js": {
+      "path": "resources/SDLIVC/sdlivc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SDLIVC/sdlivc.js"
+    },
+    "CQCIVC/cqcivc.js": {
+      "path": "resources/CQCIVC/cqcivc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQCIVC/cqcivc.js"
+    },
+    "NEU/neu.js": {
+      "path": "resources/NEU/neu.js",
+      "updated": "2026-09-02T21:18:05+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NEU/neu.js"
+    },
+    "NEU/neuyjs.js": {
+      "path": "resources/NEU/neuyjs.js",
+      "updated": "2026-09-07T15:41:59+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NEU/neuyjs.js"
+    },
+    "NJNU/njnu.js": {
+      "path": "resources/NJNU/njnu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NJNU/njnu.js"
+    },
+    "NJUPT/njupt_01.js": {
+      "path": "resources/NJUPT/njupt_01.js",
+      "updated": "2026-09-15T21:22:18+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NJUPT/njupt_01.js"
+    },
+    "NUAA/nuaa_01.js": {
+      "path": "resources/NUAA/nuaa_01.js",
+      "updated": "2026-09-16T00:08:48+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NUAA/nuaa_01.js"
+    },
+    "USC/usc_01.js": {
+      "path": "resources/USC/usc_01.js",
+      "updated": "2026-10-08T22:20:00+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/USC/usc_01.js"
+    },
+    "XMCU/xmcu_01.js": {
+      "path": "resources/XMCU/xmcu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XMCU/xmcu_01.js"
+    },
+    "XZIT/xzit_01.js": {
+      "path": "resources/XZIT/xzit_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XZIT/xzit_01.js"
+    },
+    "HBLGXY/hblgxy_01.js": {
+      "path": "resources/HBLGXY/hblgxy_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HBLGXY/hblgxy_01.js"
+    },
+    "XJIE/xjie_01.js": {
+      "path": "resources/XJIE/xjie_01.js",
+      "updated": "2026-10-08T01:21:06+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XJIE/xjie_01.js"
+    },
+    "GDPU/gdpu_01.js": {
+      "path": "resources/GDPU/gdpu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDPU/gdpu_01.js"
+    },
+    "GDUT/gdut.js": {
+      "path": "resources/GDUT/gdut.js",
+      "updated": "2026-10-12T20:02:51+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDUT/gdut.js"
+    },
+    "HNUST/HNUST_01.js": {
+      "path": "resources/HNUST/HNUST_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNUST/HNUST_01.js"
+    },
+    "HUSE/HUSE.js": {
+      "path": "resources/HUSE/HUSE.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUSE/HUSE.js"
+    },
+    "HUST/hust.js": {
+      "path": "resources/HUST/hust.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUST/hust.js"
+    },
+    "JSNU/JSNU_01.js": {
+      "path": "resources/JSNU/JSNU_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JSNU/JSNU_01.js"
+    },
+    "JXFU/JXFU_01.js": {
+      "path": "resources/JXFU/JXFU_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JXFU/JXFU_01.js"
+    },
+    "NEAU/NEAU_01.js": {
+      "path": "resources/NEAU/NEAU_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NEAU/NEAU_01.js"
+    },
+    "SUDA/suda.js": {
+      "path": "resources/SUDA/suda.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SUDA/suda.js"
+    },
+    "CQRK/cqrk_01.js": {
+      "path": "resources/CQRK/cqrk_01.js",
+      "updated": "2026-09-02T20:50:37+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQRK/cqrk_01.js"
+    },
+    "WBU/wbu_02.js": {
+      "path": "resources/WBU/wbu_02.js",
+      "updated": "2026-08-27T01:09:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/WBU/wbu_02.js"
+    },
+    "NENU/NENU_01.js": {
+      "path": "resources/NENU/NENU_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NENU/NENU_01.js"
+    },
+    "HAUT/haut_01.js": {
+      "path": "resources/HAUT/haut_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HAUT/haut_01.js"
+    },
+    "AHSZU/ahszu_01.js": {
+      "path": "resources/AHSZU/ahszu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/AHSZU/ahszu_01.js"
+    },
+    "XAUT/XAUT_01.js": {
+      "path": "resources/XAUT/XAUT_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XAUT/XAUT_01.js"
+    },
+    "HUAT/HUAT.js": {
+      "path": "resources/HUAT/HUAT.js",
+      "updated": "2026-08-23T23:14:17+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUAT/HUAT.js"
+    },
+    "CUP/cup_01.js": {
+      "path": "resources/CUP/cup_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUP/cup_01.js"
+    },
+    "CUP/cup_02.js": {
+      "path": "resources/CUP/cup_02.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUP/cup_02.js"
+    },
+    "ZHKU/zhku_lc6464.js": {
+      "path": "resources/ZHKU/zhku_lc6464.js",
+      "updated": "2026-10-14T22:17:18+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZHKU/zhku_lc6464.js"
+    },
+    "GXDLXY/gxdlxy_01.js": {
+      "path": "resources/GXDLXY/gxdlxy_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GXDLXY/gxdlxy_01.js"
+    },
+    "YANGTZEU/yu.js": {
+      "path": "resources/YANGTZEU/yu.js",
+      "updated": "2026-09-08T14:50:27+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YANGTZEU/yu.js"
+    },
+    "CAPU/capadap.js": {
+      "path": "resources/CAPU/capadap.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CAPU/capadap.js"
+    },
+    "GSMC/gsmc_01.js": {
+      "path": "resources/GSMC/gsmc_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GSMC/gsmc_01.js"
+    },
+    "TCU/tcu_01.js": {
+      "path": "resources/TCU/tcu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TCU/tcu_01.js"
+    },
+    "TUST/tust_01.js": {
+      "path": "resources/TUST/tust_01.js",
+      "updated": "2026-08-30T17:52:52+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TUST/tust_01.js"
+    },
+    "SCUT/SCUT_01.js": {
+      "path": "resources/SCUT/SCUT_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SCUT/SCUT_01.js"
+    },
+    "HYNU/hynu_01.js": {
+      "path": "resources/HYNU/hynu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HYNU/hynu_01.js"
+    },
+    "JNU/jnu_01.js": {
+      "path": "resources/JNU/jnu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JNU/jnu_01.js"
+    },
+    "HQU/hquadap.js": {
+      "path": "resources/HQU/hquadap.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HQU/hquadap.js"
+    },
+    "UJN/school.js": {
+      "path": "resources/UJN/school.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UJN/school.js"
+    },
+    "JNMC/jnmc.js": {
+      "path": "resources/JNMC/jnmc.js",
+      "updated": "2026-10-02T19:42:19+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JNMC/jnmc.js"
+    },
+    "HBGUHX/hbguhx_01.js": {
+      "path": "resources/HBGUHX/hbguhx_01.js",
+      "updated": "2026-09-30T22:53:12+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HBGUHX/hbguhx_01.js"
+    },
+    "YXHMC/yxhmc.js": {
+      "path": "resources/YXHMC/yxhmc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YXHMC/yxhmc.js"
+    },
+    "HNIU/hniu_01.js": {
+      "path": "resources/HNIU/hniu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNIU/hniu_01.js"
+    },
+    "HUEL/huel_01.js": {
+      "path": "resources/HUEL/huel_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUEL/huel_01.js"
+    },
+    "GLMU/glmu.js": {
+      "path": "resources/GLMU/glmu.js",
+      "updated": "2026-10-14T01:45:17+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GLMU/glmu.js"
+    },
+    "GXMU/gxmu.js": {
+      "path": "resources/GXMU/gxmu.js",
+      "updated": "2026-09-04T10:43:16+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GXMU/gxmu.js"
+    },
+    "NJFU/njfu_01.js": {
+      "path": "resources/NJFU/njfu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NJFU/njfu_01.js"
+    },
+    "GUIT/guit_01.js": {
+      "path": "resources/GUIT/guit_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GUIT/guit_01.js"
+    },
+    "DLMU/dlmu_01.js": {
+      "path": "resources/DLMU/dlmu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/DLMU/dlmu_01.js"
+    },
+    "HIIT/hiit_01.js": {
+      "path": "resources/HIIT/hiit_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HIIT/hiit_01.js"
+    },
+    "NEUQ/neuq.js": {
+      "path": "resources/NEUQ/neuq.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NEUQ/neuq.js"
+    },
+    "UJS/ujs_zhengfang_v9.0.js": {
+      "path": "resources/UJS/ujs_zhengfang_v9.0.js",
+      "updated": "2026-09-14T13:44:34+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UJS/ujs_zhengfang_v9.0.js"
+    },
+    "UJS/ujs_yjs_v1.0.js": {
+      "path": "resources/UJS/ujs_yjs_v1.0.js",
+      "updated": "2026-10-07T23:31:21+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UJS/ujs_yjs_v1.0.js"
+    },
+    "CQUET/cquet_01.js": {
+      "path": "resources/CQUET/cquet_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQUET/cquet_01.js"
+    },
+    "YIBINU/yibinu_01.js": {
+      "path": "resources/YIBINU/yibinu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YIBINU/yibinu_01.js"
+    },
+    "DLU/dlu.js": {
+      "path": "resources/DLU/dlu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/DLU/dlu.js"
+    },
+    "HBMU/hbmu.js": {
+      "path": "resources/HBMU/hbmu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HBMU/hbmu.js"
+    },
+    "HBMZU/hbmzu.js": {
+      "path": "resources/HBMZU/hbmzu.js",
+      "updated": "2026-09-22T00:34:29+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HBMZU/hbmzu.js"
+    },
+    "HBUAS/hbuas_01.js": {
+      "path": "resources/HBUAS/hbuas_01.js",
+      "updated": "2026-09-22T00:32:13+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HBUAS/hbuas_01.js"
+    },
+    "TONGJI/tongji_01.js": {
+      "path": "resources/TONGJI/tongji_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TONGJI/tongji_01.js"
+    },
+    "SDNU/sdnu.js": {
+      "path": "resources/SDNU/sdnu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SDNU/sdnu.js"
+    },
+    "CUPK/cupk_01.js": {
+      "path": "resources/CUPK/cupk_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUPK/cupk_01.js"
+    },
+    "NBUT/nbut.js": {
+      "path": "resources/NBUT/nbut.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NBUT/nbut.js"
+    },
+    "HUAYU/huayu.js": {
+      "path": "resources/HUAYU/huayu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUAYU/huayu.js"
+    },
+    "TSU/tsu_01.js": {
+      "path": "resources/TSU/tsu_01.js",
+      "updated": "2026-10-07T23:32:32+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TSU/tsu_01.js"
+    },
+    "GDIPU/gdipu.js": {
+      "path": "resources/GDIPU/gdipu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDIPU/gdipu.js"
+    },
+    "SCUEC/scuec.js": {
+      "path": "resources/SCUEC/scuec.js",
+      "updated": "2026-09-08T15:51:35+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SCUEC/scuec.js"
+    },
+    "UZZ/uzz_01.js": {
+      "path": "resources/UZZ/uzz_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UZZ/uzz_01.js"
+    },
+    "CMC/cmc_01.js": {
+      "path": "resources/CMC/cmc_01.js",
+      "updated": "2026-10-08T20:28:20+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CMC/cmc_01.js"
+    },
+    "SDIPCT/sdipct.js": {
+      "path": "resources/SDIPCT/sdipct.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SDIPCT/sdipct.js"
+    },
+    "GDUST/gdust.js": {
+      "path": "resources/GDUST/gdust.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDUST/gdust.js"
+    },
+    "UPC/upc.js": {
+      "path": "resources/UPC/upc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UPC/upc.js"
+    },
+    "UPC/upc_graduate.js": {
+      "path": "resources/UPC/upc_graduate.js",
+      "updated": "2026-09-10T22:18:02+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UPC/upc_graduate.js"
+    },
+    "TJAU/tjau.js": {
+      "path": "resources/TJAU/tjau.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TJAU/tjau.js"
+    },
+    "CCIT/ccit.js": {
+      "path": "resources/CCIT/ccit.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CCIT/ccit.js"
+    },
+    "IMNC/imnc_01.js": {
+      "path": "resources/IMNC/imnc_01.js",
+      "updated": "2026-08-31T14:14:36+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/IMNC/imnc_01.js"
+    },
+    "NCUT/ncut_01.js": {
+      "path": "resources/NCUT/ncut_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NCUT/ncut_01.js"
+    },
+    "JXNU/JXNU.js": {
+      "path": "resources/JXNU/JXNU.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JXNU/JXNU.js"
+    },
+    "STCNCHU/stcnchu.js": {
+      "path": "resources/STCNCHU/stcnchu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/STCNCHU/stcnchu.js"
+    },
+    "CFEC/CFEC.js": {
+      "path": "resources/CFEC/CFEC.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CFEC/CFEC.js"
+    },
+    "AHZYYGZ/AHZYYGZ.js": {
+      "path": "resources/AHZYYGZ/AHZYYGZ.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/AHZYYGZ/AHZYYGZ.js"
+    },
+    "XATU/myschool.js": {
+      "path": "resources/XATU/myschool.js",
+      "updated": "2026-10-10T01:09:47+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XATU/myschool.js"
+    },
+    "NWPU/nwpu_01.js": {
+      "path": "resources/NWPU/nwpu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NWPU/nwpu_01.js"
+    },
+    "NJTECH/njtech.js": {
+      "path": "resources/NJTECH/njtech.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NJTECH/njtech.js"
+    },
+    "NUIST/nuist.js": {
+      "path": "resources/NUIST/nuist.js",
+      "updated": "2026-09-02T21:21:20+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NUIST/nuist.js"
+    },
+    "CAUC/cauc.js": {
+      "path": "resources/CAUC/cauc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CAUC/cauc.js"
+    },
+    "DLUTCI/dlutci.js": {
+      "path": "resources/DLUTCI/dlutci.js",
+      "updated": "2026-09-04T12:47:55+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/DLUTCI/dlutci.js"
+    },
+    "DZU/dzu_deep.js": {
+      "path": "resources/DZU/dzu_deep.js",
+      "updated": "2026-09-08T21:21:11+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/DZU/dzu_deep.js"
+    },
+    "ECJTU/ecjtu_01.js": {
+      "path": "resources/ECJTU/ecjtu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ECJTU/ecjtu_01.js"
+    },
+    "WENHUA/wenhua_01.js": {
+      "path": "resources/WENHUA/wenhua_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/WENHUA/wenhua_01.js"
+    },
+    "XYAFU/xyafu_01.js": {
+      "path": "resources/XYAFU/xyafu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XYAFU/xyafu_01.js"
+    },
+    "XJZFU/xjzfu.js": {
+      "path": "resources/XJZFU/xjzfu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XJZFU/xjzfu.js"
+    },
+    "ZJUT/zjut_01.js": {
+      "path": "resources/ZJUT/zjut_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZJUT/zjut_01.js"
+    },
+    "HFNU/hfnu.js": {
+      "path": "resources/HFNU/hfnu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HFNU/hfnu.js"
+    },
+    "ZUA/zua.js": {
+      "path": "resources/ZUA/zua.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZUA/zua.js"
+    },
+    "JHZYEDU/zhengfang.js": {
+      "path": "resources/JHZYEDU/zhengfang.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JHZYEDU/zhengfang.js"
+    },
+    "QQHRIT/qqhrit.js": {
+      "path": "resources/QQHRIT/qqhrit.js",
+      "updated": "2026-09-02T14:16:39+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QQHRIT/qqhrit.js"
+    },
+    "IMU/imu_01.js": {
+      "path": "resources/IMU/imu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/IMU/imu_01.js"
+    },
+    "QQHRU/qqhru.js": {
+      "path": "resources/QQHRU/qqhru.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QQHRU/qqhru.js"
+    },
+    "SICNU/school.js": {
+      "path": "resources/SICNU/school.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SICNU/school.js"
+    },
+    "GZTRC/gztrc.js": {
+      "path": "resources/GZTRC/gztrc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GZTRC/gztrc.js"
+    },
+    "GZTRC/gztrc_old.js": {
+      "path": "resources/GZTRC/gztrc_old.js",
+      "updated": "2026-08-25T18:51:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GZTRC/gztrc_old.js"
+    },
+    "GZU/gzu.js": {
+      "path": "resources/GZU/gzu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GZU/gzu.js"
+    },
+    "ZCMU/zcmu.js": {
+      "path": "resources/ZCMU/zcmu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZCMU/zcmu.js"
+    },
+    "QAU/qau_01.js": {
+      "path": "resources/QAU/qau_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QAU/qau_01.js"
+    },
+    "HUNNU/hunnu.js": {
+      "path": "resources/HUNNU/hunnu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUNNU/hunnu.js"
+    },
+    "WHUT/whut_01.js": {
+      "path": "resources/WHUT/whut_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/WHUT/whut_01.js"
+    },
+    "CJLU/cjlu.js": {
+      "path": "resources/CJLU/cjlu.js",
+      "updated": "2026-10-02T00:39:50+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CJLU/cjlu.js"
+    },
+    "CZIMT/czimt.js": {
+      "path": "resources/CZIMT/czimt.js",
+      "updated": "2026-09-01T14:29:08+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CZIMT/czimt.js"
+    },
+    "GSCMXY/gscmxy.js": {
+      "path": "resources/GSCMXY/gscmxy.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GSCMXY/gscmxy.js"
+    },
+    "QUT/qut.js": {
+      "path": "resources/QUT/qut.js",
+      "updated": "2026-08-30T23:14:57+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QUT/qut.js"
+    },
+    "CSUFT/csuft.js": {
+      "path": "resources/CSUFT/csuft.js",
+      "updated": "2026-09-30T23:23:32+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CSUFT/csuft.js"
+    },
+    "JLU/JLU_01.js": {
+      "path": "resources/JLU/JLU_01.js",
+      "updated": "2026-09-17T14:17:21+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JLU/JLU_01.js"
+    },
+    "USTC/ustc.js": {
+      "path": "resources/USTC/ustc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/USTC/ustc.js"
+    },
+    "USTC/ustc_01.js": {
+      "path": "resources/USTC/ustc_01.js",
+      "updated": "2026-09-08T21:28:57+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/USTC/ustc_01.js"
+    },
+    "UESTC/uestc.js": {
+      "path": "resources/UESTC/uestc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/UESTC/uestc.js"
+    },
+    "SDJTU/sdjtu.js": {
+      "path": "resources/SDJTU/sdjtu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SDJTU/sdjtu.js"
+    },
+    "GDOU/gdou.js": {
+      "path": "resources/GDOU/gdou.js",
+      "updated": "2026-10-08T22:53:06+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDOU/gdou.js"
+    },
+    "GDOU/gdouyj.js": {
+      "path": "resources/GDOU/gdouyj.js",
+      "updated": "2026-10-16T16:16:12+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDOU/gdouyj.js"
+    },
+    "GDOU/gdouyj2.js": {
+      "path": "resources/GDOU/gdouyj2.js",
+      "updated": "2026-10-08T22:20:25+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDOU/gdouyj2.js"
+    },
+    "GDIT/gdit.js": {
+      "path": "resources/GDIT/gdit.js",
+      "updated": "2026-09-01T23:14:12+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDIT/gdit.js"
+    },
+    "GUC/guc.js": {
+      "path": "resources/GUC/guc.js",
+      "updated": "2026-10-07T17:12:05+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GUC/guc.js"
+    },
+    "NIIT/niit.js": {
+      "path": "resources/NIIT/niit.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NIIT/niit.js"
+    },
+    "HHTC/hhtc.js": {
+      "path": "resources/HHTC/hhtc.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HHTC/hhtc.js"
+    },
+    "HHVTC/hhvt.js": {
+      "path": "resources/HHVTC/hhvt.js",
+      "updated": "2026-09-14T23:27:43+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HHVTC/hhvt.js"
+    },
+    "CWXU/cwxu_01.js": {
+      "path": "resources/CWXU/cwxu_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CWXU/cwxu_01.js"
+    },
+    "HLJU/hlju.js": {
+      "path": "resources/HLJU/hlju.js",
+      "updated": "2026-08-23T20:33:58+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HLJU/hlju.js"
+    },
+    "HLJU/hlju_bachelor.js": {
+      "path": "resources/HLJU/hlju_bachelor.js",
+      "updated": "2026-09-22T00:33:56+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HLJU/hlju_bachelor.js"
+    },
+    "SHUFEZJ/shufezj.js": {
+      "path": "resources/SHUFEZJ/shufezj.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SHUFEZJ/shufezj.js"
+    },
+    "YZU/yzu.js": {
+      "path": "resources/YZU/yzu.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YZU/yzu.js"
+    },
+    "XUST/xust_01.js": {
+      "path": "resources/XUST/xust_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XUST/xust_01.js"
+    },
+    "JSTC/jstc_01.js": {
+      "path": "resources/JSTC/jstc_01.js",
+      "updated": "2026-08-23T16:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JSTC/jstc_01.js"
+    },
+    "GPNU/gpnu_01.js": {
+      "path": "resources/GPNU/gpnu_01.js",
+      "updated": "2026-08-24T18:01:29+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GPNU/gpnu_01.js"
+    },
+    "SYIST/syist_01.js": {
+      "path": "resources/SYIST/syist_01.js",
+      "updated": "2026-09-01T20:09:50+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SYIST/syist_01.js"
+    },
+    "QDHHC/qdhhc.js": {
+      "path": "resources/QDHHC/qdhhc.js",
+      "updated": "2026-08-24T01:33:59+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QDHHC/qdhhc.js"
+    },
+    "NTU/ntu.js": {
+      "path": "resources/NTU/ntu.js",
+      "updated": "2026-08-24T12:19:21+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NTU/ntu.js"
+    },
+    "USTL/ustl.js": {
+      "path": "resources/USTL/ustl.js",
+      "updated": "2026-08-25T15:10:41+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/USTL/ustl.js"
+    },
+    "LUT/LUT.js": {
+      "path": "resources/LUT/LUT.js",
+      "updated": "2026-08-25T22:51:18+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LUT/LUT.js"
+    },
+    "LZU/lzu.js": {
+      "path": "resources/LZU/lzu.js",
+      "updated": "2026-09-04T14:03:49+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LZU/lzu.js"
+    },
+    "SYSU/sysu.js": {
+      "path": "resources/SYSU/sysu.js",
+      "updated": "2026-08-26T14:50:31+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SYSU/sysu.js"
+    },
+    "SYSU/sysu_01.js": {
+      "path": "resources/SYSU/sysu_01.js",
+      "updated": "2026-10-17T17:11:27+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SYSU/sysu_01.js"
+    },
+    "SXDZKJ/sxdzkj.js": {
+      "path": "resources/SXDZKJ/sxdzkj.js",
+      "updated": "2026-08-26T12:15:36+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SXDZKJ/sxdzkj.js"
+    },
+    "ZZVCAE/zzvcae.js": {
+      "path": "resources/ZZVCAE/zzvcae.js",
+      "updated": "2026-08-27T18:19:38+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZZVCAE/zzvcae.js"
+    },
+    "LNU/LNU_01.js": {
+      "path": "resources/LNU/LNU_01.js",
+      "updated": "2026-09-05T15:03:07+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LNU/LNU_01.js"
+    },
+    "HNIE/hnie_01.js": {
+      "path": "resources/HNIE/hnie_01.js",
+      "updated": "2026-08-30T13:49:09+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNIE/hnie_01.js"
+    },
+    "CQIE/cqie_01.js": {
+      "path": "resources/CQIE/cqie_01.js",
+      "updated": "2026-08-30T15:00:12+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQIE/cqie_01.js"
+    },
+    "AUFE/aufe_01.js": {
+      "path": "resources/AUFE/aufe_01.js",
+      "updated": "2026-08-30T19:20:31+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/AUFE/aufe_01.js"
+    },
+    "GZMTU/gzmtu.js": {
+      "path": "resources/GZMTU/gzmtu.js",
+      "updated": "2026-08-30T23:05:30+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GZMTU/gzmtu.js"
+    },
+    "SWU/swu.js": {
+      "path": "resources/SWU/swu.js",
+      "updated": "2026-10-15T16:17:09+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SWU/swu.js"
+    },
+    "ZZU/zzu.js": {
+      "path": "resources/ZZU/zzu.js",
+      "updated": "2026-09-28T21:09:53+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZZU/zzu.js"
+    },
+    "CCZU/cczu.js": {
+      "path": "resources/CCZU/cczu.js",
+      "updated": "2026-08-31T20:39:29+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CCZU/cczu.js"
+    },
+    "FIT/fit.js": {
+      "path": "resources/FIT/fit.js",
+      "updated": "2026-08-31T20:42:16+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FIT/fit.js"
+    },
+    "GXCME/gxcme.js": {
+      "path": "resources/GXCME/gxcme.js",
+      "updated": "2026-08-31T20:44:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GXCME/gxcme.js"
+    },
+    "HAUST/haust.js": {
+      "path": "resources/HAUST/haust.js",
+      "updated": "2026-08-31T20:46:38+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HAUST/haust.js"
+    },
+    "HRBEU/hrbeu.js": {
+      "path": "resources/HRBEU/hrbeu.js",
+      "updated": "2026-09-02T12:31:17+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HRBEU/hrbeu.js"
+    },
+    "HRBEU/hrbeu_yjs.js": {
+      "path": "resources/HRBEU/hrbeu_yjs.js",
+      "updated": "2026-09-02T12:31:17+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HRBEU/hrbeu_yjs.js"
+    },
+    "HIT/hit.js": {
+      "path": "resources/HIT/hit.js",
+      "updated": "2026-09-01T21:38:26+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HIT/hit.js"
+    },
+    "HUEB/hueb.js": {
+      "path": "resources/HUEB/hueb.js",
+      "updated": "2026-08-31T20:51:01+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUEB/hueb.js"
+    },
+    "LCUDCC/lcudcc.js": {
+      "path": "resources/LCUDCC/lcudcc.js",
+      "updated": "2026-08-31T20:52:55+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LCUDCC/lcudcc.js"
+    },
+    "LYU/lyu.js": {
+      "path": "resources/LYU/lyu.js",
+      "updated": "2026-08-31T20:54:24+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LYU/lyu.js"
+    },
+    "SHXY/shxy.js": {
+      "path": "resources/SHXY/shxy.js",
+      "updated": "2026-08-31T20:56:12+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SHXY/shxy.js"
+    },
+    "SMXY/smxy.js": {
+      "path": "resources/SMXY/smxy.js",
+      "updated": "2026-08-31T21:13:03+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SMXY/smxy.js"
+    },
+    "THDM/THDM_01.js": {
+      "path": "resources/THDM/THDM_01.js",
+      "updated": "2026-08-31T22:06:05+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/THDM/THDM_01.js"
+    },
+    "XJTU/xjtu.js": {
+      "path": "resources/XJTU/xjtu.js",
+      "updated": "2026-09-14T22:48:22+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XJTU/xjtu.js"
+    },
+    "QHNU/qhnu_01.js": {
+      "path": "resources/QHNU/qhnu_01.js",
+      "updated": "2026-09-02T13:33:13+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QHNU/qhnu_01.js"
+    },
+    "WUST/wust.js": {
+      "path": "resources/WUST/wust.js",
+      "updated": "2026-09-06T19:39:45+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/WUST/wust.js"
+    },
+    "NYNU/nynu.js": {
+      "path": "resources/NYNU/nynu.js",
+      "updated": "2026-09-03T23:15:02+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NYNU/nynu.js"
+    },
+    "NCHU/nchu.js": {
+      "path": "resources/NCHU/nchu.js",
+      "updated": "2026-09-03T23:30:46+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NCHU/nchu.js"
+    },
+    "HPU/hpu.js": {
+      "path": "resources/HPU/hpu.js",
+      "updated": "2026-09-04T00:41:07+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HPU/hpu.js"
+    },
+    "CQEPC/cqepc.js": {
+      "path": "resources/CQEPC/cqepc.js",
+      "updated": "2026-09-06T19:39:21+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CQEPC/cqepc.js"
+    },
+    "BTBU/btbu.js": {
+      "path": "resources/BTBU/btbu.js",
+      "updated": "2026-09-07T18:37:25+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/BTBU/btbu.js"
+    },
+    "SCNU/scnu.js": {
+      "path": "resources/SCNU/scnu.js",
+      "updated": "2026-09-07T17:06:11+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SCNU/scnu.js"
+    },
+    "LIT/lit_01.js": {
+      "path": "resources/LIT/lit_01.js",
+      "updated": "2026-09-07T19:26:02+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LIT/lit_01.js"
+    },
+    "AEPU/aepu.js": {
+      "path": "resources/AEPU/aepu.js",
+      "updated": "2026-09-07T19:27:12+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/AEPU/aepu.js"
+    },
+    "SUSTECH/sustech.js": {
+      "path": "resources/SUSTECH/sustech.js",
+      "updated": "2026-09-07T20:42:02+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SUSTECH/sustech.js"
+    },
+    "CUG/cug.js": {
+      "path": "resources/CUG/cug.js",
+      "updated": "2026-09-08T21:17:55+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUG/cug.js"
+    },
+    "CUG/cug_postgraduate.js": {
+      "path": "resources/CUG/cug_postgraduate.js",
+      "updated": "2026-09-11T23:34:19+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CUG/cug_postgraduate.js"
+    },
+    "HUALIXY/hualixy.js": {
+      "path": "resources/HUALIXY/hualixy.js",
+      "updated": "2026-09-09T00:40:06+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUALIXY/hualixy.js"
+    },
+    "XAUAT/xauat.js": {
+      "path": "resources/XAUAT/xauat.js",
+      "updated": "2026-09-09T01:24:26+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XAUAT/xauat.js"
+    },
+    "XZHMU/xzhmu_01.js": {
+      "path": "resources/XZHMU/xzhmu_01.js",
+      "updated": "2026-09-15T17:10:51+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XZHMU/xzhmu_01.js"
+    },
+    "WZZY/wzzy_01.js": {
+      "path": "resources/WZZY/wzzy_01.js",
+      "updated": "2026-09-15T16:04:59+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/WZZY/wzzy_01.js"
+    },
+    "ZJSRU/zjsru_01.js": {
+      "path": "resources/ZJSRU/zjsru_01.js",
+      "updated": "2026-09-16T00:40:29+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZJSRU/zjsru_01.js"
+    },
+    "JSEI/jsei_01.js": {
+      "path": "resources/JSEI/jsei_01.js",
+      "updated": "2026-10-14T23:00:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JSEI/jsei_01.js"
+    },
+    "JUST/just.js": {
+      "path": "resources/JUST/just.js",
+      "updated": "2026-09-17T18:32:53+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JUST/just.js"
+    },
+    "HUUC/huuc_01.js": {
+      "path": "resources/HUUC/huuc_01.js",
+      "updated": "2026-09-17T21:40:43+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUUC/huuc_01.js"
+    },
+    "NANKAI/nankai.js": {
+      "path": "resources/NANKAI/nankai.js",
+      "updated": "2026-09-17T23:16:54+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NANKAI/nankai.js"
+    },
+    "DLUT/dlut_01.js": {
+      "path": "resources/DLUT/dlut_01.js",
+      "updated": "2026-09-17T22:02:43+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/DLUT/dlut_01.js"
+    },
+    "QFNU/qfnu_01.js": {
+      "path": "resources/QFNU/qfnu_01.js",
+      "updated": "2026-09-22T15:29:30+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QFNU/qfnu_01.js"
+    },
+    "SCEMI/scemi_01.js": {
+      "path": "resources/SCEMI/scemi_01.js",
+      "updated": "2026-09-23T00:35:38+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SCEMI/scemi_01.js"
+    },
+    "FJNU/fjnu_01.js": {
+      "path": "resources/FJNU/fjnu_01.js",
+      "updated": "2026-09-23T17:46:58+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FJNU/fjnu_01.js"
+    },
+    "HAUE/haue_01.js": {
+      "path": "resources/HAUE/haue_01.js",
+      "updated": "2026-09-24T19:06:20+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HAUE/haue_01.js"
+    },
+    "XCU/xcu_01.js": {
+      "path": "resources/XCU/xcu_01.js",
+      "updated": "2026-09-25T22:27:24+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XCU/xcu_01.js"
+    },
+    "GDKM/GDKM.js": {
+      "path": "resources/GDKM/GDKM.js",
+      "updated": "2026-10-01T01:40:19+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/GDKM/GDKM.js"
+    },
+    "SHIEP/SHIEP.js": {
+      "path": "resources/SHIEP/SHIEP.js",
+      "updated": "2026-10-08T12:47:29+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SHIEP/SHIEP.js"
+    },
+    "SHNU/shnu.js": {
+      "path": "resources/SHNU/shnu.js",
+      "updated": "2026-09-28T15:51:30+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SHNU/shnu.js"
+    },
+    "NEFU/nefu.js": {
+      "path": "resources/NEFU/nefu.js",
+      "updated": "2026-09-28T15:58:22+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NEFU/nefu.js"
+    },
+    "SCETOP/scetop_zf_legacy.js": {
+      "path": "resources/SCETOP/scetop_zf_legacy.js",
+      "updated": "2026-09-30T17:59:35+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SCETOP/scetop_zf_legacy.js"
+    },
+    "HUNAU/hunau_01.js": {
+      "path": "resources/HUNAU/hunau_01.js",
+      "updated": "2026-09-30T18:01:56+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HUNAU/hunau_01.js"
+    },
+    "YSSDUFE/yssdufe_01.js": {
+      "path": "resources/YSSDUFE/yssdufe_01.js",
+      "updated": "2026-09-30T21:06:41+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YSSDUFE/yssdufe_01.js"
+    },
+    "NJCIT/njcit.js": {
+      "path": "resources/NJCIT/njcit.js",
+      "updated": "2026-09-30T23:26:48+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NJCIT/njcit.js"
+    },
+    "QVTU/qvtu.js": {
+      "path": "resources/QVTU/qvtu.js",
+      "updated": "2026-09-30T23:30:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QVTU/qvtu.js"
+    },
+    "ZJBTI/zjbti.js": {
+      "path": "resources/ZJBTI/zjbti.js",
+      "updated": "2026-10-03T22:39:53+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZJBTI/zjbti.js"
+    },
+    "XHSYSU/xhsysu.js": {
+      "path": "resources/XHSYSU/xhsysu.js",
+      "updated": "2026-10-04T21:14:24+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XHSYSU/xhsysu.js"
+    },
+    "QDU/qdu_01.js": {
+      "path": "resources/QDU/qdu_01.js",
+      "updated": "2026-10-07T17:12:41+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/QDU/qdu_01.js"
+    },
+    "ZQU/zqu_01.js": {
+      "path": "resources/ZQU/zqu_01.js",
+      "updated": "2026-10-06T21:50:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZQU/zqu_01.js"
+    },
+    "HZU/hzu.js": {
+      "path": "resources/HZU/hzu.js",
+      "updated": "2026-10-07T17:10:55+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HZU/hzu.js"
+    },
+    "YSU/ysu_yjs.js": {
+      "path": "resources/YSU/ysu_yjs.js",
+      "updated": "2026-10-07T22:32:00+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/YSU/ysu_yjs.js"
+    },
+    "XHKJZYXY/xhkjzyxy_01.js": {
+      "path": "resources/XHKJZYXY/xhkjzyxy_01.js",
+      "updated": "2026-10-08T22:12:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/XHKJZYXY/xhkjzyxy_01.js"
+    },
+    "HEBAU/hebau.js": {
+      "path": "resources/HEBAU/hebau.js",
+      "updated": "2026-10-08T20:31:04+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HEBAU/hebau.js"
+    },
+    "BNUZH/school.js": {
+      "path": "resources/BNUZH/school.js",
+      "updated": "2026-10-08T20:36:45+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/BNUZH/school.js"
+    },
+    "SCTBC/sctbc.js": {
+      "path": "resources/SCTBC/sctbc.js",
+      "updated": "2026-10-08T22:52:39+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SCTBC/sctbc.js"
+    },
+    "HNU/hnu_01.js": {
+      "path": "resources/HNU/hnu_01.js",
+      "updated": "2026-10-10T18:15:38+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HNU/hnu_01.js"
+    },
+    "SDUFE/sdufe_01.js": {
+      "path": "resources/SDUFE/sdufe_01.js",
+      "updated": "2026-10-12T20:00:10+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SDUFE/sdufe_01.js"
+    },
+    "CCSUT/ccsut_01.js": {
+      "path": "resources/CCSUT/ccsut_01.js",
+      "updated": "2026-10-13T00:36:23+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/CCSUT/ccsut_01.js"
+    },
+    "JDZVUA/jdzvua.js": {
+      "path": "resources/JDZVUA/jdzvua.js",
+      "updated": "2026-10-13T15:17:58+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/JDZVUA/jdzvua.js"
+    },
+    "ZWU/zwu_01.js": {
+      "path": "resources/ZWU/zwu_01.js",
+      "updated": "2026-10-14T23:26:43+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZWU/zwu_01.js"
+    },
+    "HEBEU/hebeu.js": {
+      "path": "resources/HEBEU/hebeu.js",
+      "updated": "2026-10-15T00:52:42+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HEBEU/hebeu.js"
+    },
+    "LIDAPOLY/lidapoly.js": {
+      "path": "resources/LIDAPOLY/lidapoly.js",
+      "updated": "2026-10-16T01:41:39+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/LIDAPOLY/lidapoly.js"
+    },
+    "SWFU/swfu.js": {
+      "path": "resources/SWFU/swfu.js",
+      "updated": "2026-10-17T22:58:47+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SWFU/swfu.js"
+    },
+    "BJTU/bjtu.js": {
+      "path": "resources/BJTU/bjtu.js",
+      "updated": "2026-10-17T02:57:03+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/BJTU/bjtu.js"
+    },
+    "NWAFU/nwafu.js": {
+      "path": "resources/NWAFU/nwafu.js",
+      "updated": "2026-10-17T21:19:32+08:00",
+      "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/NWAFU/nwafu.js"
+    }
   }
 }

@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 悬浮球输入面板背景（浅色） -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#F7FFFFFF" />
-    <stroke
-        android:width="1dp"
-        android:color="#1F000000" />
-    <corners android:radius="18dp" />
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <gradient android:angle="315" android:startColor="#FAF4F9FF" android:endColor="#FAF7F4FF"/>
+    <stroke android:width="1dp" android:color="#33577EEA"/>
+    <corners android:radius="20dp"/>
 </shape>

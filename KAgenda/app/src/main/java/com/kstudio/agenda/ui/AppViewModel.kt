@@ -1,5 +1,7 @@
 package com.kstudio.agenda.ui
 
+import com.kstudio.agenda.data.SchoolCatalog
+
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
@@ -9,14 +11,13 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.kstudio.agenda.data.AgendaStore
 import com.kstudio.agenda.data.AiAssistant
-import com.kstudio.agenda.data.AiClient
+import com.kstudio.agenda.data.AiInference
 import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.AppSettings
 import com.kstudio.agenda.data.BackupManager
 import com.kstudio.agenda.data.CourseEditConflict
 import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.ExtraCoursesStore
-import com.kstudio.agenda.data.LocalSmartParser
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SchoolToggleSpec
@@ -220,6 +221,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 // 法定节假日是否照常显示课表（默认停课）
                 HolidayTable.setShowCoursesOnHoliday(s.showHolidayCourses)
+                HolidayTable.replaceOverrides(com.kstudio.agenda.model.HolidayOverrides.decode(s.holidayOverridesRaw))
                 // 当前学校：课表缓存归属 + 课程修正记录归属都依赖它
                 Schools.setCurrent(s.schoolId)
                 // 打开 App 自动刷新：有账号且（无缓存 或 超过 6 小时）时静默同步一次。
@@ -328,7 +330,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     fun syncNow() {
         val school = Schools.of(settings.value.schoolId)
-        if (school.warehouseId.isNotBlank()) {
+        if (SchoolCatalog.usesBrowserImport(school)) {
             getApplication<Application>().startActivity(android.content.Intent(getApplication(), WarehouseImportActivity::class.java)
                 .putExtra("schoolId", school.id).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
         } else repo.syncNow()
@@ -344,7 +346,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun saveAccountAndSync(studentId: String, password: String?) {
-        if (Schools.of(settings.value.schoolId).warehouseId.isNotBlank()) { syncNow(); return }
+        if (SchoolCatalog.usesBrowserImport(Schools.of(settings.value.schoolId))) { syncNow(); return }
         val id = studentId.trim()
         if (id.isBlank()) {
             message(t.msgNeedStudentId)
@@ -517,7 +519,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     val aiRun: StateFlow<AiRunState> = _aiRun.asStateFlow()
 
     /**
-     * 后台识别（本地优先 + DeepSeek 兜底）。
+     * 后台识别，统一使用设置中的本地或云端模式。
      *
      * 与旧行为的关键区别：识别跑在 [viewModelScope] 而不是界面作用域，所以用户可以离开 AI 界面，
      * 识别完成后：1) 发一条 IMPORTANCE_HIGH 浮动通知（Heads-up 横幅）；
@@ -533,48 +535,9 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             var note = ""
             var failed = false
             try {
-                val local = runCatching { LocalSmartParser.parseEvents(asked, LocalDate.now()) }
-                    .getOrDefault(emptyList())
-                if (offlineOnly) {
-                    if (local.isEmpty()) {
-                        note = t.qaNothing
-                    } else {
-                        result = local
-                        note = t.aiOfflineDone(local.size)
-                    }
-                } else {
-                    val key = SettingsStore.effectiveAiKey(getApplication())
-                    if (key.isNullOrBlank()) {
-                        // 没有可用 Key：直接用本地识别结果
-                        if (local.isEmpty()) {
-                            note = t.aiNeedKey
-                        } else {
-                            result = local
-                            note = t.aiOfflineDone(local.size)
-                        }
-                    } else {
-                        val reply = AiClient.chat(
-                            apiKey = key,
-                            model = SettingsStore.effectiveAiModel(getApplication()),
-                            systemPrompt = AiSkills.assistantSystemPrompt,
-                            userPrompt = AiSkills.assistantUserPrompt(
-                                asked,
-                                LocalDate.now(),
-                                AiAssistant.contextLines(agenda.value, asked),
-                                settings.value.profileText,
-                            ),
-                        )
-                        val list = AiSkills.parseOpsReply(reply)
-                        when {
-                            list.isNotEmpty() -> result = list
-                            local.isNotEmpty() -> {
-                                result = local
-                                note = t.aiOfflineDone(local.size)
-                            }
-                            else -> note = t.qaNothing
-                        }
-                    }
-                }
+                val parsed = AiInference.recognize(getApplication(), asked, agenda.value, offlineOnly)
+                result = parsed.ops
+                note = parsed.note
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Throwable) {
@@ -662,7 +625,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                 // 学校配置已原子切换；展示重新读取该校缓存。
                 _selectedWeekNo.value = Int.MIN_VALUE
                 repo.reloadFromCache()
-                if (Schools.of(id).warehouseId.isBlank() && settings.value.hasPassword && settings.value.autoRefresh) {
+                if (!SchoolCatalog.usesBrowserImport(Schools.of(id)) && settings.value.hasPassword && settings.value.autoRefresh) {
                     repo.syncNow(silent = true)
                 }
             }
@@ -763,17 +726,20 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** 导入课程表：与已有导入课程合并（去重），并立即刷新课表/小组件/通知 */
-    fun importCourses(courses: List<Course>, anchor: LocalDate?) {
+    fun importCourses(courses: List<Course>, anchor: LocalDate?, onResult: (Result<Int>) -> Unit = {}) {
         if (courses.isEmpty()) {
             message(t.msgImportNoCourses)
+            onResult(Result.failure(IllegalArgumentException("empty_courses")))
             return
         }
         viewModelScope.launch {
-            val added = withContext(Dispatchers.IO) {
-                ExtraCoursesStore.addAll(getApplication(), courses, anchor)
-            }
-            repo.onImportedCoursesChanged()
-            message(t.msgImportedCourses(added))
+            try {
+                val added = withContext(Dispatchers.IO) { ExtraCoursesStore.addAll(getApplication(), courses, anchor) }
+                repo.onImportedCoursesChanged()
+                message(t.msgImportedCourses(added))
+                onResult(Result.success(added))
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { message(com.kstudio.agenda.i18n.ImportText.failed); onResult(Result.failure(e)) }
         }
     }
 
@@ -1123,8 +1089,43 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** 界面风格（默认 / 液态玻璃） */
+    fun setMotionSpeed(percent: Int) {
+        viewModelScope.launch { SettingsStore.setMotionSpeed(getApplication(), percent) }
+    }
+
+    fun setHolidayOverride(date: java.time.LocalDate, value: com.kstudio.agenda.model.HolidayOverride?) {
+        viewModelScope.launch {
+            try {
+                SettingsStore.setHolidayOverride(getApplication(), date, value)
+                HolidayTable.replaceOverrides(com.kstudio.agenda.model.HolidayOverrides.decode(SettingsStore.read(getApplication()).holidayOverridesRaw))
+                repo.rescheduleReminders()
+                withContext(Dispatchers.IO) {
+                    StatusNotification.refresh(getApplication())
+                    NextClassWidgetUpdater.updateAndSchedule(getApplication())
+                }
+            } catch (e: Exception) {
+                if (e is CancellationException) throw e
+                message(com.kstudio.agenda.i18n.LocalAiText.text("保存失败，请重试", "Could not save. Retry.", "Échec de l’enregistrement. Réessayez."))
+            }
+        }
+    }
+
     fun setUiStyle(style: String) {
-        viewModelScope.launch { SettingsStore.setUiStyle(getApplication(), style) }
+        viewModelScope.launch {
+            SettingsStore.setUiStyle(getApplication(), style)
+            withContext(Dispatchers.IO) { NextClassWidgetUpdater.updateAll(getApplication()) }
+        }
+    }
+
+    fun setGlassColorDepth(depth: Int) {
+        viewModelScope.launch {
+            SettingsStore.setGlassColorDepth(getApplication(), depth)
+            withContext(Dispatchers.IO) { NextClassWidgetUpdater.updateAll(getApplication()) }
+        }
+    }
+
+    fun setGlassBackgroundMotion(enabled: Boolean) {
+        viewModelScope.launch { SettingsStore.setGlassBackgroundMotion(getApplication(), enabled) }
     }
 
     /** 系统悬浮球开关：写入设置并启/停前台服务（无悬浮窗权限时给出提示） */

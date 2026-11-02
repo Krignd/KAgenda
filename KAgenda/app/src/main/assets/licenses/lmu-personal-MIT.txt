@@ -1,0 +1,60 @@
+LMU explicit school mapping with shared Chaoxing implementation.
+Original author: MoeShin, moeshin/ai-schedule-chaoxing.
+Modified by KAgenda (2026), with isolated DeepSeek Harness draft assistance, fully reviewed and corrected before tests. This is modified MIT work, not a zero-copy original claim.
+No real account validation. No upstream repository executed. Personal page uses selected term; no PASS/table-cell-skip/seasonal clocks adopted.
+https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/scheduleHtmlProvider.js
+Actual path date 2022-09-25T19:56:56Z; SHA-256 0d9660c12050daeb2c56c315240201f09b2bfc9049f2ae5623f44825bf063337
+https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/scheduleHtmlParser.js
+Actual path date 2022-09-25T19:56:56Z; SHA-256 8c40e59c5f322acd2946cf6be7ba3a5c9ac983aa326e4bc529804203114328d1
+https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/schools.json
+Actual path date 2022-09-23T17:43:53Z; SHA-256 1de422fb5fc3a47f37407d182112d6d3580041e1d6ffde0a0d521e8d64d36eb0
+https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/README.md
+Actual path date 2022-09-25T19:56:56Z; SHA-256 7f37b8a3b40d856cca3823b687c60f7191844dec0b9330604f8ae96292a64d94
+https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/LICENSE
+Actual path date 2021-03-10T17:22:54Z; SHA-256 fe29153f957dcab38042f0a2da081e0b837dcb59265156a4b286d85acf2c8a47
+
+Full original upstream MIT license:
+MIT License
+
+Copyright (c) 2021 MoeShin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+KAgenda modification license:
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

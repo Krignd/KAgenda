@@ -81,12 +81,13 @@ object NextClassWidgetUpdater {
         val events = AgendaStore.events.value.filter { !it.isPlan }.map { it.upcomingView(now) }
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 2) }.orEmpty()
+        val appearance = WidgetAppearance(context)
         for (spec in SPECS) {
             val ids = manager.getAppWidgetIds(ComponentName(context, spec.clazz))
             for (id in ids) {
                 manager.updateAppWidget(
                     id,
-                    buildViews(context, spec, semester, current, upcoming, events, now, id),
+                    buildViews(context, spec, semester, current, upcoming, events, now, id, appearance).also { appearance.next(it, spec) },
                 )
             }
         }
@@ -133,7 +134,7 @@ object NextClassWidgetUpdater {
         val events = AgendaStore.events.value.filter { !it.isPlan }.map { it.upcomingView(now) }
         val current = semester?.let { findCurrent(it, now) }
         val upcoming = semester?.let { findUpcoming(it, now, 1) }.orEmpty()
-        // “进行中”：长日程按日期区间；短日程需精确开始时间，未设结束时持续到当天结束。
+        // “进行中”：长日程按日期区间；短日程需精确起止时间。
         val agendaOngoing = events.firstOrNull { (it.isLong || it.hasPreciseStart) && it.isOngoing(now) }
         val agendaNext = events.filter { it.anchorDateTime().isAfter(now) }
             .minByOrNull { it.anchorDateTime() }
@@ -191,6 +192,7 @@ object NextClassWidgetUpdater {
         events: List<AgendaEvent>,
         now: LocalDateTime,
         widgetId: Int,
+        appearance: WidgetAppearance,
     ): RemoteViews {
         val rv = RemoteViews(context.packageName, spec.layoutRes)
 
@@ -246,7 +248,7 @@ object NextClassWidgetUpdater {
             if (showTeacher) rv.setTextViewText(R.id.widget_teacher, "")
             rv.setTextViewText(R.id.widget_remaining, "")
             rv.setTextViewText(R.id.widget_next2, "")
-            rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
+            rv.setTextColor(R.id.widget_remaining, appearance.accent(ACCENT_DEFAULT))
             applyAccent(rv, null, null)
             return rv
         }
@@ -281,7 +283,7 @@ object NextClassWidgetUpdater {
                 R.id.widget_remaining,
                 context.getString(R.string.widget_until_end, durationPiece(context, remainMinutes)),
             )
-            rv.setTextColor(R.id.widget_remaining, CoursePalette.colorFor(current.course))
+            rv.setTextColor(R.id.widget_remaining, appearance.accent(CoursePalette.colorFor(current.course)))
             rv.setTextViewText(R.id.widget_next2, if (spec.showNext2) (nextLabel ?: "") else "")
             applyAccent(rv, CoursePalette.colorFor(current.course), R.drawable.ic_type_course)
             return rv
@@ -305,7 +307,7 @@ object NextClassWidgetUpdater {
                 R.id.widget_remaining,
                 if (left > 0) context.getString(R.string.widget_until_end, durationPiece(context, left)) else "",
             )
-            rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
+            rv.setTextColor(R.id.widget_remaining, appearance.accent(ACCENT_DEFAULT))
             rv.setTextViewText(
                 R.id.widget_next2,
                 if (spec.showNext2) nextItemLabel(context, upcoming, agendaNext) else "",
@@ -322,7 +324,7 @@ object NextClassWidgetUpdater {
             if (showTeacher) rv.setTextViewText(R.id.widget_teacher, "")
             rv.setTextViewText(R.id.widget_remaining, "")
             rv.setTextViewText(R.id.widget_next2, "")
-            rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
+            rv.setTextColor(R.id.widget_remaining, appearance.accent(ACCENT_DEFAULT))
             applyAccent(rv, null, null)
             return rv
         }
@@ -349,7 +351,7 @@ object NextClassWidgetUpdater {
                 dayDistanceLabel(context, ev.date)
             }
             rv.setTextViewText(R.id.widget_remaining, remainLabel)
-            rv.setTextColor(R.id.widget_remaining, ACCENT_DEFAULT)
+            rv.setTextColor(R.id.widget_remaining, appearance.accent(ACCENT_DEFAULT))
             rv.setTextViewText(
                 R.id.widget_next2,
                 if (spec.showNext2) nextItemLabel(context, upcoming, null) else "",
@@ -373,7 +375,7 @@ object NextClassWidgetUpdater {
         }
         val minutes = Duration.between(now, first.start).toMinutes().coerceAtLeast(0)
         rv.setTextViewText(R.id.widget_remaining, remainingText(context, minutes))
-        rv.setTextColor(R.id.widget_remaining, CoursePalette.colorFor(first.course))
+        rv.setTextColor(R.id.widget_remaining, appearance.accent(CoursePalette.colorFor(first.course)))
         applyAccent(rv, CoursePalette.colorFor(first.course), R.drawable.ic_type_course)
 
         if (spec.showNext2) {

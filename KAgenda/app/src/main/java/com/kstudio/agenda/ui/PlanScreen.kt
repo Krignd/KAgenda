@@ -2,6 +2,7 @@
 
 package com.kstudio.agenda.ui
 
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,7 +25,7 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -33,6 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.kstudio.agenda.ui.components.CalendarMotion
+import com.kstudio.agenda.ui.components.CalendarFrame
+import com.kstudio.agenda.ui.theme.dialogAnchor
+import com.kstudio.agenda.ui.components.CalendarLabel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +46,9 @@ import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.FuzzyTime
 import com.kstudio.agenda.ui.components.segmentedStrokeColor
+import com.kstudio.agenda.ui.components.AnimatedPage
+import com.kstudio.agenda.ui.components.GlassViewSwitcher
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
 import com.kstudio.agenda.ui.components.swipeStep
 import java.time.LocalDate
 
@@ -59,7 +67,11 @@ fun PlanScreen(vm: AppViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         // 顶部：视图切换（日 / 周 / 月）
-        SingleChoiceSegmentedButtonRow(
+        if (LocalGlassEnabled.current) {
+            GlassViewSwitcher(listOf(t.viewDay, t.viewWeek, t.viewMonth), mode.ordinal) {
+                modeName = PlanMode.entries[it].name
+            }
+        } else SingleChoiceSegmentedButtonRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -85,13 +97,15 @@ fun PlanScreen(vm: AppViewModel) {
                 )
             }
         }
-        when (mode) {
+        AnimatedPage(mode.ordinal, Modifier.weight(1f).fillMaxWidth()) { pageIndex ->
+        when (PlanMode.entries[pageIndex]) {
             PlanMode.Day -> PlanDayView(vm)
             PlanMode.Week -> PlanWeekView(vm)
             PlanMode.Month -> PlanMonthView(vm, onOpenDay = { date ->
                 vm.selectDate(date)
                 modeName = PlanMode.Day.name
             })
+        }
         }
     }
 }
@@ -104,6 +118,7 @@ private fun PlanDayView(vm: AppViewModel) {
     val selected by vm.selectedDate.collectAsState()
     val t = LocalStrings.current
     val plans = agendaAll.filter { it.isPlan }
+    val agendaAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
 
@@ -118,7 +133,7 @@ private fun PlanDayView(vm: AppViewModel) {
             IconButton(onClick = { vm.selectDate(selected.minusDays(7)) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevWeek)
             }
-            Text(
+            CalendarLabel(
                 text = rangeLabel(monday),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -132,43 +147,46 @@ private fun PlanDayView(vm: AppViewModel) {
             }
         }
 
-        val dayPlans = plans
-            .filter { it.occursOn(selected) }
-            .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
-        LazyColumn(
-            modifier = Modifier.weight(1f).swipeStep(key = "plan-day", onStep = { vm.stepDay(it) }),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item(key = "plan-header") {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = t.myPlans,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = {
-                        editing = null
-                        editorOpen = true
-                    }) { Text(t.addPlanBtn) }
+        CalendarMotion(CalendarFrame(selected, Unit), Modifier.weight(1f).fillMaxWidth()) { frame ->
+            val selected = frame.date
+            val dayPlans = plans
+                .filter { it.occursOn(selected) }
+                .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
+            LazyColumn(
+                modifier = Modifier.fillMaxSize().swipeStep(key = "plan-day", onStep = { vm.stepDay(it) }),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item(key = "plan-header") {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = t.myPlans,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(modifier = Modifier.dialogAnchor(agendaAnchor), onClick = {
+                            editing = null
+                            editorOpen = true
+                        }) { Text(t.addPlanBtn) }
+                    }
                 }
-            }
-            if (dayPlans.isEmpty()) {
-                item(key = "plan-empty") {
-                    Text(
-                        text = t.emptyPlansHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp),
-                    )
-                }
-            } else {
-                items(dayPlans, key = { "plan-" + it.id }) { ev ->
-                    AgendaCard(event = ev, onClick = {
-                        editing = ev
-                        editorOpen = true
-                    })
+                if (dayPlans.isEmpty()) {
+                    item(key = "plan-empty") {
+                        Text(
+                            text = t.emptyPlansHint,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                } else {
+                    items(dayPlans, key = { "plan-" + it.id }) { ev ->
+                        AgendaCard(event = ev, onClick = {
+                            editing = ev
+                            editorOpen = true
+                        })
+                    }
                 }
             }
         }
@@ -176,6 +194,7 @@ private fun PlanDayView(vm: AppViewModel) {
 
     if (editorOpen) {
         AgendaEditorDialog(
+            origin = if (editing == null) agendaAnchor.bounds else null,
             initial = editing,
             defaultDate = selected,
             asPlan = true,
@@ -195,15 +214,13 @@ private fun PlanWeekView(vm: AppViewModel) {
     val settings by vm.settings.collectAsState()
     val t = LocalStrings.current
     val plans = agendaAll.filter { it.isPlan }
+    val agendaAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
 
     val monday = selected.minusDays((selected.dayOfWeek.value - 1).toLong())
     // 周视图天数与「日程表」周视图共用同一设置（5=周一~周五 / 7=周一~周日）
     val visibleDays = settings.weekDays
-    val weekPlans = plans
-        .filter { ev -> (0L until visibleDays.toLong()).any { off -> ev.occursOn(monday.plusDays(off)) } }
-        .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
 
     Column(
         Modifier
@@ -217,7 +234,7 @@ private fun PlanWeekView(vm: AppViewModel) {
             IconButton(onClick = { vm.selectDate(selected.minusDays(7)) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevWeek)
             }
-            Text(rangeLabel(monday), style = MaterialTheme.typography.titleMedium)
+            CalendarLabel(rangeLabel(monday), style = MaterialTheme.typography.titleMedium)
             IconButton(onClick = { vm.selectDate(selected.plusDays(7)) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = t.nextWeek)
             }
@@ -227,44 +244,51 @@ private fun PlanWeekView(vm: AppViewModel) {
             }
         }
 
-        LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            item(key = "plan-header") {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = t.myPlansWeek,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = {
-                        editing = null
-                        editorOpen = true
-                    }) { Text(t.addPlanBtn) }
-                }
-            }
-            if (weekPlans.isEmpty()) {
-                item(key = "plan-empty") {
-                    Text(
-                        text = t.emptyPlansHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 4.dp),
-                    )
-                }
-            } else {
-                items(weekPlans, key = { "plan-" + it.id }) { ev ->
-                    val d = ev.date
-                    AgendaCard(
-                        event = ev,
-                        dateLabel = "${d.monthValue}/${d.dayOfMonth} ${t.weekdayShort(d.dayOfWeek.value)}",
-                        onClick = {
-                            editing = ev
+        CalendarMotion(CalendarFrame(monday, Unit), Modifier.weight(1f).fillMaxWidth()) { frame ->
+            val monday = frame.date
+            val weekPlans = plans
+                .filter { ev -> (0L until visibleDays.toLong()).any { off -> ev.occursOn(monday.plusDays(off)) } }
+                .sortedWith(compareBy({ it.dateEpochDay }, { FuzzyTime.sortKey(it.startTime) }))
+
+            LazyColumn(
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                item(key = "plan-header") {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = t.myPlansWeek,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(modifier = Modifier.dialogAnchor(agendaAnchor), onClick = {
+                            editing = null
                             editorOpen = true
-                        },
-                    )
+                        }) { Text(t.addPlanBtn) }
+                    }
+                }
+                if (weekPlans.isEmpty()) {
+                    item(key = "plan-empty") {
+                        Text(
+                            text = t.emptyPlansHint,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                } else {
+                    items(weekPlans, key = { "plan-" + it.id }) { ev ->
+                        val d = ev.date
+                        AgendaCard(
+                            event = ev,
+                            dateLabel = "${d.monthValue}/${d.dayOfMonth} ${t.weekdayShort(d.dayOfWeek.value)}",
+                            onClick = {
+                                editing = ev
+                                editorOpen = true
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -272,6 +296,7 @@ private fun PlanWeekView(vm: AppViewModel) {
 
     if (editorOpen) {
         AgendaEditorDialog(
+            origin = if (editing == null) agendaAnchor.bounds else null,
             initial = editing,
             defaultDate = selected,
             asPlan = true,
@@ -302,18 +327,6 @@ private fun PlanMonthView(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit) {
         if (!target.isBefore(monthMin) && !target.isAfter(monthMax)) monthStart = target
     }
 
-    val planMap = remember(agendaAll, monthStart) {
-        // 按天展开：普通计划只出现在开始日；带重复规则的计划逐日命中
-        val map = mutableMapOf<Long, List<AgendaEvent>>()
-        for (day in 1..monthStart.lengthOfMonth()) {
-            val d = monthStart.withDayOfMonth(day)
-            val hit = plans
-                .filter { it.occursOn(d) }
-                .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
-            if (hit.isNotEmpty()) map[d.toEpochDay()] = hit
-        }
-        map
-    }
 
     Column(
         Modifier
@@ -328,7 +341,7 @@ private fun PlanMonthView(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit) {
             IconButton(onClick = { shiftMonth(-1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevMonth)
             }
-            Text(
+            CalendarLabel(
                 text = t.monthTitle(monthStart.year, monthStart.monthValue),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -354,31 +367,47 @@ private fun PlanMonthView(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit) {
         }
         Spacer(Modifier.height(4.dp))
 
-        // 月历网格（仅计划条目）
-        val leading = monthStart.dayOfWeek.value - 1
-        val daysInMonth = monthStart.lengthOfMonth()
-        val rows = (leading + daysInMonth + 6) / 7
-        Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            for (r in 0 until rows) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    for (c in 0 until 7) {
-                        val dayNum = r * 7 + c - leading + 1
-                        val date = if (dayNum in 1..daysInMonth) monthStart.withDayOfMonth(dayNum) else null
-                        MonthCell(
-                            date = date,
-                            courses = emptyList(),
-                            events = date?.let { planMap[it.toEpochDay()] }.orEmpty(),
-                            isToday = date == today,
-                            isSelected = date == selected,
-                            onClick = { date?.let(onOpenDay) },
-                            modifier = Modifier.weight(1f),
-                        )
+        CalendarMotion(CalendarFrame(monthStart, Unit), Modifier.weight(1f).fillMaxWidth()) { frame ->
+            val monthStart = frame.date
+            val planMap = remember(agendaAll, monthStart) {
+                // 按天展开：普通计划只出现在开始日；带重复规则的计划逐日命中
+                val map = mutableMapOf<Long, List<AgendaEvent>>()
+                for (day in 1..monthStart.lengthOfMonth()) {
+                    val d = monthStart.withDayOfMonth(day)
+                    val hit = plans
+                        .filter { it.occursOn(d) }
+                        .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
+                    if (hit.isNotEmpty()) map[d.toEpochDay()] = hit
+                }
+                map
+            }
+
+            // 月历网格（仅计划条目）
+            val leading = monthStart.dayOfWeek.value - 1
+            val daysInMonth = monthStart.lengthOfMonth()
+            val rows = (leading + daysInMonth + 6) / 7
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 6.dp).verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                for (r in 0 until rows) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        for (c in 0 until 7) {
+                            val dayNum = r * 7 + c - leading + 1
+                            val date = if (dayNum in 1..daysInMonth) monthStart.withDayOfMonth(dayNum) else null
+                            MonthCell(
+                                date = date,
+                                courses = emptyList(),
+                                events = date?.let { planMap[it.toEpochDay()] }.orEmpty(),
+                                isToday = date == today,
+                                isSelected = date == selected,
+                                onClick = { date?.let(onOpenDay) },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }

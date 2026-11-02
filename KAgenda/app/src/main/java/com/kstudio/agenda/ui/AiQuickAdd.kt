@@ -13,33 +13,37 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.AlertDialog
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
+import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.AiAssistant
-import com.kstudio.agenda.data.AiClient
 import com.kstudio.agenda.data.AiSkills
-import com.kstudio.agenda.data.LocalSmartParser
-import com.kstudio.agenda.data.SettingsStore
+import com.kstudio.agenda.data.LocalAiModels
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.i18n.LocalAiText
 import com.kstudio.agenda.model.RepeatRules
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.first
 import java.time.LocalDate
 
 /**
@@ -47,22 +51,35 @@ import java.time.LocalDate
  * 入口：顶栏 DeepSeek 图标按钮、可拖拽悬浮按钮、常驻通知入口、系统悬浮球。
  */
 @Composable
-fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
+fun AiQuickAddDialog(vm: AppViewModel, origin: androidx.compose.ui.geometry.Rect? = null, onDismiss: () -> Unit) {
     val t = LocalStrings.current
     val context = LocalContext.current
     val run by vm.aiRun.collectAsState()
+    val aiSettings by vm.settings.collectAsState()
+    val selectedModel = LocalAiModels.find(aiSettings.localAiModel) ?: LocalAiModels.all.first()
+    var modelAvailable by remember { mutableStateOf(false) }
+    var entranceFinished by remember { mutableStateOf(origin == null) }
+    var modelReady by remember { mutableStateOf(aiSettings.aiProvider != "local") }
+    LaunchedEffect(aiSettings.localAiModel, aiSettings.aiProvider, run.busy) {
+        // Measure the correct initial status before capturing the entrance. Later refreshes wait
+        // for arrival so the pane cannot change height underneath the traveling layer.
+        if (modelReady && !entranceFinished) snapshotFlow { entranceFinished }.first { it }
+        modelAvailable = aiSettings.aiProvider == "local" && withContext(Dispatchers.IO) { LocalAiModels.installed(context, selectedModel) }
+        modelReady = true
+    }
     // 识别任务由 ViewModel 持有（可以离开这个界面，识别会继续跑，完成后发浮动通知）
     // 这里只保存输入框文字与预览副本，与 VM 里的结果保持同步
     var text by remember { mutableStateOf(run.src) }
     var editedOps by remember(run.ops) { mutableStateOf(run.ops) }
+    var keepOriginal by remember { mutableStateOf(false) }
     var editIndex by remember { mutableStateOf(-1) }
     var askReparse by remember { mutableStateOf(false) }
+    var reparseRulesOnly by remember { mutableStateOf(false) }
 
     // 发起识别：记录文本快照；等待期间用户若改动文字，返回结果作废
     // （防止“改了内容却把旧文字的操作执行了”的误操作）
     //
-    // 本地优先：先用 [LocalSmartParser] 离线识别（覆盖通知/列表/课程表等常见格式），
-    // 只有离线识别不到内容时才调用 DeepSeek，从而让应用不依赖 API 也能正常使用。
+    // 普通识别遵循设置中的本地/云端选择；规则识别按钮始终离线。
     fun startRecognize(offlineOnly: Boolean = false) {
         if (text.isBlank() || run.busy) return
         editedOps = emptyList()
@@ -70,11 +87,21 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
     }
 
     AlertDialog(
+        origin = origin,
+        entranceDurationMillis = 260,
+        onEntered = { entranceFinished = true },
+        contentReady = modelReady,
         onDismissRequest = onDismiss,
         title = { Text(t.qaTitle) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(when {
+                    aiSettings.aiProvider == "cloud" -> LocalAiText.cloud
+                    modelAvailable -> "${LocalAiText.local} · ${selectedModel.name}"
+                    else -> LocalAiText.rulesMode
+                }, style = MaterialTheme.typography.labelMedium)
                 Text(t.aiContextNote, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (aiSettings.aiProvider == "local" && !modelAvailable) LocalAiText.noModelHint else LocalAiText.rulesHint, style = MaterialTheme.typography.bodySmall)
                 OutlinedTextField(
                     value = text,
                     onValueChange = {
@@ -96,6 +123,10 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     maxLines = 6,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    androidx.compose.material3.Checkbox(checked = keepOriginal, onCheckedChange = { keepOriginal = it })
+                    Text(LocalAiText.keepOriginal)
+                }
                 if (editedOps.isNotEmpty()) {
                     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                         editedOps.forEachIndexed { index, op ->
@@ -127,7 +158,9 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
                     if (list.isEmpty()) return@TextButton
                     // 防误触连点：先清空待执行列表，双击也不会重复执行
                     editedOps = emptyList()
-                    vm.applyAiOps(list)
+                    vm.applyAiOps(list.map { op ->
+                        if (keepOriginal && op is AiSkills.AiOp.Add) op.copy(item = op.item.copy(originalText = op.item.originalText.ifBlank { run.src })) else op
+                    })
                     vm.clearAiRun()
                     onDismiss()
                 },
@@ -137,12 +170,13 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
         dismissButton = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(
-                    onClick = { if (editedOps.isNotEmpty()) askReparse = true else startRecognize(offlineOnly = true) },
+                    onClick = { reparseRulesOnly = true; if (editedOps.isNotEmpty()) askReparse = true else startRecognize(offlineOnly = true) },
                     enabled = text.isNotBlank() && !run.busy,
                 ) { Text(t.aiOfflineParse) }
-                TextButton(
+                if (aiSettings.aiProvider == "cloud" || modelAvailable) TextButton(
                     onClick = {
                         // 已有预览时再次识别会清空（含手动修改的内容）：先让用户确认
+                        reparseRulesOnly = false
                         if (editedOps.isNotEmpty()) askReparse = true else startRecognize()
                     },
                     enabled = text.isNotBlank() && !run.busy,
@@ -160,8 +194,8 @@ fun AiQuickAddDialog(vm: AppViewModel, onDismiss: () -> Unit) {
             confirmButton = {
                 TextButton(onClick = {
                     askReparse = false
-                    startRecognize()
-                }) { Text(t.qaParse) }
+                    startRecognize(offlineOnly = reparseRulesOnly)
+                }) { Text(if (reparseRulesOnly) t.aiOfflineParse else t.qaParse) }
             },
             dismissButton = {
                 TextButton(onClick = { askReparse = false }) { Text(t.cancel) }
@@ -297,6 +331,7 @@ private fun AiOpEditDialog(
     var start by remember { mutableStateOf(add?.item?.startTime.orEmpty()) }
     var end by remember { mutableStateOf(add?.item?.endTime.orEmpty()) }
     var loc by remember { mutableStateOf(add?.item?.location.orEmpty()) }
+    var originalText by remember { mutableStateOf(add?.item?.originalText.orEmpty()) }
     var nTitle by remember { mutableStateOf(upd?.set?.title.orEmpty()) }
     var nDate by remember { mutableStateOf(upd?.set?.date?.toString().orEmpty()) }
     var nStart by remember { mutableStateOf(upd?.set?.startTime.orEmpty()) }
@@ -336,6 +371,7 @@ private fun AiOpEditDialog(
                         OutlinedTextField(value = end, onValueChange = { end = it }, label = { Text(t.fieldEndTime) }, singleLine = true, modifier = Modifier.weight(1f))
                     }
                     OutlinedTextField(value = loc, onValueChange = { loc = it }, label = { Text(t.fieldLocation) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(value = originalText, onValueChange = { originalText = it }, label = { Text(LocalAiText.originalText) }, minLines = 2, maxLines = 6, modifier = Modifier.fillMaxWidth())
                     // 重复规则：日程与短计划都支持（与编辑器保存口径一致）
                     OutlinedTextField(value = rp, onValueChange = { rp = it }, label = { Text(t.repeatSection) }, placeholder = { Text(t.repeatFieldHint) }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     TextButton(onClick = { isPlan = !isPlan }) { Text(if (isPlan) t.qaPlanTag else t.qaAgendaTag) }
@@ -390,6 +426,7 @@ private fun AiOpEditDialog(
                                 startTime = start.trim(),
                                 endTime = end.trim(),
                                 location = loc.trim(),
+                                originalText = originalText,
                                 // 重复规则：日程与短计划都支持（与编辑器口径一致）
                                 repeat = if (rp.isNotBlank()) {
                                     RepeatRules.parse(rp) ?: op.item.repeat

@@ -3,14 +3,17 @@ package com.kstudio.agenda.data
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import org.jsoup.Jsoup
+import org.jsoup.parser.Parser
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
+import com.tom_roush.pdfbox.pdmodel.PDDocument
+import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.kstudio.agenda.util.AppLog
-import java.io.ByteArrayOutputStream
 import java.io.InputStream
-import java.util.zip.Inflater
 import java.util.zip.ZipInputStream
 
 /**
- * 常见文档的纯文本提取（完全本地、无需第三方库、无网络）。
+ * 常见文档的纯文本提取（完全本地、无网络）。
  *
  * 支持读取：
  * - 纯文本类：txt / md / markdown / csv / tsv / json / xml / html / htm / log / ini / yaml
@@ -21,7 +24,7 @@ import java.util.zip.ZipInputStream
  */
 object DocumentTextExtractor {
 
-    /** 单次读取上限：避免超大文件占用内存（超过则截断） */
+    /** 单次读取上限：避免超大文件占用内存（超过则拒绝） */
     private const val MAX_BYTES = 8 * 1024 * 1024
 
     private val TEXT_EXT = setOf(
@@ -69,33 +72,42 @@ object DocumentTextExtractor {
         val ext = extensionOf(name)
         val bytes = runCatching { readAll(context, uri) }
             .getOrElse { return Result.failure(it) }
+        PDFBoxResourceLoader.init(context.applicationContext)
         return extractBytes(bytes, ext, mime)
     }
 
     internal fun extractBytes(bytes: ByteArray, ext: String, mime: String? = null): Result<String> {
         return runCatching {
             require(bytes.size <= MAX_BYTES)
+            val resolved = when (mime?.substringBefore(';')?.lowercase()) {
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document" -> "docx"
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" -> "xlsx"
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation" -> "pptx"
+                "application/pdf" -> "pdf"
+                "text/html" -> "html"
+                else -> ext.lowercase()
+            }
             when {
-                ext in TEXT_EXT || (ext.isEmpty() && mime.orEmpty().startsWith("text/")) ->
-                    decodeText(bytes, ext)
+                resolved in TEXT_EXT || (ext.isEmpty() && mime.orEmpty().startsWith("text/")) ->
+                    decodeText(bytes, resolved)
 
-                ext == "html" || ext == "htm" -> stripHtml(decodeText(bytes, ext))
+                resolved == "html" || resolved == "htm" -> stripHtml(decodeText(bytes, resolved))
 
-                mime == "application/json" || mime == "application/xml" -> decodeText(bytes, ext)
+                mime == "application/json" || mime == "application/xml" -> decodeText(bytes, resolved)
 
-                ext == "docx" -> extractOoxml(bytes, listOf("word/document.xml")) { xml ->
-                    xml.replace("</w:p>", "\n").replace("<w:br/>", "\n").let { stripXmlTags(it) }
+                resolved == "docx" -> extractOoxml(bytes, listOf("word/document.xml")) { xml ->
+                    officeText(xml, "w")
                 }
 
-                ext == "pptx" -> extractOoxml(bytes, null) { xml ->
-                    xml.replace("</a:p>", "\n").let { stripXmlTags(it) }
+                resolved == "pptx" -> extractOoxml(bytes, null) { xml ->
+                    officeText(xml, "a")
                 }
 
-                ext == "xlsx" -> extractXlsx(bytes)
+                resolved == "xlsx" -> extractXlsx(bytes)
 
-                ext == "pdf" || mime == "application/pdf" -> extractPdf(bytes)
+                resolved == "pdf" || mime == "application/pdf" -> extractPdf(bytes)
 
-                ext.isEmpty() -> decodeText(bytes, ext)
+                ext.isEmpty() -> decodeText(bytes, resolved)
 
                 else -> error("UNSUPPORTED:$ext")
             }
@@ -112,26 +124,45 @@ object DocumentTextExtractor {
 
     /** 文本文件解码：优先 UTF-8，含替换字符过多时回落 GBK（国内教务导出的 csv 常见） */
     private fun decodeText(bytes: ByteArray, ext: String): String {
-        val utf8 = String(bytes, Charsets.UTF_8)
+        val bomText = when {
+            bytes.size >= 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xFE.toByte() -> String(bytes, Charsets.UTF_16LE)
+            bytes.size >= 2 && bytes[0] == 0xFE.toByte() && bytes[1] == 0xFF.toByte() -> String(bytes, Charsets.UTF_16BE)
+            else -> null
+        }
+        val utf8 = bomText ?: String(bytes, Charsets.UTF_8)
         val bad = utf8.count { it == '\uFFFD' }
-        val text = if (bad > 0 && bad * 50 > utf8.length) {
+        val text = if (bomText == null && bad > 0 && bad * 50 > utf8.length) {
             runCatching { String(bytes, charset("GBK")) }.getOrDefault(utf8)
         } else {
             utf8
         }
-        return if (ext == "html" || ext == "htm") stripHtml(text) else text
+        return if (ext == "html" || ext == "htm") stripHtml(text) else text.trimStart('\uFEFF')
     }
 
     /** 去掉 HTML 标签与常见实体，保留可读文本 */
     private fun stripHtml(html: String): String {
-        var s = html.replace(Regex("(?is)<(script|style)[^>]*>.*?</\\1>"), " ")
-        s = s.replace(Regex("(?i)<br\\s*/?>"), "\n")
-        s = s.replace(Regex("(?i)</(p|div|tr|li|h[1-6])>"), "\n")
-        s = s.replace(Regex("(?i)</t[dh]>"), "\t")
-        s = s.replace(Regex("<[^>]+>"), " ")
-        s = s.replace("&nbsp;", " ").replace("&amp;", "&").replace("&lt;", "<")
-            .replace("&gt;", ">").replace("&quot;", "\"").replace("&#39;", "'")
-        return s.replace(Regex("[ \\t\\u00A0]{2,}"), " ").replace(Regex("\\n{3,}"), "\n\n").trim()
+        val doc = Jsoup.parse(html)
+        doc.select("script,style,noscript,input,textarea,select,button").remove()
+        return doc.body().let { body ->
+            val tables = body.select("table")
+            if (tables.isNotEmpty()) tables.joinToString("\n\n") { table -> table.select("tr").joinToString("\n") { row ->
+                row.children().filter { it.tagName() in listOf("td", "th") }.joinToString("\t") { it.text() }
+            } } else body.wholeText().trim()
+        }
+    }
+
+    private fun officeText(xml: String, prefix: String): String {
+        val doc = Jsoup.parse(xml, "", Parser.xmlParser())
+        fun read(element: org.jsoup.nodes.Element): String = when (element.tagName()) {
+            "$prefix:tbl" -> element.getElementsByTag("$prefix:tr").joinToString("\n") { row ->
+                row.getElementsByTag("$prefix:tc").joinToString("\t") { cell ->
+                    cell.getElementsByTag("$prefix:t").joinToString(" ") { it.text() }
+                }
+            }
+            "$prefix:p" -> element.getElementsByTag("$prefix:t").joinToString("") { it.text() }
+            else -> element.children().map(::read).filter { it.isNotBlank() }.joinToString("\n")
+        }
+        return read(doc)
     }
 
     private fun stripXmlTags(xml: String): String {
@@ -172,7 +203,7 @@ object DocumentTextExtractor {
             }
         }
         if (sb.isBlank()) error("文档中未找到可读取的文字")
-        return sb.toString().trim()
+        return sb.toString().trimEnd('\n', '\r')
     }
 
     /** xlsx：sharedStrings + 单元格引用（含 inlineStr） → 制表符分隔的文本 */
@@ -244,7 +275,7 @@ object DocumentTextExtractor {
                 sb.append(arr.joinToString("\t")).append('\n')
             }
         }
-        return sb.toString().trim()
+        return sb.toString().trimEnd('\n', '\r')
     }
 
     /** "AB" → 27（0 基） */
@@ -262,165 +293,15 @@ object DocumentTextExtractor {
         s.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
             .replace("&apos;", "'").replace("&amp;", "&")
 
-    // ------------------------------------------------------------ PDF（尽力而为）
-
-    /**
-     * PDF 文本提取：遍历所有 stream，尝试 zlib 解压后从内容流里取
-     * `(文字) Tj` / `[(文字) ...] TJ` / `<hex> Tj` 的文本。
-     * 对扫描版 PDF（图片）无效——此时返回空并给出提示。
-     */
+    /** PDFBox resolves PDF fonts/ToUnicode maps; scanned pages require screenshot OCR. */
     private fun extractPdf(bytes: ByteArray): String {
-        val sb = StringBuilder()
-        var cursor = 0
-        var remaining = MAX_BYTES
-        while (true) {
-            val s = indexOf(bytes, "stream", cursor)
-            if (s < 0) break
-            var start = s + 6
-            if (start < bytes.size && bytes[start] == 13.toByte()) start++
-            if (start < bytes.size && bytes[start] == 10.toByte()) start++
-            val e = indexOf(bytes, "endstream", start)
-            if (e < 0) break
-            var end = e
-            while (end > start && (bytes[end - 1] == 10.toByte() || bytes[end - 1] == 13.toByte())) end--
-            val chunk = bytes.copyOfRange(start, end)
-            val content = try { inflate(chunk, remaining) }
-                catch (e: BoundedInput.TooLarge) { throw e }
-                catch (_: Exception) { null }
-                ?: chunk.takeIf { looksLikeContentStream(it) }
-            if (content != null) {
-                if (content.size > remaining) throw BoundedInput.TooLarge()
-                remaining -= content.size
-                val text = pdfTextFromContent(String(content, Charsets.ISO_8859_1))
-                if (text.isNotBlank()) sb.append(text).append('\n')
-            }
-            cursor = e + 9
+        return PDDocument.load(bytes).use { doc ->
+            require(doc.numberOfPages <= 100) { "PDF has too many pages" }
+            val text = PDFTextStripper().apply { sortByPosition = true }.getText(doc).trim()
+            require(text.isNotBlank()) { "PDF 中未提取到文字，请将课表页面截图后使用截图导入" }
+            require(text.length <= MAX_BYTES) { "Input exceeds size limit" }
+            text
         }
-        val out = sb.toString().replace(Regex("\\n{3,}"), "\n\n").trim()
-        if (out.isBlank()) error("PDF 中未提取到文字（可能是扫描版/图片型 PDF）")
-        return out
-    }
-
-    private fun looksLikeContentStream(b: ByteArray): Boolean {
-        val s = String(b, Charsets.ISO_8859_1)
-        return s.contains(" Tj") || s.contains(" TJ") || s.contains("BT")
-    }
-
-    private fun inflate(data: ByteArray, limit: Int): ByteArray {
-        val inflater = Inflater()
-        inflater.setInput(data)
-        val out = ByteArrayOutputStream()
-        val buf = ByteArray(16 * 1024)
-        try { while (!inflater.finished()) {
-            val n = runCatching { inflater.inflate(buf) }.getOrDefault(-1)
-            if (n <= 0) break
-            if (n > limit - out.size()) throw BoundedInput.TooLarge()
-            out.write(buf, 0, n)
-        } } finally { inflater.end() }
-        val result = out.toByteArray()
-        if (result.isEmpty()) error("empty")
-        return result
-    }
-
-    /** 从内容流中提取文本操作符的可见文字 */
-    private fun pdfTextFromContent(content: String): String {
-        val sb = StringBuilder()
-        var i = 0
-        while (i < content.length) {
-            when (content[i]) {
-                '(' -> {
-                    val (text, next) = readPdfString(content, i)
-                    sb.append(text)
-                    i = next
-                }
-                '[' -> {
-                    // TJ 数组：(文字) -100 (文字) …
-                    var j = i + 1
-                    while (j < content.length && content[j] != ']') {
-                        if (content[j] == '(') {
-                            val (text, next) = readPdfString(content, j)
-                            sb.append(text)
-                            j = next
-                        } else {
-                            j++
-                        }
-                    }
-                    i = j
-                }
-                'T' -> {
-                    // Td / TD / T* / Tj / TJ → 换行（粗略：新的一行文字）
-                    if (i + 1 < content.length && content[i + 1] in "dD*") {
-                        if (sb.isNotEmpty() && sb.last() != '\n') sb.append('\n')
-                    } else if (i + 1 < content.length && (content[i + 1] == 'j' || content[i + 1] == 'J')) {
-                        if (sb.isNotEmpty() && sb.last() != '\n') sb.append('\n')
-                    }
-                    i += 2
-                }
-                else -> i++
-            }
-        }
-        return sb.toString().lines().map { it.trim() }.filter { it.isNotBlank() }.joinToString("\n")
-    }
-
-    /** 读取 PDF 字符串 "(...)"，处理转义与嵌套括号 */
-    private fun readPdfString(s: String, start: Int): Pair<String, Int> {
-        val sb = StringBuilder()
-        var i = start + 1
-        var depth = 1
-        while (i < s.length) {
-            val c = s[i]
-            when {
-                c == '\\' && i + 1 < s.length -> {
-                    val n = s[i + 1]
-                    when (n) {
-                        'n' -> sb.append('\n')
-                        'r' -> sb.append('\r')
-                        't' -> sb.append('\t')
-                        'b', 'f' -> Unit
-                        '(', ')', '\\' -> sb.append(n)
-                        in '0'..'7' -> {
-                            var oct = ""
-                            var k = i + 1
-                            while (k < s.length && oct.length < 3 && s[k] in '0'..'7') {
-                                oct += s[k]
-                                k++
-                            }
-                            oct.toIntOrNull(8)?.let { sb.append(it.toChar()) }
-                            i = k - 1
-                        }
-                        else -> sb.append(n)
-                    }
-                    i += 2
-                }
-                c == '(' -> {
-                    depth++
-                    sb.append(c)
-                    i++
-                }
-                c == ')' -> {
-                    depth--
-                    if (depth == 0) return sb.toString() to (i + 1)
-                    sb.append(c)
-                    i++
-                }
-                else -> {
-                    sb.append(c)
-                    i++
-                }
-            }
-        }
-        return sb.toString() to i
-    }
-
-    private fun indexOf(haystack: ByteArray, needle: String, from: Int): Int {
-        val n = needle.toByteArray(Charsets.US_ASCII)
-        outer@ for (i in from..haystack.size - n.size) {
-            for (j in n.indices) {
-                if (haystack[i + j] != n[j]) continue@outer
-            }
-            return i
-        }
-        return -1
     }
 
     /** 记录一次提取失败（便于用户分享日志排查） */

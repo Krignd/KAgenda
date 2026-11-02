@@ -28,9 +28,9 @@
     <string name="widget_next_agenda">Prochain événement</string>
     <string name="widget_ongoing">En cours</string>
     <string name="widget_today">Aujourd\'hui</string>
-    <string name="feature_global_reminder">Rappels globaux</string>
+    <string name="feature_global_reminder">Réglages globaux des rappels</string>
     <string name="feature_follow_global">Utiliser les réglages globaux</string>
-    <string name="feature_apply_global">Appliquer les réglages globaux à tous</string>
+    <string name="feature_apply_global">Utiliser les réglages globaux pour tous les rappels</string>
     <string name="feature_notify_event">Notification</string>
     <string name="feature_alarm_event">Alarme</string>
     <string name="feature_alarm_hint">Sonne au volume des alarmes. Arrêt depuis la notification ou après deux minutes.</string>
@@ -60,7 +60,7 @@
     <string name="feature_widget_week_courses">Cours de la semaine</string>
     <string name="feature_widget_empty">Aucun événement</string>
     <string name="feature_widget_more">Touchez pour tout voir</string>
-    <string name="feature_ai_context_note">La reconnaissance IA transmet les titres, dates, horaires, lieux, étiquettes et règles de répétition pour améliorer les modifications.</string>
+    <string name="feature_ai_context_note">L’assistant IA transmet les titres, dates, horaires, lieux, étiquettes et règles de répétition des événements existants pour améliorer les modifications.</string>
     <string name="feature_reminder_needs_time">Une heure de début précise est requise</string>
     <string name="feature_workday_mark">Travail</string>
     <string name="feature_stop_alarm">Arrêter l’alarme</string>

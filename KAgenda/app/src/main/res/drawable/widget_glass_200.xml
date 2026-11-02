@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Milky launcher-icon gradient: distinct pastel cyan -> blue -> violet, with diffused light. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+ <item><shape android:shape="rectangle"><corners android:radius="24dp" />
+  <gradient android:angle="315" android:centerX="0.43" android:startColor="#EABBE2EC" android:centerColor="#EABAD2F8" android:endColor="#EAD0BDEC" />
+ </shape></item>
+ <item><shape android:shape="rectangle"><corners android:radius="24dp" />
+  <gradient android:type="radial" android:centerX="0.10" android:centerY="0.06" android:gradientRadius="320dp" android:startColor="#1A38CDE0" android:endColor="#0038CDE0" />
+ </shape></item>
+ <item><shape android:shape="rectangle"><corners android:radius="24dp" />
+  <gradient android:type="radial" android:centerX="0.98" android:centerY="0.85" android:gradientRadius="300dp" android:startColor="#186345D8" android:endColor="#006345D8" />
+ </shape></item>
+ <item><shape android:shape="rectangle"><corners android:radius="24dp" />
+  <gradient android:angle="270" android:startColor="#20FFFFFF" android:endColor="#00FFFFFF" />
+  <stroke android:width="1dp" android:color="#B8FFFFFF" />
+ </shape></item>
+</layer-list>

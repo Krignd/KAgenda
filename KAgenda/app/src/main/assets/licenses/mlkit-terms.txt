@@ -1,0 +1,5 @@
+Google ML Kit Chinese Text Recognition v2
+Artifact: com.google.mlkit:text-recognition-chinese:16.0.1
+Official documentation: https://developers.google.com/ml-kit/vision/text-recognition/v2/android
+Terms: https://developers.google.com/ml-kit/terms
+This Google SDK and its bundled models are subject to the upstream terms; they are not represented as open-source code.

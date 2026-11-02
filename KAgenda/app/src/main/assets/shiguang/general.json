@@ -1,0 +1,78 @@
+[
+  {
+    "id": "zhengfang_jiaowu",
+    "name": "正方教务-通用教务",
+    "initial": "Z",
+    "adapters": [
+      {
+        "id": "zhengfang_01",
+        "name": "正方教务html通用获取",
+        "category": "GENERAL_TOOL",
+        "url": "",
+        "path": "zhengfang_jiaowu/zhengfang_01.js",
+        "maintainer": "星河欲转",
+        "description": "输入教务网址，登录，切换到个人课表页面点击执行导入",
+        "combo": false,
+        "updated": "2026-08-23T16:00:54+08:00",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/zhengfang_jiaowu/zhengfang_01.js"
+      }
+    ]
+  },
+  {
+    "id": "chaoxing_jiaowu",
+    "name": "超星教务系统-通用教务",
+    "initial": "C",
+    "adapters": [
+      {
+        "id": "chaoxing",
+        "name": "超星教务系统",
+        "category": "GENERAL_TOOL",
+        "url": "",
+        "path": "chaoxing_jiaowu/chaoxing.js",
+        "maintainer": "b1n23",
+        "description": "超星教务系统理论通用，输入教务网址，登录后点击执行导入\n支持导入开学日期和节次时间",
+        "combo": false,
+        "updated": "2026-08-23T16:00:54+08:00",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/chaoxing_jiaowu/chaoxing.js"
+      }
+    ]
+  },
+  {
+    "id": "qingguo_jiaowu",
+    "name": "青果教务-通用教务",
+    "initial": "Q",
+    "adapters": [
+      {
+        "id": "qingguo_01",
+        "name": "青果教务html通用获取",
+        "category": "GENERAL_TOOL",
+        "url": "",
+        "path": "qingguo_jiaowu/qingguo_01.js",
+        "maintainer": "星河欲转",
+        "description": "输入教务网址，登录，切换到个人课表页面点击执行导入",
+        "combo": false,
+        "updated": "2026-08-23T16:00:54+08:00",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/qingguo_jiaowu/qingguo_01.js"
+      }
+    ]
+  },
+  {
+    "id": "urp_jiaowu",
+    "name": "URP教务-通用教务",
+    "initial": "U",
+    "adapters": [
+      {
+        "id": "urp_01",
+        "name": "URP教务通用获取",
+        "category": "GENERAL_TOOL",
+        "url": "",
+        "path": "urp_jiaowu/urp_01.js",
+        "maintainer": "星河欲转",
+        "description": "输入教务网址，登录，切换到个人课表页面点击执行导入",
+        "combo": false,
+        "updated": "2026-08-30T18:16:19+08:00",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/urp_jiaowu/urp_01.js"
+      }
+    ]
+  }
+]

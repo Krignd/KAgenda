@@ -1,0 +1,43 @@
+KAgenda original implementation only. The MIT license below applies only to KAgenda code.
+Public protocol author/account: haohao-u; repository: haohao-u/the-assitant-of-study.
+Fixed revision: 4f4550398349a77e47e5698c9187bca5e4d4bdad.
+No applicable upstream root/file source license has been established. No source code is copied,
+translated, packaged, adapted or relicensed. Only public URL, method, field and form-code facts are used.
+Original KAgenda implementation copyright Krignd.
+Actual personal cxXsKb POST uses xnm/xqm with the visible authenticated school session;
+the reviewed actual form maps first semester=3 and second semester=12.
+No source login handling, credentials, 2025/12 defaults, lossy normalizer, destructive replacement,
+fixed school calendars, clocks or stale cache is adopted. User supplies the intended term/calendar.
+Unknown nonempty arrangements, missing fields, partial pages, expired session and changed re-read abort.
+Raw identity only stays in transient comparison; it is not exported into course details.
+Reference files (path-level dates and SHA-256):
+https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/services/jwglxt_portal.py
+2026-10-22T06:13:08Z; SHA-256 a3fe6a9eee292393ca7cedb995439add9ba57c45f05923a76bee2dc9fc76976f
+https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/templates/recommendation/pages/jwglxt.html
+2026-10-22T06:13:08Z; SHA-256 8bfd14439ac150ec4f64aa70791217171af527096de0c3358dad4b1ff907e69c
+https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/static/recommendation/js/pages/jwglxt.js
+2026-10-22T06:13:08Z; SHA-256 4658c9a2b68e7102c3557a73012f9aea5cac22d37322eb77a3070bf2f71d0216
+https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/views.py
+2026-10-22T06:13:08Z; SHA-256 dd78fce050ccce841045945ed1627378c3fff533d6cdc2f84155e49ca142c84e
+
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

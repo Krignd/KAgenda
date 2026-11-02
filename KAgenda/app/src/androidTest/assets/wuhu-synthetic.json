@@ -1,0 +1,150 @@
+{
+  "schoolTime": {
+    "maxWeekNum": 3,
+    "maxSection": 4,
+    "xnxqdm": "2026-2027-1",
+    "weekCalendar": [
+      "2026-08-31:1",
+      "2026-09-07:2",
+      "2026-09-14:3"
+    ]
+  },
+  "slotsResponse": {
+    "datas": {
+      "jc": {
+        "rows": [
+          {
+            "DM": "1",
+            "KSSJ": "08:00",
+            "JSSJ": "08:45"
+          },
+          {
+            "DM": "2",
+            "KSSJ": "08:55",
+            "JSSJ": "09:40"
+          },
+          {
+            "DM": "3",
+            "KSSJ": "10:00",
+            "JSSJ": "10:45"
+          },
+          {
+            "DM": "4",
+            "KSSJ": "10:55",
+            "JSSJ": "11:40"
+          }
+        ]
+      }
+    }
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "response": {
+        "data": {
+          "theorySchedule": [
+            {
+              "kcm": "同名合成课程",
+              "jxbid": "CLASS-A",
+              "kbid": "K-CLASS-A",
+              "jxblx": "理论",
+              "jxlmc": "合成楼",
+              "jasmc": "合成A101",
+              "skxq": 1,
+              "ksjc": 1,
+              "jsjc": 2
+            },
+            {
+              "kcm": "同名合成课程",
+              "jxbid": "CLASS-B",
+              "kbid": "K-CLASS-B",
+              "jxblx": "理论",
+              "jxlmc": "合成楼",
+              "jasmc": "合成B202",
+              "skxq": 1,
+              "ksjc": 3,
+              "jsjc": 4
+            }
+          ]
+        }
+      }
+    },
+    {
+      "week": 2,
+      "response": {
+        "data": {
+          "theorySchedule": [
+            {
+              "kcm": "同名合成课程",
+              "jxbid": "CLASS-A",
+              "kbid": "K-CLASS-A",
+              "jxblx": "理论",
+              "jxlmc": "合成楼",
+              "jasmc": "合成A102",
+              "skxq": 1,
+              "ksjc": 1,
+              "jsjc": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "week": 3,
+      "response": {
+        "data": {
+          "theorySchedule": [
+            {
+              "kcm": "同名合成课程",
+              "jxbid": "CLASS-A",
+              "kbid": "K-CLASS-A",
+              "jxblx": "理论",
+              "jxlmc": "合成楼",
+              "jasmc": "合成A101",
+              "skxq": 1,
+              "ksjc": 1,
+              "jsjc": 2
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "details": [
+    {
+      "identity": [
+        "CLASS-A",
+        "K-CLASS-A",
+        "理论"
+      ],
+      "response": {
+        "data": {
+          "teacherInfo": [
+            {
+              "xm": "合成甲"
+            },
+            {
+              "xm": "合成乙"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "identity": [
+        "CLASS-B",
+        "K-CLASS-B",
+        "理论"
+      ],
+      "response": {
+        "data": {
+          "teacherInfo": [
+            {
+              "xm": "合成丙"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

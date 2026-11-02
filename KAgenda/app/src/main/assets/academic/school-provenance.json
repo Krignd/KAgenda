@@ -1,0 +1,2242 @@
+{
+  "generatedAt": "2026-10-23T07:45:18.469376+00:00",
+  "accountValidated": false,
+  "commonSha256": "72c3b5f2fb6052778b3cdf8a90a3ffc8491919af950d29a2a7dc4ba38daa9ace",
+  "files": {
+    "EXT/nju.js": {
+      "sha256": "436ec48a3958bf0aa4ded180bc95c6d40028ddbbf82d00a2de204b644cf6ecd2",
+      "sources": [
+        {
+          "adapterId": "ext_nju_ug",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/njubksjw2.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/njubksjw2.js",
+          "sha256": "7be27b96c59ba4585ed69356f85083fa0c27b4ff61313b682bc520fb30890c3a",
+          "license": "Apache-2.0",
+          "updated": "2026-01-17T07:18:22Z"
+        },
+        {
+          "adapterId": "ext_nju_xk",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/njubksxk.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/njubksxk.js",
+          "sha256": "2ea78ce538168ffc417f10328b9e274f17ad2bc8db9a23a4acf932058b8ae9aa",
+          "license": "Apache-2.0",
+          "updated": "2026-01-17T07:18:22Z"
+        },
+        {
+          "adapterId": "ext_nju_grad",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/njuyjsjw.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/njuyjsjw.js",
+          "sha256": "b5adfa4c56737e93da2e20a11f4814a50bdb4d9cb7182f5210147ff8a6b6e298",
+          "license": "Apache-2.0",
+          "updated": "2025-09-28T12:57:33Z"
+        },
+        {
+          "adapterId": "ext_ruc_grad",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/rucyjsjw.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/rucyjsjw.js",
+          "sha256": "55f1070643e6c626d168b1c80df2d9f09a93cc76793496da47d78af9a43c3905",
+          "license": "Apache-2.0",
+          "updated": "2026-01-17T07:18:22Z"
+        },
+        {
+          "adapterId": "ext_seu",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/seubksjw.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/seubksjw.js",
+          "sha256": "7bb8d64c0cf1bdb26ac4c1dff7bb07a8ad7ca2a1d0b562a30a9b3c0641209078",
+          "license": "Apache-2.0",
+          "updated": "2026-08-28T11:51:32Z"
+        },
+        {
+          "adapterId": "ext_sjtu_grad",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/sjtuyjsxk.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/sjtuyjsxk.js",
+          "sha256": "5857c56bc956cccdc9885776a6479fc2420215d6eef7d50b5b8761490497e3b6",
+          "license": "Apache-2.0",
+          "updated": "2026-01-17T07:18:22Z"
+        },
+        {
+          "adapterId": "ext_ucas_grad",
+          "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+          "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+          "path": "api/tools/ucasyjsxk.js",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/ucasyjsxk.js",
+          "sha256": "d8afe65cd302301bfba105db95c11e99c0f67b9054e3d9a14dcafe641d7a3c3b",
+          "license": "Apache-2.0",
+          "updated": "2026-09-06T03:40:50Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict weeks/sections; explicit semester selection; fail on incomplete responses; no invented dates/weeks NJU undergraduate: independently audited headers, personal URL, explicit full term, unique pager and full single-page row total; nonempty unknown/week/course filters abort, no unscheduled omissions. Stable DOM and final identity/term/filter/row snapshots after explicit calendar prompt. Unexpanded pagination rejects before staging; no inferred calendar dates or period clocks.",
+      "supportingSources": [
+        {
+          "repository": "https://github.com/Fallforgotten/nju-timetable-desktop",
+          "path": "vendor/extract.js",
+          "revision": "2380b4fbbf36e79424e0b3ecf3152658b3d4a61d",
+          "sourceUrl": "https://github.com/Fallforgotten/nju-timetable-desktop/blob/2380b4fbbf36e79424e0b3ecf3152658b3d4a61d/vendor/extract.js",
+          "sha256": "d5cd0c34b5ec84227a79f3dabe5d7b47f468c2efa9b6a9518b7d97987bd3d5b1",
+          "updated": "2026-10-13T17:00:16+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Fallforgotten/nju-timetable-desktop",
+          "path": "vendor/paginate.js",
+          "revision": "2380b4fbbf36e79424e0b3ecf3152658b3d4a61d",
+          "sourceUrl": "https://github.com/Fallforgotten/nju-timetable-desktop/blob/2380b4fbbf36e79424e0b3ecf3152658b3d4a61d/vendor/paginate.js",
+          "sha256": "0f1c0d8a9f40cb07aaa308f9865fdd31cb451c65cd6d35adf6edfb9d643557bc",
+          "updated": "2026-10-13T17:00:16+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Fallforgotten/nju-timetable-desktop",
+          "path": "policy.cjs",
+          "revision": "2380b4fbbf36e79424e0b3ecf3152658b3d4a61d",
+          "sourceUrl": "https://github.com/Fallforgotten/nju-timetable-desktop/blob/2380b4fbbf36e79424e0b3ecf3152658b3d4a61d/policy.cjs",
+          "sha256": "07353be29bfcf7817cd65b0d70f593bd2ab7d580cdc819f34a5970c9454376cf",
+          "updated": "2026-10-13T16:45:56+08:00",
+          "license": "MIT"
+        }
+      ]
+    },
+    "EXT/dnui.js": {
+      "sha256": "825d059656a3cbe508daf9233a15cb6c697350bfba8c88b51fc3df7bfb997437",
+      "sources": [
+        {
+          "adapterId": "ext_dnui",
+          "repository": "https://github.com/LuBanQAQ/dnui-wakeup-export",
+          "revision": "1035f4b4ceb7ba3a801325c57547b4def8a697b6",
+          "path": "dnui-wakeup-export.user.js",
+          "sourceUrl": "https://github.com/LuBanQAQ/dnui-wakeup-export/blob/1035f4b4ceb7ba3a801325c57547b4def8a697b6/dnui-wakeup-export.user.js",
+          "sha256": "ce85854d00d2f31e25d006ab5ee2f646a5402ac16aa84f45d0b9c581b4e7b102",
+          "license": "MIT",
+          "updated": "2026-01-04T10:29:10Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict weeks/sections; explicit semester selection; fail on incomplete responses; no invented dates/weeks"
+    },
+    "EXT/fzu.js": {
+      "sha256": "0529597f81f7b82c103318f5de338af0a66b9bb4154628ff94743f8e2d5fa2d0",
+      "sources": [
+        {
+          "adapterId": "ext_fzu",
+          "repository": "https://github.com/west2-online/jwch",
+          "revision": "81779d5a6307fa46f2017cba89d246691b5be73e",
+          "path": "course.go",
+          "sourceUrl": "https://github.com/west2-online/jwch/blob/81779d5a6307fa46f2017cba89d246691b5be73e/course.go",
+          "sha256": "feb21eb8e84926ac3413694a8427a6535f4cb13c15ee65e125d374355fd8723f",
+          "license": "Apache-2.0",
+          "updated": "2026-09-20T06:34:45Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict weeks/sections; explicit semester selection; reject missing/unarranged course schedules before staging any courses or configuration; no invented dates/weeks",
+      "supportingSources": [
+        {
+          "repository": "west2-online/jwch",
+          "path": "constants/constants.go",
+          "commit": "81779d5a6307fa46f2017cba89d246691b5be73e",
+          "sourceUrl": "https://github.com/west2-online/jwch/blob/81779d5a6307fa46f2017cba89d246691b5be73e/constants/constants.go",
+          "sha256": "83877d8279c27be6fc63f699aa8d5659daaee0959fbb0ac85f46b253791f12dc"
+        }
+      ]
+    },
+    "EXT/zhengfang.js": {
+      "sha256": "95d415c5f56e12ba161ddf0aa3885b8a9acf34e79c1e20f2af5df5407ea5cf83",
+      "sources": [
+        {
+          "adapterId": "ext_zju",
+          "repository": "https://github.com/Jnove/ZJUCoursetrace",
+          "revision": "faed4d975958db8e6277727001081f91f673f048",
+          "path": "lib/zju/api.ts",
+          "sourceUrl": "https://github.com/Jnove/ZJUCoursetrace/blob/faed4d975958db8e6277727001081f91f673f048/lib/zju/api.ts",
+          "sha256": "a6226d833563f605450c808013d8ae73fc521b39c40531858b72a20d96c64c50",
+          "license": "MIT",
+          "updated": "2026-10-08T02:02:11Z"
+        },
+        {
+          "adapterId": "ext_usst",
+          "repository": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar",
+          "revision": "bce264b562c198f4bb9863e516cecd92bf4aa306",
+          "path": "src/utils/information.js",
+          "sourceUrl": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar/blob/bce264b562c198f4bb9863e516cecd92bf4aa306/src/utils/information.js",
+          "sha256": "e021765309dfe39a4db488b0437f410902a9b51c6f090ce62e974636e010badf",
+          "license": "MIT",
+          "updated": "2024-09-12T17:26:37Z"
+        },
+        {
+          "adapterId": "ext_suse",
+          "repository": "https://github.com/suse-edu-cn/SUSE-OAA-APP",
+          "revision": "53d06ec130a106f4bf6669e1eb536088a841a9b0",
+          "path": "shared/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/data/remote/api/SchoolApiService.kt",
+          "sourceUrl": "https://github.com/suse-edu-cn/SUSE-OAA-APP/blob/53d06ec130a106f4bf6669e1eb536088a841a9b0/shared/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/data/remote/api/SchoolApiService.kt",
+          "sha256": "90952e0875a90cf352a9b3e165b523604c83d16bbf8c3afed4db18a281215bf5",
+          "license": "MIT",
+          "updated": "2026-09-05T08:53:21Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict explicit weeks/sections/selected semester; USST preserves documented xqmc campus and kcxz/khfsmc/kclb course details, rejects missing teacher/room and unknown nonempty practice lists before any staging. No invented dates, clocks or weeks.",
+      "supportingSources": [
+        {
+          "repository": "Jnove/ZJUCoursetrace",
+          "path": "lib/zju/parsers.ts",
+          "commit": "faed4d975958db8e6277727001081f91f673f048",
+          "sourceUrl": "https://github.com/Jnove/ZJUCoursetrace/blob/faed4d975958db8e6277727001081f91f673f048/lib/zju/parsers.ts",
+          "sha256": "602aaf231252e862f3afefd6405ec5b32559b78a46224985376a5b01b3944b58"
+        },
+        {
+          "repository": "SLctfTeam/USST-Lecture-Table-Calendar",
+          "path": "src/utils/lecture_table.js",
+          "commit": "bce264b562c198f4bb9863e516cecd92bf4aa306",
+          "sourceUrl": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar/blob/bce264b562c198f4bb9863e516cecd92bf4aa306/src/utils/lecture_table.js",
+          "sha256": "de59c4132cc2b1274d97712dbd459065adf363b86169f063f55fbb6e3f85f0c6"
+        },
+        {
+          "repository": "SLctfTeam/USST-Lecture-Table-Calendar",
+          "path": "src/config/api.config.js",
+          "commit": "bce264b562c198f4bb9863e516cecd92bf4aa306",
+          "sourceUrl": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar/blob/bce264b562c198f4bb9863e516cecd92bf4aa306/src/config/api.config.js",
+          "sha256": "b5f43ecb53bb538611759ccda2de7bc2d41f9b8ef54fefafb0d62f0b831a9129"
+        },
+        {
+          "repository": "drfccv/ZFJW-backend",
+          "path": "zfjw/api/schedule.py",
+          "commit": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/schedule.py",
+          "sha256": "0433132bd1a0cdf5be55e7fc417741e2abfc1c10bb8ea0c7a39eb77aa1bac42f"
+        },
+        {
+          "repository": "suse-edu-cn/SUSE-OAA-APP",
+          "path": "core/network/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/data/remote/ApiConfig.kt",
+          "commit": "53d06ec130a106f4bf6669e1eb536088a841a9b0",
+          "sourceUrl": "https://github.com/suse-edu-cn/SUSE-OAA-APP/blob/53d06ec130a106f4bf6669e1eb536088a841a9b0/core/network/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/data/remote/ApiConfig.kt",
+          "sha256": "a2a5f0fd7d4205b8f6d3028517fc6cf8307e543c95b1db4dc0f963b73dcf80b4"
+        },
+        {
+          "repository": "suse-edu-cn/SUSE-OAA-APP",
+          "path": "shared/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/domain/model/school/SchoolApiModels.kt",
+          "commit": "53d06ec130a106f4bf6669e1eb536088a841a9b0",
+          "sourceUrl": "https://github.com/suse-edu-cn/SUSE-OAA-APP/blob/53d06ec130a106f4bf6669e1eb536088a841a9b0/shared/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/domain/model/school/SchoolApiModels.kt",
+          "sha256": "4775e0ef84a0968e6183c5420be8c988e0c062c0da1d568dd4f95da7c9af44d0"
+        },
+        {
+          "repository": "https://github.com/Harry-Linner/CampusOS",
+          "path": "packages/core/src/main/zjuUndergraduateApi.ts",
+          "revision": "e773a452dad691f8ad77d0b0633a1b93b941e06d",
+          "sourceUrl": "https://github.com/Harry-Linner/CampusOS/blob/e773a452dad691f8ad77d0b0633a1b93b941e06d/packages/core/src/main/zjuUndergraduateApi.ts",
+          "sha256": "81f25453904f21a51cc5ca54c3d71b4bd6195a9baa8289a89b3b600e7d585d02",
+          "updated": "2026-09-15T13:35:10+08:00"
+        }
+      ]
+    },
+    "EXT/xjtlu.js": {
+      "sha256": "e93fef9f2c24f791fdcb5ed11d083df23adee2b0f05ea664107a5d94d36d6dac",
+      "sources": [
+        {
+          "adapterId": "ext_xjtlu",
+          "repository": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet",
+          "revision": "64951fce1204a3bce92a44885b85040c8996a5c7",
+          "path": "src/lib/parseTimetable.ts",
+          "sourceUrl": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet/blob/64951fce1204a3bce92a44885b85040c8996a5c7/src/lib/parseTimetable.ts",
+          "sha256": "10f552fa0a4701e15cd6f5ac082794eb6c854eb666b2a3741a104cedbf3d7667",
+          "license": "MIT",
+          "updated": "2026-05-28T15:03:48Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict weeks/sections; explicit semester selection; fail on incomplete responses; no invented dates/weeks",
+      "supportingSources": [
+        {
+          "repository": "sceneeeee/xjtlu-timetable-bookmarklet",
+          "path": "src/lib/parseWeeks.ts",
+          "commit": "64951fce1204a3bce92a44885b85040c8996a5c7",
+          "sourceUrl": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet/blob/64951fce1204a3bce92a44885b85040c8996a5c7/src/lib/parseWeeks.ts",
+          "sha256": "971fecc12089c7756a821c4e94da0a0193f287dcfc917429e904ee71e3227396"
+        },
+        {
+          "repository": "sceneeeee/xjtlu-timetable-bookmarklet",
+          "path": "src/bookmarklet/main.ts",
+          "commit": "64951fce1204a3bce92a44885b85040c8996a5c7",
+          "sourceUrl": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet/blob/64951fce1204a3bce92a44885b85040c8996a5c7/src/bookmarklet/main.ts",
+          "sha256": "7fffcd6fc4f352afe3e8ced4cb42df2beff53ae7c1c89ed874ad0d546640ddc5"
+        }
+      ]
+    },
+    "EXT/scujcc.js": {
+      "sha256": "fa6f1bc5eed283ceeb5c95c4cadbe6ea41723660a1e3d6cddaa6d73ed3c2712e",
+      "sources": [
+        {
+          "adapterId": "ext_scujcc",
+          "repository": "https://github.com/XFY9326/Schedule",
+          "revision": "d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29",
+          "path": "app/src/main/java/tool/xfy9326/schedule/content/adapters/parser/SCUJCCCourseParser.kt",
+          "sourceUrl": "https://github.com/XFY9326/Schedule/blob/d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29/app/src/main/java/tool/xfy9326/schedule/content/adapters/parser/SCUJCCCourseParser.kt",
+          "sha256": "b4d3d130ba3537970a7a1b55831ede74e50fa624281e7ecbb2f922dd6a85041f",
+          "license": "Apache-2.0",
+          "updated": "2026-03-21T06:08:08Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict weeks/sections; explicit semester selection; fail on incomplete responses; no invented dates/weeks",
+      "supportingSources": [
+        {
+          "repository": "XFY9326/Schedule",
+          "path": "app/src/main/java/tool/xfy9326/schedule/content/adapters/provider/SCUJCCCourseProvider.kt",
+          "commit": "d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29",
+          "sourceUrl": "https://github.com/XFY9326/Schedule/blob/d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29/app/src/main/java/tool/xfy9326/schedule/content/adapters/provider/SCUJCCCourseProvider.kt",
+          "sha256": "d95bb6a8747f36185fd046f9f057ba244c3bdac3fde9773f3ae0ea5495069c45"
+        }
+      ]
+    },
+    "EXT/zzuli.js": {
+      "sha256": "2690228070d23119a3c45de7581ac7b49adce688164fcd5b4d61f1a6b1b13202",
+      "sources": [
+        {
+          "adapterId": "ext_zzuli",
+          "repository": "https://github.com/LingNc/stnet_syllabus",
+          "revision": "02e9ff9ff806dcf51f3c475769ed1e64d19b898f",
+          "path": "internal/parser/list_parser.go",
+          "sourceUrl": "https://github.com/LingNc/stnet_syllabus/blob/02e9ff9ff806dcf51f3c475769ed1e64d19b898f/internal/parser/list_parser.go",
+          "sha256": "a62c832647c0d8fbdc96411700cfd8013de664291714b8760b5868ef79edde20",
+          "license": "MIT",
+          "updated": "2026-03-09T14:36:42Z"
+        }
+      ],
+      "changes": "KAgenda host protocol; strict weeks/sections; explicit semester selection; fail on incomplete responses; no invented dates/weeks",
+      "supportingSources": [
+        {
+          "repository": "LingNc/stnet_syllabus",
+          "path": "scripts/get_schedule.py",
+          "commit": "02e9ff9ff806dcf51f3c475769ed1e64d19b898f",
+          "sourceUrl": "https://github.com/LingNc/stnet_syllabus/blob/02e9ff9ff806dcf51f3c475769ed1e64d19b898f/scripts/get_schedule.py",
+          "sha256": "46ac03849f5700b73ede86c01c8d4aae93e4bfa51712b13eb752f1fa3b351a5c"
+        }
+      ]
+    },
+    "EXT/zhejiang.js": {
+      "sha256": "c9afe15d32d1484994daba0c48b3e89f21a788e82b1c565880af6a2678326d98",
+      "sources": [
+        {
+          "repository": "https://github.com/wow-233/niwin-assistant",
+          "path": "lib/services/wzu_sync_script.dart",
+          "revision": "6b6de141340523d6cd3776b8f11e035a860c54f2",
+          "sourceUrl": "https://github.com/wow-233/niwin-assistant/blob/6b6de141340523d6cd3776b8f11e035a860c54f2/lib/services/wzu_sync_script.dart",
+          "sha256": "17c97eeb37ce6b2c19f81140c0a819479157e650b726f71d46d1e495845cfa81",
+          "updated": "2026-09-25T13:15:26+08:00",
+          "adapterId": "ext_wzu_api",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/Yingye66/zjgsu-campus-mcp-open-source",
+          "path": "src/adapters/campus/jwweb.py",
+          "revision": "37beae2862bfb05f4471adf446f1d2db5195db0a",
+          "sourceUrl": "https://github.com/Yingye66/zjgsu-campus-mcp-open-source/blob/37beae2862bfb05f4471adf446f1d2db5195db0a/src/adapters/campus/jwweb.py",
+          "sha256": "601b9bb02787a89be57b15b19bd21a1f375dfc531af14b6f46e55cdfe4cbf4c4",
+          "updated": "2026-10-19T10:43:21+08:00",
+          "adapterId": "ext_zjgsu_web",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "path": "config/schools_config.json",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/config/schools_config.json",
+          "sha256": "a067f0bc156873c56640a93594c66d572304d78e63c44e1599bf55d05ce9e9dd",
+          "updated": "2026-09-30T15:36:04+08:00",
+          "adapterId": "ext_zjyc",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/zhullyb/zf2ics",
+          "path": "zf2ics.user.js",
+          "revision": "d5168afd4742ebec4be6f243c27f915dec6117ba",
+          "sourceUrl": "https://github.com/zhullyb/zf2ics/blob/d5168afd4742ebec4be6f243c27f915dec6117ba/zf2ics.user.js",
+          "sha256": "4c5b0205ecd581063086770a2ef50f61447fd26ae13ec7f0b60ba2fe7452a1a1",
+          "updated": "2025-09-21T22:26:37+08:00",
+          "adapterId": "ext_zjut_api",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/my832/dongfang-timetable",
+          "path": "app/assets/school-import.js",
+          "revision": "903fe9c313dd0f1c8aa65d55570d73e22ab4b526",
+          "sourceUrl": "https://github.com/my832/dongfang-timetable/blob/903fe9c313dd0f1c8aa65d55570d73e22ab4b526/app/assets/school-import.js",
+          "sha256": "74c39ba0b0f70c38b796b807c811ab658e35ed0c13b29615fe61ad6f571d28f5",
+          "updated": "2026-10-13T16:35:30+08:00",
+          "adapterId": "ext_zufedfc_html",
+          "license": "LicenseRef-Dongfang-Permissive"
+        },
+        {
+          "repository": "https://github.com/wirano/CJLU_ClassTable",
+          "path": "main.py",
+          "revision": "49154bfb9a7be62315046496103ef4f6f0624972",
+          "sourceUrl": "https://github.com/wirano/CJLU_ClassTable/blob/49154bfb9a7be62315046496103ef4f6f0624972/main.py",
+          "sha256": "1458fc8ed4cffda86ea83bf12c9382fccf771c13d5e2ae914dc16c2a75816833",
+          "updated": "2021-12-23T13:39:18+08:00",
+          "adapterId": "ext_cjlu_api",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Mioxiya/AISchedule-shufe-zj",
+          "path": "code/provider.js",
+          "revision": "9cfae2a31a3c19ac98bf3e5e4b46517358460728",
+          "sourceUrl": "https://github.com/Mioxiya/AISchedule-shufe-zj/blob/9cfae2a31a3c19ac98bf3e5e4b46517358460728/code/provider.js",
+          "sha256": "b41d852c7192817602b478fc19b99cbd7235aa6127550f6331d081faa36b6d7a",
+          "updated": "2025-02-26T15:26:07+08:00",
+          "adapterId": "ext_shufezj_api",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+          "path": "resources/ZWU/zwu_01.js",
+          "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+          "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZWU/zwu_01.js",
+          "sha256": "1b8f70febb4b892b15555cf6cdb663c88c0a85b3ba54c84d2612c10a96b943d6",
+          "updated": "2026-10-14T23:26:43+08:00",
+          "adapterId": "ext_zwu_api",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/wow-233/niwin-assistant",
+          "path": "lib/screens/academic_status_screen.dart",
+          "revision": "6b6de141340523d6cd3776b8f11e035a860c54f2",
+          "sourceUrl": "https://github.com/wow-233/niwin-assistant/blob/6b6de141340523d6cd3776b8f11e035a860c54f2/lib/screens/academic_status_screen.dart",
+          "sha256": "ce3e8001057869f4e0dac1293502839f2ba08b8f92ecef9f60453e06c70dfe94",
+          "updated": "2026-09-25T01:09:14+08:00"
+        },
+        {
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "path": "zfjw/api/schedule.py",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/schedule.py",
+          "sha256": "0433132bd1a0cdf5be55e7fc417741e2abfc1c10bb8ea0c7a39eb77aa1bac42f",
+          "updated": "2026-09-30T15:36:04+08:00"
+        },
+        {
+          "repository": "https://github.com/my832/dongfang-timetable",
+          "path": "app/src/com/shiji/notes/SchoolBrowserActivity.java",
+          "revision": "903fe9c313dd0f1c8aa65d55570d73e22ab4b526",
+          "sourceUrl": "https://github.com/my832/dongfang-timetable/blob/903fe9c313dd0f1c8aa65d55570d73e22ab4b526/app/src/com/shiji/notes/SchoolBrowserActivity.java",
+          "sha256": "a807864df3c3415266ae46c0fe36a86b28984e75abdeee42d5757a528ad135bf",
+          "updated": "2026-10-13T16:35:30+08:00"
+        }
+      ],
+      "changes": "Manual WebView login; exact school/origin/path; selected semester; module activation; bounded 910 retry; strict weeks/periods; no partial import; explicit extras consent; no inherited dates or time presets."
+    },
+    "EXT/jiangsu.js": {
+      "sha256": "a6e59d57d7712b7ae775b98886d795d2a225db6bb19616b35c799e4eb7baebfc",
+      "sources": [
+        {
+          "repository": "https://github.com/mico-v/usts-cli",
+          "path": "src/infrastructure/jwgl/schedule.ts",
+          "revision": "adbe1ee632b0f7ad9e6cce0269563e45e42c673a",
+          "sourceUrl": "https://github.com/mico-v/usts-cli/blob/adbe1ee632b0f7ad9e6cce0269563e45e42c673a/src/infrastructure/jwgl/schedule.ts",
+          "sha256": "e62f7c2a52606905cc86082336f37f4fac9ed3e61273d1f6cf163291f31e5b93",
+          "updated": "2026-09-19T23:27:32+08:00",
+          "adapterId": "ext_usts_api",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Ye111ow/cumt-schedule-desktop",
+          "path": "src/zhengfang.js",
+          "revision": "b0b22f9e06b3802755eb976ed07f5dd641f77364",
+          "sourceUrl": "https://github.com/Ye111ow/cumt-schedule-desktop/blob/b0b22f9e06b3802755eb976ed07f5dd641f77364/src/zhengfang.js",
+          "sha256": "7dbb25efc3e5722c7e3e216ef07c20c2be9dc505e09a9a727a27d4a1f3772fef",
+          "updated": "2026-07-18T18:18:19+08:00",
+          "adapterId": "ext_cumt_api",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/GiuseppeLR/njtech_timetable",
+          "path": "lib/features/import/pages/jw_webview_page.dart",
+          "revision": "3c529518e2d79fa10e1b9c36b7853246d78d1e16",
+          "sourceUrl": "https://github.com/GiuseppeLR/njtech_timetable/blob/3c529518e2d79fa10e1b9c36b7853246d78d1e16/lib/features/import/pages/jw_webview_page.dart",
+          "sha256": "184e50835001ed809da29f7b8252d505c3292acf522b1303645f729bb166d6f0",
+          "updated": "2026-07-23T21:45:06+08:00",
+          "adapterId": "ext_njtech_api",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/Albiehao/cumtxh-jwxt-api",
+          "path": "src/school_api/client.py",
+          "revision": "80b0580b226ea97759ceced499aa41315a03096b",
+          "sourceUrl": "https://github.com/Albiehao/cumtxh-jwxt-api/blob/80b0580b226ea97759ceced499aa41315a03096b/src/school_api/client.py",
+          "sha256": "212548a7bf9555dc27552811126e3eeddd9f16ae24eb8d5c1c34aed0086cb90c",
+          "updated": "2025-04-10T15:23:39+08:00",
+          "adapterId": "ext_cumtxh_api",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/mico-v/usts-cli",
+          "path": "src/infrastructure/jwgl/mappers.ts",
+          "revision": "adbe1ee632b0f7ad9e6cce0269563e45e42c673a",
+          "sourceUrl": "https://github.com/mico-v/usts-cli/blob/adbe1ee632b0f7ad9e6cce0269563e45e42c673a/src/infrastructure/jwgl/mappers.ts",
+          "sha256": "82181f3d60826a26bf6b1e9f6b53c7c9e132b2ecc4398a590a342639c3462c68",
+          "updated": "2026-09-19T23:27:32+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/mico-v/usts-cli",
+          "path": "src/infrastructure/http/authenticated-transport.ts",
+          "revision": "adbe1ee632b0f7ad9e6cce0269563e45e42c673a",
+          "sourceUrl": "https://github.com/mico-v/usts-cli/blob/adbe1ee632b0f7ad9e6cce0269563e45e42c673a/src/infrastructure/http/authenticated-transport.ts",
+          "sha256": "74dfc71bb7ee288adf4a8c077f4501455d60ef984f89d97887e5509e19affd6c",
+          "updated": "2026-09-12T17:42:20+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Ye111ow/cumt-schedule-desktop",
+          "path": "src/schedule.js",
+          "revision": "b0b22f9e06b3802755eb976ed07f5dd641f77364",
+          "sourceUrl": "https://github.com/Ye111ow/cumt-schedule-desktop/blob/b0b22f9e06b3802755eb976ed07f5dd641f77364/src/schedule.js",
+          "sha256": "669256f18cb8482aa9782264a8dc74cd4a39accf1dbed96e9c3cfed98e5004e1",
+          "updated": "2026-07-18T15:21:30+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/GiuseppeLR/njtech_timetable",
+          "path": "lib/features/import/parsers/njtech_web_parser.dart",
+          "revision": "3c529518e2d79fa10e1b9c36b7853246d78d1e16",
+          "sourceUrl": "https://github.com/GiuseppeLR/njtech_timetable/blob/3c529518e2d79fa10e1b9c36b7853246d78d1e16/lib/features/import/parsers/njtech_web_parser.dart",
+          "sha256": "7a65303083070749b3b5314d40cea06a28dd2ad5b5292e62c15caf95e49bcc88",
+          "updated": "2026-07-23T21:45:06+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/Albiehao/cumtxh-jwxt-api",
+          "path": "src/school_api/config.py",
+          "revision": "80b0580b226ea97759ceced499aa41315a03096b",
+          "sourceUrl": "https://github.com/Albiehao/cumtxh-jwxt-api/blob/80b0580b226ea97759ceced499aa41315a03096b/src/school_api/config.py",
+          "sha256": "617ec51c088f65a020553e233f65ba9d9e9350d6e5271f4cb7b58d8f816e848f",
+          "updated": "2025-04-10T15:23:39+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Albiehao/cumtxh-jwxt-api",
+          "path": "src/school_api/models/schedule.py",
+          "revision": "80b0580b226ea97759ceced499aa41315a03096b",
+          "sourceUrl": "https://github.com/Albiehao/cumtxh-jwxt-api/blob/80b0580b226ea97759ceced499aa41315a03096b/src/school_api/models/schedule.py",
+          "sha256": "b3d572bae548ad03204c45bd7ffc06dcf3f0d23ebb743668058260f99c7f2e1c",
+          "updated": "2025-04-10T15:23:39+08:00",
+          "license": "MIT"
+        }
+      ],
+      "changes": "Visible manual school login; exact origin; explicit semester; strict complete rows; explicit untimed-course consent. USTS sjkList/qsjsz differs from CUMT kbList/zcd. NJUCM reads page-provided dates and all 12 period times, waits for actual table mutations, audits every teaching week with experiments and restores the all-week view. No guessed dates or times."
+    },
+    "EXT/njucm.js": {
+      "sha256": "3ec8ffe047a2e6b4b87b99215f8742983c19f49b646822edfd7fc245c4a4e270",
+      "sources": [
+        {
+          "repository": "https://github.com/Miao-30/NJUCM-weekdesk",
+          "path": "src/extract.ts",
+          "revision": "50f9c39cc910aff4ce3d0d55bbba4bae7018e777",
+          "sourceUrl": "https://github.com/Miao-30/NJUCM-weekdesk/blob/50f9c39cc910aff4ce3d0d55bbba4bae7018e777/src/extract.ts",
+          "sha256": "9f5936f7b05168b267fb56701d94f2a0b102d44a88f9c6d2029df4682342f24b",
+          "updated": "2026-09-06T20:32:46+08:00",
+          "adapterId": "ext_njucm_dom",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/Miao-30/NJUCM-weekdesk",
+          "path": "src/core.ts",
+          "revision": "50f9c39cc910aff4ce3d0d55bbba4bae7018e777",
+          "sourceUrl": "https://github.com/Miao-30/NJUCM-weekdesk/blob/50f9c39cc910aff4ce3d0d55bbba4bae7018e777/src/core.ts",
+          "sha256": "de139dcdd9a4343807a071a4cea00849bd49b548abbb4cf8aa217fee2128faa5",
+          "updated": "2026-09-06T20:32:46+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Miao-30/NJUCM-weekdesk",
+          "path": "electron/main.ts",
+          "revision": "50f9c39cc910aff4ce3d0d55bbba4bae7018e777",
+          "sourceUrl": "https://github.com/Miao-30/NJUCM-weekdesk/blob/50f9c39cc910aff4ce3d0d55bbba4bae7018e777/electron/main.ts",
+          "sha256": "cf17a766366bae40031d35076d348ebaecd91765466795c3b7e67d03ee21d644",
+          "updated": "2026-09-10T11:08:17+08:00",
+          "license": "MIT"
+        }
+      ],
+      "changes": "Visible manual school login; exact origin; explicit semester; strict complete rows; explicit untimed-course consent. USTS sjkList/qsjsz differs from CUMT kbList/zcd. NJUCM reads page-provided dates and all 12 period times, waits for actual table mutations, audits every teaching week with experiments and restores the all-week view. No guessed dates or times.",
+      "localFixes": [
+        {
+          "at": "2026-10-25T08:46:27.098298+00:00",
+          "change": "Reject mixed scheduled/unscheduled rosters before staging; do not offer partial import confirmation."
+        }
+      ]
+    },
+    "EXT/nuist.js": {
+      "sha256": "7f398a3e615afc64b2e80d08654c09fad28c672447d8c77bf0078b0d4012f2ca",
+      "sources": [
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "app/src/main/java/com/example/nuisttable/web/request.kt",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/web/request.kt",
+          "sha256": "7f151041fc449d4ae1c86c93454ae5b81d813da7c6702f1a251a123d0e998c24",
+          "updated": "2026-09-15T16:24:20+08:00",
+          "adapterId": "ext_nuist_weekly",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "app/src/main/java/com/example/nuisttable/web/api.kt",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/web/api.kt",
+          "sha256": "0b2214b5534e85b24c766489575cc0facb472483d365050039aa913e99c87744",
+          "updated": "2026-08-09T19:33:10+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "app/src/main/java/com/example/nuisttable/json/data/Respose.kt",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/json/data/Respose.kt",
+          "sha256": "add33569d822db09b751a1489ac0038bafca761cd4f6d619e5b36fa283a3b809",
+          "updated": "2026-09-15T16:04:16+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "app/src/main/java/com/example/nuisttable/json/getJsonData.kt",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/json/getJsonData.kt",
+          "sha256": "14632cb651d8f7b08c8203541f542c6446340a640700649a1d106f5995d36b00",
+          "updated": "2026-09-15T16:24:20+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "app/src/main/java/com/example/nuisttable/ui/asset/WebPage.kt",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/ui/asset/WebPage.kt",
+          "sha256": "0dbe8e3d7ba6be95f8999a72c7fb80b502abd0d2002790e347489c367858db92",
+          "updated": "2026-09-15T16:24:20+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "app/src/main/java/com/example/nuisttable/MainActivity.kt",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/MainActivity.kt",
+          "sha256": "7dfab3272bc8cf18ece139d8d620a987cdbf1cf7630124399287b9266441c7a1",
+          "updated": "2026-09-15T16:24:20+08:00",
+          "license": "MIT"
+        }
+      ],
+      "changes": "Visible manual login; exact HTTPS origin; explicit server-current term and user-provided calendar week count; complete weekly scheduled-course requests; strict rows/totals; final term/start-date recheck; page-provided date, no fixed 20-week range or clock preset; no stored cookies or silent skips."
+    },
+    "EXT/seu.js": {
+      "sha256": "2f7823c20486bd7ce22bdd9025a2c29ac0391379f9b24d7cba021d38e4ae1f47",
+      "sources": [
+        {
+          "repository": "https://github.com/Haa1024/SEU-Timetable",
+          "path": "app/src/main/java/com/seu/timetable/data/EhallClient.kt",
+          "revision": "d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b",
+          "sourceUrl": "https://github.com/Haa1024/SEU-Timetable/blob/d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b/app/src/main/java/com/seu/timetable/data/EhallClient.kt",
+          "sha256": "d2fd78885460db78d1d74e63ff836c692433739f501fc9d50a1ab7bcd0a827a7",
+          "updated": "2026-09-24T16:50:32+08:00",
+          "adapterId": "ext_seu_wdkb",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/Haa1024/SEU-Timetable",
+          "path": "app/src/main/java/com/seu/timetable/data/EhallDto.kt",
+          "revision": "d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b",
+          "sourceUrl": "https://github.com/Haa1024/SEU-Timetable/blob/d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b/app/src/main/java/com/seu/timetable/data/EhallDto.kt",
+          "sha256": "18f67449b2a7f889ae35ffdc3681381ebd9cc26d85876060d7e79b25e82dc7eb",
+          "updated": "2026-09-24T11:26:12+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Haa1024/SEU-Timetable",
+          "path": "app/src/main/java/com/seu/timetable/data/EhallMapper.kt",
+          "revision": "d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b",
+          "sourceUrl": "https://github.com/Haa1024/SEU-Timetable/blob/d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b/app/src/main/java/com/seu/timetable/data/EhallMapper.kt",
+          "sha256": "90bc3a62698dee848bc13447daac2f54e893e9e154f01b4f4e460f7e89690823",
+          "updated": "2026-09-24T11:26:12+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/Haa1024/SEU-Timetable",
+          "path": "app/src/main/java/com/seu/timetable/domain/Course.kt",
+          "revision": "d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b",
+          "sourceUrl": "https://github.com/Haa1024/SEU-Timetable/blob/d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b/app/src/main/java/com/seu/timetable/domain/Course.kt",
+          "sha256": "6188a05ab359543049c195380502d49989041c52fee19539ee74d975ab9ad240",
+          "updated": "2026-09-24T11:26:12+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/sakimidare/SEUTimetable",
+          "path": "app/src/main/assets/timetable_extractor.js",
+          "revision": "fc9a384ea37d72ea39223b67c12bbc01383edc35",
+          "sourceUrl": "https://github.com/sakimidare/SEUTimetable/blob/fc9a384ea37d72ea39223b67c12bbc01383edc35/app/src/main/assets/timetable_extractor.js",
+          "sha256": "ec8a7508e1da042f1a608801012bd32ec37e58740952332236a253f30f7e07e8",
+          "updated": "2026-01-30T23:38:44+08:00",
+          "license": "Apache-2.0"
+        }
+      ],
+      "changes": "Independent composition of the MIT field/date protocol and Apache-2.0 semester-list GET protocol; explicit semester; full-term xskcb without SKZC filter; structured rows, no repeated YPSJDD parsing; server date and ZZC without default; final course snapshot/calendar/list recheck; scheduled courses only; no clock presets or inferred semester codes."
+    },
+    "EXT/nuaa.js": {
+      "sha256": "8fd81ec7d4f60de484ba162298d18456098bb29f4a5580033c1052f3be38f279",
+      "sources": [
+        {
+          "repository": "https://github.com/shiywhh/i-niuaa",
+          "path": "lib/core/eams_client.dart",
+          "revision": "2acccb997836be11c220bf3e91e25a249fdf0d08",
+          "sourceUrl": "https://github.com/shiywhh/i-niuaa/blob/2acccb997836be11c220bf3e91e25a249fdf0d08/lib/core/eams_client.dart",
+          "sha256": "d86744fdede17ea6aef53735040ef078fb6b6990ad204a006f5bd4fb77a1769a",
+          "updated": "2026-09-22T21:53:51+08:00",
+          "adapterId": "ext_nuaa_eams",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/shiywhh/i-niuaa",
+          "path": "lib/core/models.dart",
+          "revision": "2acccb997836be11c220bf3e91e25a249fdf0d08",
+          "sourceUrl": "https://github.com/shiywhh/i-niuaa/blob/2acccb997836be11c220bf3e91e25a249fdf0d08/lib/core/models.dart",
+          "sha256": "0eac269e6bd85f55d3463b064d1c3c3e06e71c2cb5e5d8dc8c0655512dab3b3d",
+          "updated": "2026-09-22T21:53:51+08:00",
+          "license": "MIT"
+        }
+      ],
+      "changes": "Independent static EAMS protocol implementation; DeepSeek draft with primary-agent corrections and review. Explicit server semester and user calendar week count; literal-only TaskActivity parsing, evidenced 13-unit mapping and week-zero placeholder; disjoint periods preserved. Unique roster audit aborts on unknown missing rows or ambiguity. Final identity, semester label, full course and roster snapshots rechecked before staging. No eval, upstream execution, auto-login, course-selection code, fixed dates or clock presets."
+    },
+    "EXT/njust.js": {
+      "sha256": "737c2a1fb736ebeee14b4a2e2e94aa430455058375ddcbf2b8cf03d0bbd27823",
+      "sources": [
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "src/html-parser.ts",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/html-parser.ts",
+          "sha256": "1af3399389a863d6e8ac188c1c0cb73dbf276b0615669a087b8f84100bcafdc1",
+          "updated": "2026-09-30T01:07:30+08:00",
+          "adapterId": "ext_njust_personal",
+          "license": "Apache-2.0"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "src/config.ts",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/config.ts",
+          "sha256": "e8aa18618980f7c8099f9ceda69c8767461fcec18bc72e4784067348772c8358",
+          "updated": "2026-09-30T01:07:30+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "src/endpoints.ts",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/endpoints.ts",
+          "sha256": "75d431e4f3fe680c417880526b19fec509bc8e575952ed0b7ea01df62cedc116",
+          "updated": "2026-09-30T01:07:30+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "src/timetable-page.ts",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/timetable-page.ts",
+          "sha256": "654a09a70e21afe86dc05c0357a9116c733d0ba76ae5755ddcd7f09611f9b020",
+          "updated": "2026-09-30T01:07:30+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "src/authenticated-page.ts",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/authenticated-page.ts",
+          "sha256": "500006649dd6eacfec1a5bb0dbe3a0ded21f306c40f40d8e02cfa35969177364",
+          "updated": "2026-09-30T01:07:30+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "src/types.ts",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/types.ts",
+          "sha256": "b692c3c9aaa9a3e7b9e6f478cad003e827cb58157fd825ed853eea8d80e515d3",
+          "updated": "2026-09-08T21:38:50+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/JirakiRance/NJUST-NannoSchedule",
+          "path": "back/parsers/nj_parser.py",
+          "revision": "32342f7d66e9b5f3ec46a3d736966dd9ede665e2",
+          "sourceUrl": "https://github.com/JirakiRance/NJUST-NannoSchedule/blob/32342f7d66e9b5f3ec46a3d736966dd9ede665e2/back/parsers/nj_parser.py",
+          "sha256": "ea08eac65a671f48cbf2468a16273358742bdbdf945f1b9d48125f082a7df899",
+          "updated": "2026-04-09T23:50:59+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/JirakiRance/NJUST-NannoSchedule",
+          "path": "back/core/config.py",
+          "revision": "32342f7d66e9b5f3ec46a3d736966dd9ede665e2",
+          "sourceUrl": "https://github.com/JirakiRance/NJUST-NannoSchedule/blob/32342f7d66e9b5f3ec46a3d736966dd9ede665e2/back/core/config.py",
+          "sha256": "55167d0402a92359c3d9a8e2930de72570e7cc590721cb7db42a488ff2c83b89",
+          "updated": "2026-07-21T13:36:35+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/JirakiRance/NJUST-NannoSchedule",
+          "path": "back/api/user_api.py",
+          "revision": "32342f7d66e9b5f3ec46a3d736966dd9ede665e2",
+          "sourceUrl": "https://github.com/JirakiRance/NJUST-NannoSchedule/blob/32342f7d66e9b5f3ec46a3d736966dd9ede665e2/back/api/user_api.py",
+          "sha256": "efcbd4742f84fb9859f17b2cccdc8df60b4f325752b42e6693431ac9fac53014",
+          "updated": "2026-07-21T13:36:35+08:00",
+          "license": "MIT"
+        }
+      ],
+      "changes": "Independent implementation of Apache-2.0 and MIT personal-semester protocol references; DeepSeek draft with primary-agent review/corrections. Exact HTTPS path, explicit server term POST with empty zc; unique detached DOM tables, explicit days/periods/weeks and full bidirectional grid/detail audit. Per-meeting room constraints, structured identity keys, no silent drops. Calendar week count entered explicitly; final term/filter/full-course and entry checks after all interaction. No upstream execution, inferred row periods, cookies, fixed date or clock presets."
+    },
+    "EXT/suda-personal.js": {
+      "sha256": "25cbf7db4e8266049a5dc39662c3a0e2f83c36a646da4623b1a00d52e48a9bba",
+      "sources": [
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "lib/method/course/timetable.dart",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/lib/method/course/timetable.dart",
+          "sha256": "5f33b401ec1df496b8d6182dac342b7987dea29ffb856afc41cedb322199378f",
+          "updated": "2026-06-10T09:20:14+08:00",
+          "adapterId": "ext_suda_personal",
+          "license": "Apache-2.0"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "lib/method/course/src/webforms.dart",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/lib/method/course/src/webforms.dart",
+          "sha256": "4b9d08c327b6eb3fc699bf0cd41aa822055b1a7d973209b1ede555f9037aa014",
+          "updated": "2026-06-12T21:41:03+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "lib/method/course/src/specs.dart",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/lib/method/course/src/specs.dart",
+          "sha256": "eeb28df03fbaccacea6e6e984d4040276447b189104fa99e4908ebe784c20c08",
+          "updated": "2026-06-09T10:02:31+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "lib/method/course/src/http.dart",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/lib/method/course/src/http.dart",
+          "sha256": "f79a2a3d73574592e233435255189611efc1860bc70ead59742f1e978bdcaea3",
+          "updated": "2026-06-09T10:02:31+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "lib/models/course/term.dart",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/lib/models/course/term.dart",
+          "sha256": "da9b4fbc7e8e2d5fd7efe25a9fbb9bda4bcbcef0a8e897f70bb155c552014ba9",
+          "updated": "2026-06-10T09:20:14+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "test/method/course/timetable_test.dart",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/test/method/course/timetable_test.dart",
+          "sha256": "baa89411f79910693dc789dab42f0d600288c860e12d36a50725385b7e84f9aa",
+          "updated": "2026-06-10T09:20:14+08:00",
+          "license": "Apache-2.0"
+        }
+      ],
+      "changes": "Independent parser and WebForms host composition; DeepSeek draft with primary-agent fixes. Explicit school year/semester, fresh same-origin viewstate and three-second pacing; final full snapshot after calendar prompt. Explicit weekday/period labels may resolve week-only grid text; no row-number fallback. Parses scheduled DataGrid1 practice and its explicit week column; no fabricated class IDs. Unknown/unscheduled rows, pagination, identity changes and contradictory overlapping meetings abort. Entity decoding once, no school script execution, dates or clock presets. Upstream test file used only as static header-contract evidence; no upstream fixtures copied or executed."
+    },
+    "EXT/just-personal.js": {
+      "sha256": "c5d83e9dd13ad0cd1520e28e2b9ddf312d6996a668e6f12eb84ea4a3218e69ca",
+      "sources": [
+        {
+          "repository": "https://github.com/lawrencehaohan-coder/suike",
+          "path": "android/work/portal-import/teaching-collector.js",
+          "revision": "99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b",
+          "sourceUrl": "https://github.com/lawrencehaohan-coder/suike/blob/99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b/android/work/portal-import/teaching-collector.js",
+          "sha256": "e68fe4a9fbba56ebf89c7cd6d7431cc04cd818860b83ce68b0267dd2e1191e41",
+          "updated": "2026-10-20T13:55:57+08:00",
+          "adapterId": "ext_just_personal",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/lawrencehaohan-coder/suike",
+          "path": "android/work/portal-import/teaching-parser.js",
+          "revision": "99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b",
+          "sourceUrl": "https://github.com/lawrencehaohan-coder/suike/blob/99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b/android/work/portal-import/teaching-parser.js",
+          "sha256": "1d2c70488d6b96f59ebd307e2c2300b2ad906354c6954e41484dee411b119364",
+          "updated": "2026-10-20T13:55:57+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/lawrencehaohan-coder/suike",
+          "path": "android/work/portal-import/schools.json",
+          "revision": "99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b",
+          "sourceUrl": "https://github.com/lawrencehaohan-coder/suike/blob/99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b/android/work/portal-import/schools.json",
+          "sha256": "2cdb36b5e7038871c624ed43297a63a8f8875e90ad8b47d8ddbcda7dd86e1213",
+          "updated": "2026-10-20T13:55:57+08:00",
+          "license": "MIT"
+        },
+        {
+          "repository": "https://github.com/lawrencehaohan-coder/suike",
+          "path": "THIRD_PARTY_NOTICES.md",
+          "revision": "99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b",
+          "sourceUrl": "https://github.com/lawrencehaohan-coder/suike/blob/99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b/THIRD_PARTY_NOTICES.md",
+          "sha256": "9b059c005a71553f783f12a3520509f6db29e6711f4950344dec73928ddfa81b",
+          "updated": "2026-10-20T13:55:57+08:00",
+          "license": "MIT"
+        }
+      ],
+      "changes": "Independent DOM parser and visible-login host; DeepSeek draft corrected by KAgenda. Explicit selected school-year/semester labels and server option codes, 14-row personal table, all day/period labels and selected blue/unselected red facts audited. Strict teaching-class/term and contradictory overlapping slots; disjoint sections/weeks preserved. Unknown or actual unscheduled/practice content aborts. Normal group-header rowspans and explicit period clock labels are validated without inferring clocks. Whole DOM and term/code/URL snapshots rechecked after explicit calendar prompt; no upstream execution, fixed dates, old-clock reuse or partial import."
+    },
+    "EXT/wxxy.js": {
+      "sha256": "be777bb34e8439974e4f05fb990f451087eb6f7c91265e462d344dee41016d55",
+      "sources": [
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-schedule/src/zhengfang.rs",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/src/zhengfang.rs",
+          "sha256": "08f9cb4754261394dbb0f298ceb5d78f3363d6e1513774882ea8fcad130e2d41",
+          "updated": "2026-09-18T19:36:24+08:00",
+          "adapterId": "ext_wxxy_api",
+          "license": "Apache-2.0"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-auth/src/jwglxt.rs",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-auth/src/jwglxt.rs",
+          "sha256": "878bfe6a4afffe066e763d2af91fdc48ff41ea21d8b87fca75fa5a86ab3655ef",
+          "updated": "2026-09-18T19:36:24+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-schedule/Cargo.toml",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/Cargo.toml",
+          "sha256": "d4501bd0321a713db0105e16f39d6393fd2b10625e5d37159577f687aa99c9a7",
+          "updated": "2026-09-17T19:03:12+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-auth/Cargo.toml",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-auth/Cargo.toml",
+          "sha256": "33343b41eab1b4735e5da9df4ffef8b5950adf80f9b5cc50d1ae6379d103c4c6",
+          "updated": "2026-09-18T19:36:24+08:00",
+          "license": "Apache-2.0"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-schedule/NOTICE.md",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/NOTICE.md",
+          "sha256": "f20a95eef52a3f15496eee8d4beeaea75a4c382c7001857c42747e4d62c014c3",
+          "updated": "2026-09-17T19:03:12+08:00",
+          "license": "Apache-2.0"
+        }
+      ],
+      "changes": "Independent KAgenda JavaScript implementation of documented personal POST and decimal oldzc bit-mask contract, bit0=week1. campus-schedule and campus-auth explicitly declare Apache-2.0 in Cargo.toml; no whole-repository license claim. No Rust code/models, upstream test fixtures, TGT login, inferred academic year from portal date, default clocks or silent skip logic copied. Strict full-term rows, unknown extra arrays, selected server codes and filters; re-fetch full course/identity snapshot after explicit calendar prompt; failures abort before staging."
+    },
+    "EXT/tongji-personal.js": {
+      "sha256": "267022358b33e211e8bd19c15559655a31c27662abc22659f3237c74c0f30ca5",
+      "sources": [
+        {
+          "repository": "https://github.com/gzy31007/TJDesktopTimetable",
+          "revision": "4d79f8c0cedc7c8e6058129e6468d6e3365bfc73",
+          "path": "dotnet/TjtCore/Adapters/TongjiStudentAdapter.cs",
+          "sourceUrl": "https://github.com/gzy31007/TJDesktopTimetable/blob/4d79f8c0cedc7c8e6058129e6468d6e3365bfc73/dotnet/TjtCore/Adapters/TongjiStudentAdapter.cs",
+          "sha256": "a8caeb0b32ec5b1c5276d9836b67fc5778bccd730bdd19e8551e381b252ab726",
+          "updated": "2026-09-16T21:28:27+08:00",
+          "adapterId": "ext_tongji_personal",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/gzy31007/TJDesktopTimetable",
+          "revision": "4d79f8c0cedc7c8e6058129e6468d6e3365bfc73",
+          "path": "dotnet/Tjt.App/Data/TongjiFetcher.cs",
+          "sourceUrl": "https://github.com/gzy31007/TJDesktopTimetable/blob/4d79f8c0cedc7c8e6058129e6468d6e3365bfc73/dotnet/Tjt.App/Data/TongjiFetcher.cs",
+          "sha256": "f531c12b53b876418889b0455a4a5d8d7ab1dae0681dbbd1f19f95fc5b8a217b",
+          "updated": "2026-10-17T16:17:15+08:00"
+        },
+        {
+          "repository": "https://github.com/gzy31007/TJDesktopTimetable",
+          "revision": "4d79f8c0cedc7c8e6058129e6468d6e3365bfc73",
+          "path": "dotnet/TjtCore/TongjiTerms.cs",
+          "sourceUrl": "https://github.com/gzy31007/TJDesktopTimetable/blob/4d79f8c0cedc7c8e6058129e6468d6e3365bfc73/dotnet/TjtCore/TongjiTerms.cs",
+          "sha256": "408a42020554066e70f7ab26083983d71ad810e22c7c16131fa8b0f84fa0940d",
+          "updated": "2026-09-15T20:49:29+08:00"
+        }
+      ],
+      "communityProtocolReference": {
+        "path": "resources/TONGJI/tongji_01.js",
+        "updated": "2026-08-23T16:00:54+08:00",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/TONGJI/tongji_01.js",
+        "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+        "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+        "sha256": "3b8b1bbc8fd31a22d3d42aaa988f88abe833a023d411b8d5c872718c1bdc310e",
+        "maintainer": "Linho1219"
+      },
+      "changes": "Independent KAgenda implementation, DSH draft reviewed and corrected by primary agent. Visible HTTPS login, explicit server semester, strict complete report rows, per-meeting teacher/room/weeks, real calendar Monday and periods; explicit total-week prompt only if absent. Confirm known unplanned rows before final full course/calendar/term/URL snapshots. Unknown rows, pagination, missing values, conflicting same-class facts or any change abort before staging. No upstream code/fixture execution, credentials, guessed dates, times or weeks. Separate original community entry preserved.",
+      "localFixes": [
+        {
+          "at": "2026-10-25T08:46:27.098298+00:00",
+          "change": "Reject mixed scheduled/unscheduled rosters before staging; do not offer partial import confirmation."
+        }
+      ]
+    },
+    "EXT/shu-personal.js": {
+      "sha256": "9fb40593df81c85ede3527cfd7e481fb4002dd8012c3fa98635a557c01ad7e7a",
+      "sources": [
+        {
+          "repository": "https://github.com/zmdld11/SHU-Class-Schedule",
+          "revision": "0c7090795bc3119e6f4c83ff2569d458eada53b2",
+          "path": "app/src/main/java/io/github/zmdld11/shuschedule/data/jwxk/JwxkSpec.kt",
+          "sourceUrl": "https://github.com/zmdld11/SHU-Class-Schedule/blob/0c7090795bc3119e6f4c83ff2569d458eada53b2/app/src/main/java/io/github/zmdld11/shuschedule/data/jwxk/JwxkSpec.kt",
+          "sha256": "efe461d8f987325552ee410c5d7ae5e112052c6954d02a4ab669197e162ffe76",
+          "updated": "2026-09-16T13:11:13+08:00",
+          "adapterId": "ext_shu_personal",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/zmdld11/SHU-Class-Schedule",
+          "revision": "0c7090795bc3119e6f4c83ff2569d458eada53b2",
+          "path": "app/src/main/java/io/github/zmdld11/shuschedule/data/parser/ZfKbListParser.kt",
+          "sourceUrl": "https://github.com/zmdld11/SHU-Class-Schedule/blob/0c7090795bc3119e6f4c83ff2569d458eada53b2/app/src/main/java/io/github/zmdld11/shuschedule/data/parser/ZfKbListParser.kt",
+          "sha256": "1ec557644c0e46daa614ad54cce924c39c28b830d273e16315bf185b0b89aa97",
+          "updated": "2026-09-16T16:09:46+08:00"
+        },
+        {
+          "repository": "https://github.com/zmdld11/SHU-Class-Schedule",
+          "revision": "0c7090795bc3119e6f4c83ff2569d458eada53b2",
+          "path": "app/src/main/java/io/github/zmdld11/shuschedule/data/jwxk/SemesterOptionsParser.kt",
+          "sourceUrl": "https://github.com/zmdld11/SHU-Class-Schedule/blob/0c7090795bc3119e6f4c83ff2569d458eada53b2/app/src/main/java/io/github/zmdld11/shuschedule/data/jwxk/SemesterOptionsParser.kt",
+          "sha256": "27c39ac2add0d4d5755baff15b419bb7ff9f46ff9febc9703d6d7f5715c88270",
+          "updated": "2026-09-16T13:11:13+08:00"
+        }
+      ],
+      "changes": "Independent KAgenda strict personal-import host using MIT SHU request/semester/row protocol. Exact HTTPS origin/path, school SSO entry, live selected server options including seasonal code 32; no candidate-term probing or first-nonempty fallback. Explicit zcd weeks and disjoint jcs/jc periods, per-record teacher/room/campus and class IDs; contradictions abort instead of dropping shorter rescheduled records. Complete response, identity/term/filter/course snapshots re-read after explicit week-count prompt; no upstream execution, fixtures, fixed 12-period clocks or inferred Monday/calendar."
+    },
+    "EXT/sjtu-undergraduate.js": {
+      "sha256": "8173f643c7a0550cecbbeed2219c23ee9bf5b55348d7ddde6cb8673dbbeb6625",
+      "sources": [
+        {
+          "repository": "https://github.com/dujiajun/CourseBlock",
+          "revision": "20feb37e37b2cd5779a7d3e24ef49983df7bbd5e",
+          "path": "app/src/main/java/com/dujiajun/courseblock/downloader/UndergraduateDownloader.kt",
+          "sourceUrl": "https://github.com/dujiajun/CourseBlock/blob/20feb37e37b2cd5779a7d3e24ef49983df7bbd5e/app/src/main/java/com/dujiajun/courseblock/downloader/UndergraduateDownloader.kt",
+          "sha256": "7065747c929bb5e1b2b4156ff92c0a5a6008ed53c629b7ca96950a5a95d158a4",
+          "updated": "2026-09-14T17:42:55+08:00",
+          "adapterId": "ext_sjtu_ug",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/dujiajun/CourseBlock",
+          "revision": "20feb37e37b2cd5779a7d3e24ef49983df7bbd5e",
+          "path": "app/src/main/java/com/dujiajun/courseblock/model/Course.kt",
+          "sourceUrl": "https://github.com/dujiajun/CourseBlock/blob/20feb37e37b2cd5779a7d3e24ef49983df7bbd5e/app/src/main/java/com/dujiajun/courseblock/model/Course.kt",
+          "sha256": "abfc40cf351b78ac8309b355c2ffb4f9ca07599e2402f7894c99448e4648e189",
+          "updated": "2023-08-27T20:32:30+08:00"
+        },
+        {
+          "repository": "https://github.com/dujiajun/CourseBlock",
+          "revision": "20feb37e37b2cd5779a7d3e24ef49983df7bbd5e",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/dujiajun/CourseBlock/blob/20feb37e37b2cd5779a7d3e24ef49983df7bbd5e/README.md",
+          "sha256": "77b21cf938a8360c908073ec960b396d2d4b538fd201b3e914870f6adefdc177",
+          "updated": "2023-08-27T20:49:44+08:00"
+        }
+      ],
+      "changes": "Independent KAgenda strict personal host using the MIT undergraduate POST xnm/xqm and kbList fields. Exact i.sjtu.edu.cn HTTPS and /kbcx path; live unique year/term options with documented 3/12/16 codes, no month inference. Class identity uses documented kch_id and jxbmc, per-row teacher/place/campus/weeks/disjoint periods retained. Unknown lists, missing fields, pagination or conflicting same-class facts abort. Re-fetch full response after explicit week-count prompt and verify identity/term/filter/URL snapshots. No upstream execution, calendar/clocks, 22-week truncation, credential access, graduate or medical-system route copied."
+    },
+    "EXT/ecnu-personal.js": {
+      "sha256": "f9b2761ef95e9930566d086c91595cc0598313c9fbd88c730272975fe95f104e",
+      "sources": [
+        {
+          "repository": "https://github.com/Taulee/ECNUCourseTableTool-2.0",
+          "revision": "d3d60512b3c084df8f65154e6fc5b45fedccb1ea",
+          "path": "ecnu_calendar.py",
+          "sourceUrl": "https://github.com/Taulee/ECNUCourseTableTool-2.0/blob/d3d60512b3c084df8f65154e6fc5b45fedccb1ea/ecnu_calendar.py",
+          "sha256": "c3d40d98ae9010dd9f908f32ef2bc8cd75823743effd5ad4a93161c1364e9ae5",
+          "updated": "2026-09-24T18:39:40+08:00",
+          "adapterId": "ext_ecnu_dom",
+          "license": "MIT"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/Taulee/ECNUCourseTableTool-2.0",
+          "revision": "d3d60512b3c084df8f65154e6fc5b45fedccb1ea",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/Taulee/ECNUCourseTableTool-2.0/blob/d3d60512b3c084df8f65154e6fc5b45fedccb1ea/README.md",
+          "sha256": "bc71c4d2c3d29177d7f0cc65771acabb39b105dfe0f17f54038107c7d288488b",
+          "updated": "2026-09-24T18:39:40+08:00"
+        },
+        {
+          "repository": "https://github.com/SJF-ECNU/ECNUCourseTableToolForIOS",
+          "revision": "530ef2b136bfc78f5a5980e1ec7da455793e3408",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/SJF-ECNU/ECNUCourseTableToolForIOS/blob/530ef2b136bfc78f5a5980e1ec7da455793e3408/README.md",
+          "sha256": "5a6f1d3b38d5b5535ca2d9a6b54d976d872893895265a952b6008aafe5ae2d7e",
+          "updated": "2025-03-18T16:21:34+08:00"
+        }
+      ],
+      "changes": "Independent KAgenda DOM host, DSH draft corrected by primary agent. Exact HTTPS personal-table URL, explicit live semester, actual Monday and period clocks. Audit numeric day/period classes, bounded rowspans, all cards/groups, teaching-class codes, campus/room/teacher and explicit weeks; no row-index guessing, default calendar or clocks. Preserve multiple courses in one lesson card and later groups after duplicate facts; structured identity keys. Unknown content, filters, pagination, missing fields or contradictory same-class meetings abort. Final full facts/term/date/clock/filter/URL snapshot after explicit week-count prompt, then native staging only. No upstream execution, private samples, HTTP/QR server, external API or silent skip logic copied."
+    },
+    "EXT/hfut-personal.js": {
+      "sha256": "84be8980ee4a821d69e6cd04e3449d46ac67a2f495257618f412d87a78834279",
+      "sources": [
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "network-api/src/main/java/com/hfut/schedule/network/api/inf/JxglstuService.kt",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/network-api/src/main/java/com/hfut/schedule/network/api/inf/JxglstuService.kt",
+          "sha256": "f7020e0853e85a86db6e029e4fb2988f33dd1ce7605e82f6c05cc6e61f73b23b",
+          "updated": "2026-10-20T01:06:50+08:00",
+          "adapterId": "ext_hfut_personal",
+          "license": "Apache-2.0"
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/jxglstu/lesson/JxglstuTermLessonResponse.kt",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/jxglstu/lesson/JxglstuTermLessonResponse.kt",
+          "sha256": "2a963be978059ef5df1da6174a0420b1778c8abd2b79ef2d712025928599c282",
+          "updated": "2026-07-18T23:18:48+08:00"
+        },
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/jxglstu/lesson/JxglstuCourseTableResponse.kt",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/jxglstu/lesson/JxglstuCourseTableResponse.kt",
+          "sha256": "0ee5b5d47110df090e1812d1c8803732bdf95e789b3afbdd3b30420b54267ba6",
+          "updated": "2026-07-18T23:18:48+08:00"
+        },
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/jxglstu/lesson/JxglstuCourseTimeResponse.kt",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/jxglstu/lesson/JxglstuCourseTimeResponse.kt",
+          "sha256": "3287959bef4df68e4523655f112bdee43b3014edc2d31bea0e6624d742cfbc63",
+          "updated": "2026-07-18T23:18:48+08:00"
+        },
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/shared/MultiLanguageBaseData.kt",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/network-api/src/main/java/com/hfut/schedule/network/api/model/response/json/shared/MultiLanguageBaseData.kt",
+          "sha256": "e7f00188f0adcae927c5049691effecba1113c9992ec4707fba4ef505bfc6848",
+          "updated": "2026-07-18T23:18:48+08:00"
+        },
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "app/src/main/java/com/hfut/schedule/logic/network/repo/JxglstuRepository.kt",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/app/src/main/java/com/hfut/schedule/logic/network/repo/JxglstuRepository.kt",
+          "sha256": "794bb4ddde7d45e9999d874b0e3d279f8344805d1e0dc408eb2f3015e8393c5a",
+          "updated": "2026-10-20T01:06:50+08:00"
+        },
+        {
+          "repository": "https://github.com/Junpgle/HFUTCampusNet",
+          "revision": "9f62dac63c6a200ef328066e02f7722de8407c45",
+          "path": "HFUTCampusNet/CourseScheduleService.swift",
+          "sourceUrl": "https://github.com/Junpgle/HFUTCampusNet/blob/9f62dac63c6a200ef328066e02f7722de8407c45/HFUTCampusNet/CourseScheduleService.swift",
+          "sha256": "14f101fa22f5d751869b9697951f2d30286d4546c296b8b2d53c0de3bd107c00",
+          "updated": "2026-10-12T17:15:31+08:00"
+        },
+        {
+          "repository": "https://github.com/Junpgle/HFUTCampusNet",
+          "revision": "9f62dac63c6a200ef328066e02f7722de8407c45",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/Junpgle/HFUTCampusNet/blob/9f62dac63c6a200ef328066e02f7722de8407c45/README.md",
+          "sha256": "f4c8389a7ddba540082aa5653b29886879fdff497c64441cc76008c1f5ec8bb3",
+          "updated": "2026-10-16T20:27:42+08:00"
+        }
+      ],
+      "changes": "Independent KAgenda host; DSH drafted a standalone pure normalizer from PUBLIC upstream DTOs only. No KAgenda internal host/common code sent for this task. Primary corrected source String datum IDs, uninterpreted zero/off-term school week metadata, explicit Monday consistency, unknown structured branches, and readable teaching-class details. Exact personal URL and unique live page literals; complete get-data/datum/timetable-layout requests; teaching-class set equality and every class scheduled. Actual dated meetings plus user-explicit first Monday/total weeks; exact school clocks/period count. Final complete response, identity, term, controls and URL snapshots after all prompts. No upstream programs, samples, auth code, passwords, session copying, default biz IDs, semester formula, default clock/calendar, nearest-time matching or partial saves."
+    },
+    "EXT/wuhu-personal.js": {
+      "sha256": "23d966e52420db53769bde55f21410adcb55487f8de9aaabbc2afb79d7bf359a",
+      "sources": [
+        {
+          "repository": "https://github.com/skreon/wuhuAiSchedule",
+          "revision": "06aee566f8f46bebff2d4dad531a28a018b50b17",
+          "path": "provider.js",
+          "sourceUrl": "https://github.com/skreon/wuhuAiSchedule/blob/06aee566f8f46bebff2d4dad531a28a018b50b17/provider.js",
+          "sha256": "83acb0c7b0e9ad3846def819ff2f6b4e2f24c50a4d348adfa692effb293e244c",
+          "updated": "2024-02-24T02:35:43+08:00",
+          "adapterId": "ext_wuhu_personal",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/skreon/wuhuAiSchedule",
+          "revision": "06aee566f8f46bebff2d4dad531a28a018b50b17",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/skreon/wuhuAiSchedule/blob/06aee566f8f46bebff2d4dad531a28a018b50b17/README.md",
+          "sha256": "bd3c4723fa55500a6021a7c92f07e82a014cd5e9e8f9482327498dfa49746671",
+          "updated": "2024-04-21T15:44:37+08:00"
+        },
+        {
+          "repository": "https://github.com/skreon/wuhuAiSchedule",
+          "revision": "06aee566f8f46bebff2d4dad531a28a018b50b17",
+          "path": "parser.js",
+          "sourceUrl": "https://github.com/skreon/wuhuAiSchedule/blob/06aee566f8f46bebff2d4dad531a28a018b50b17/parser.js",
+          "sha256": "88ecfe7ad2a0a379f762e9638576e24a541a46bba8f824326daee137dc61677d",
+          "updated": "2024-02-26T20:16:08+08:00"
+        },
+        {
+          "repository": "https://github.com/skreon/wuhuAiSchedule",
+          "revision": "06aee566f8f46bebff2d4dad531a28a018b50b17",
+          "path": "timer.js",
+          "sourceUrl": "https://github.com/skreon/wuhuAiSchedule/blob/06aee566f8f46bebff2d4dad531a28a018b50b17/timer.js",
+          "sha256": "b352640103240ad0f94566f295c32e18b753523ae62549f963170883ddd0f443",
+          "updated": "2024-02-24T02:55:18+08:00"
+        },
+        {
+          "repository": "https://github.com/skreon/wuhuAiSchedule",
+          "revision": "06aee566f8f46bebff2d4dad531a28a018b50b17",
+          "path": "pc/timer.js",
+          "sourceUrl": "https://github.com/skreon/wuhuAiSchedule/blob/06aee566f8f46bebff2d4dad531a28a018b50b17/pc/timer.js",
+          "sha256": "4b4bc8cdd9691bb340b205527e877ac2d269d913690862825d989bdaf5dfcba2",
+          "updated": "2024-02-24T01:26:09+08:00"
+        }
+      ],
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "unlicensed",
+      "changes": "Original KAgenda host. DSH pure normalizer draft received public field facts only, no upstream implementation or KAgenda code. Primary corrected invented mandatory skzc/xnxqdm echoes, unsafe success codes, calendar status, fractional identifiers, valid disjoint-week room changes, declared pagination completeness and metadata preservation. Every explicit school week, all teacher names keyed by actual class/meeting/type, exact real slots. Explicit calendar Monday confirmation and two complete snapshots before staging. Unknown nonempty practice/structured branches, missing weeks/fields, changed data, failures and incomplete pages abort. No copied upstream code, defaults, hidden auth, private samples or real-account claims."
+    },
+    "EXT/fjjxu-personal.js": {
+      "sha256": "938304f00810a4657b9389393c8deec5c80f08ff961557de519287b11f9f7268",
+      "sources": [
+        {
+          "adapterId": "ext_fjjxu_personal",
+          "repository": "https://github.com/GUY-ATM/KEBIAO",
+          "revision": "1a5ba8507c6dd324cc9e91ff98d7584c1b8c654f",
+          "path": "kebiao.html",
+          "sourceUrl": "https://github.com/GUY-ATM/KEBIAO/blob/1a5ba8507c6dd324cc9e91ff98d7584c1b8c654f/kebiao.html",
+          "sha256": "99e277d1f600defc3f9ea914de576b5c8efbef11ec424e164ed7e54bf82ec35c",
+          "updated": "2026-08-23T07:41:09Z",
+          "license": "MIT"
+        }
+      ],
+      "localFixes": [
+        "Original same-origin GET implementation from reviewed MIT endpoint/field facts; no password or upstream code execution.",
+        "No inferred term/date/total weeks or school clock table; explicit calendar confirmation and native preview.",
+        "Reject nonempty unreviewed schedule branches, malformed rows, incomplete pagination, invalid session and changed re-read.",
+        "Preserve disjoint sections, all explicit weeks and distinct teacher/room/course identifiers.",
+        "Compare uppercase/lowercase self and term facts plus full stable course rows across both reads. Preserve teaching class, class composition, campus ID and notes; reject nested nonempty arrangements, explicit failure/session states and changed response paths.",
+        "Reviewed recent school-specific jc-only/numeric-weekday path supported with conflicting fields rejected. Calendar explicitly naming third semester maps to source-defined16; never infer it from month. Known self year/term echoes must match actual calendar."
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/suyi8767/ysjx-local-dev-v2",
+          "revision": "1b8f38f7d08fce0059b6e12202ac00acf1929a18",
+          "path": "zfn_api.py",
+          "sourceUrl": "https://github.com/suyi8767/ysjx-local-dev-v2/blob/1b8f38f7d08fce0059b6e12202ac00acf1929a18/zfn_api.py",
+          "sha256": "89e5b81e98f15842284e7f2b8eaf84e683a27251d93be6a1401a4a4cea12c8f9",
+          "updated": "2025-10-11T00:25:25Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "codeCopied": false,
+          "author": "suyi8767",
+          "scope": "Uppercase xsxx identity/term field names and teaching-class/campus/note field names only. No implementation or subproject license adopted."
+        },
+        {
+          "repository": "https://github.com/huanggua379/fjjxu-schedule",
+          "revision": "1debf66947b556de65bbbbf200e12602b6fcf5dd",
+          "path": "lib/data/remote/schedule_remote.dart",
+          "sourceUrl": "https://github.com/huanggua379/fjjxu-schedule/blob/1debf66947b556de65bbbbf200e12602b6fcf5dd/lib/data/remote/schedule_remote.dart",
+          "sha256": "1a45b254af7da73ec391fd39a2b8b116626d10d32b187657594decac636ea594",
+          "updated": "2026-09-19T06:42:17Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "codeCopied": false,
+          "author": "huanggua379",
+          "scope": "jc field, explicit numeric weekday fallback and explicitly defined semester16 only; no calendar inference/defaults/parser code adopted."
+        },
+        {
+          "repository": "https://github.com/huanggua379/fjjxu-schedule",
+          "revision": "1debf66947b556de65bbbbf200e12602b6fcf5dd",
+          "path": "lib/features/settings/settings_page.dart",
+          "sourceUrl": "https://github.com/huanggua379/fjjxu-schedule/blob/1debf66947b556de65bbbbf200e12602b6fcf5dd/lib/features/settings/settings_page.dart",
+          "sha256": "e44d85d9f1899781a2e33aae9cdbae1fd559fa50e3d0f63c0213c168e38b060e",
+          "updated": "2026-09-19T06:26:38Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "codeCopied": false,
+          "author": "huanggua379",
+          "scope": "jc field, explicit numeric weekday fallback and explicitly defined semester16 only; no calendar inference/defaults/parser code adopted."
+        },
+        {
+          "repository": "https://github.com/huanggua379/fjjxu-schedule",
+          "revision": "1debf66947b556de65bbbbf200e12602b6fcf5dd",
+          "path": "lib/core/constants/app_constants.dart",
+          "sourceUrl": "https://github.com/huanggua379/fjjxu-schedule/blob/1debf66947b556de65bbbbf200e12602b6fcf5dd/lib/core/constants/app_constants.dart",
+          "sha256": "329d22adb9b1788f7a6dfbc1f0db5cb293306721990c6e41ee9c0c506f58dbf6",
+          "updated": "2026-09-19T06:26:38Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "codeCopied": false,
+          "author": "huanggua379",
+          "scope": "jc field, explicit numeric weekday fallback and explicitly defined semester16 only; no calendar inference/defaults/parser code adopted."
+        }
+      ]
+    },
+    "EXT/qnu-personal.js": {
+      "sha256": "9cb5151d86a48ae7b728132409e46edc1d08356d6bd25304545ac44cbd200d6e",
+      "sources": [
+        {
+          "repository": "https://github.com/huanmen/qsschedule",
+          "revision": "4ac3d71f103dd649dcd3de02f441d12c1480020e",
+          "path": "android/integration/qnu/src/main/kotlin/cn/qztc/timetable/integration/qnu/QnuTimetableParser.kt",
+          "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/android/integration/qnu/src/main/kotlin/cn/qztc/timetable/integration/qnu/QnuTimetableParser.kt",
+          "sha256": "25053e5fe07154c200d3cd819a66c90be75cf6dc27ec7dd8f6b1079ea96c5e91",
+          "updated": "2026-10-22T15:35:49Z",
+          "license": "MIT",
+          "adapterId": "ext_qnu_personal"
+        },
+        {
+          "repository": "https://github.com/huanmen/qsschedule",
+          "revision": "4ac3d71f103dd649dcd3de02f441d12c1480020e",
+          "path": "android/integration/qnu/src/main/kotlin/cn/qztc/timetable/integration/qnu/QnuTimetableImporter.kt",
+          "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/android/integration/qnu/src/main/kotlin/cn/qztc/timetable/integration/qnu/QnuTimetableImporter.kt",
+          "sha256": "acb1bf3bb32f920366991b6f96d8b7c714dac14f3c911ea1da95fcfac7f46806",
+          "updated": "2026-10-22T15:35:49Z",
+          "license": "MIT",
+          "adapterId": "ext_qnu_personal"
+        },
+        {
+          "repository": "https://github.com/huanmen/qsschedule",
+          "revision": "4ac3d71f103dd649dcd3de02f441d12c1480020e",
+          "path": "android/core/domain/src/main/kotlin/cn/qztc/timetable/core/domain/model/WeekRule.kt",
+          "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/android/core/domain/src/main/kotlin/cn/qztc/timetable/core/domain/model/WeekRule.kt",
+          "sha256": "34dff32b0335f080ac9c55a66890dd2595a5d8404a4784c12f0604b3697a606f",
+          "updated": "2026-10-22T15:35:49Z",
+          "license": "MIT",
+          "adapterId": "ext_qnu_personal"
+        },
+        {
+          "repository": "https://github.com/huanmen/qsschedule",
+          "revision": "4ac3d71f103dd649dcd3de02f441d12c1480020e",
+          "path": "android/integration/qnu-android/src/main/kotlin/cn/qztc/timetable/integration/qnu/android/QnuEndpointPolicy.kt",
+          "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/android/integration/qnu-android/src/main/kotlin/cn/qztc/timetable/integration/qnu/android/QnuEndpointPolicy.kt",
+          "sha256": "46adec9c29ba856ec8626295efc1e8f6dd47b242502b169f08eeb7fce449ab51",
+          "updated": "2026-10-06T04:10:09Z",
+          "license": "MIT",
+          "adapterId": "ext_qnu_personal"
+        },
+        {
+          "repository": "https://github.com/huanmen/qsschedule",
+          "revision": "4ac3d71f103dd649dcd3de02f441d12c1480020e",
+          "path": "android/app/src/main/kotlin/cn/qztc/timetable/qnu/QnuImportScreen.kt",
+          "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/android/app/src/main/kotlin/cn/qztc/timetable/qnu/QnuImportScreen.kt",
+          "sha256": "9019254b9e0855d785ef9de97d6488bdcd66a7df10600adb394468d3628c2566",
+          "updated": "2026-10-22T15:35:49Z",
+          "license": "MIT",
+          "adapterId": "ext_qnu_personal"
+        }
+      ],
+      "localFixes": [
+        "Natural year and spring/summer/autumn labels from live term selectors, actual personal-button URL provenance; class-page title rejected.",
+        "Live semantic lesson labels/clocks; no fixed+2 period guess or historical/default clock table. Nonempty unsupported noon-reserve lessons abort whole batch.",
+        "Complete regular cells plus stop/move/makeup/substitute details, date/week consistency and Chinese week numerals; no warning-level silent skips.",
+        "Explicit user calendar Monday and total teaching weeks; fresh same-origin reads, no redirects, and second-read/source-term consistency.",
+        "Only full successful batch reaches existing native preview; no upstream personal data or account validation."
+      ]
+    },
+    "EXT/hqu-personal.js": {
+      "sha256": "10df2c283c552baf42c30e4928b7a4d285b0b4e4f4641b749c74aec7c8943027",
+      "sources": [
+        {
+          "repository": "https://github.com/Lee70020/HuaYuanTimetable",
+          "revision": "be54e11ffe445b91f6d8414b08b7822e724e0b34",
+          "path": "app/src/main/java/cn/hqu/timetable/local/WdkbClient.java",
+          "sourceUrl": "https://github.com/Lee70020/HuaYuanTimetable/blob/be54e11ffe445b91f6d8414b08b7822e724e0b34/app/src/main/java/cn/hqu/timetable/local/WdkbClient.java",
+          "sha256": "fcf027b3b428cc3d6f5cedf3f65740138b7ab892f04f1f5ba5a9293a374b431d",
+          "updated": "2026-09-18T09:04:58Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "adapterId": "ext_hqu_personal"
+        },
+        {
+          "repository": "https://github.com/Lee70020/HuaYuanTimetable",
+          "revision": "be54e11ffe445b91f6d8414b08b7822e724e0b34",
+          "path": "app/src/main/python/schedule.py",
+          "sourceUrl": "https://github.com/Lee70020/HuaYuanTimetable/blob/be54e11ffe445b91f6d8414b08b7822e724e0b34/app/src/main/python/schedule.py",
+          "sha256": "bd93dfc703be81b1a06cc5a9be13fdbe6e000f33f21507b2e9cb797f1e48938a",
+          "updated": "2026-09-18T09:04:58Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "adapterId": "ext_hqu_personal"
+        },
+        {
+          "repository": "https://github.com/Lee70020/HuaYuanTimetable",
+          "revision": "be54e11ffe445b91f6d8414b08b7822e724e0b34",
+          "path": "app/src/main/java/cn/hqu/timetable/local/WdkbClient.java",
+          "sourceUrl": "https://github.com/Lee70020/HuaYuanTimetable/blob/be54e11ffe445b91f6d8414b08b7822e724e0b34/app/src/main/java/cn/hqu/timetable/local/WdkbClient.java",
+          "sha256": "fcf027b3b428cc3d6f5cedf3f65740138b7ab892f04f1f5ba5a9293a374b431d",
+          "updated": "2026-09-18T09:04:58Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "adapterId": "ext_hqu_atrust_personal"
+        },
+        {
+          "repository": "https://github.com/Lee70020/HuaYuanTimetable",
+          "revision": "be54e11ffe445b91f6d8414b08b7822e724e0b34",
+          "path": "app/src/main/python/schedule.py",
+          "sourceUrl": "https://github.com/Lee70020/HuaYuanTimetable/blob/be54e11ffe445b91f6d8414b08b7822e724e0b34/app/src/main/python/schedule.py",
+          "sha256": "bd93dfc703be81b1a06cc5a9be13fdbe6e000f33f21507b2e9cb797f1e48938a",
+          "updated": "2026-09-18T09:04:58Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "adapterId": "ext_hqu_atrust_personal"
+        }
+      ],
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "unlicensed",
+      "communityProtocolReference": {
+        "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+        "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+        "path": "resources/HQU/hquadap.js",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/HQU/hquadap.js",
+        "sha256": "d086ca8baa23031fa27cabb6fe625dc7de9b33b8c08b3e7e5dec66df06028e34"
+      },
+      "changes": "Original KAgenda implementation using public URL/field facts only. Explicit server-provided term choice and calendar inputs. Required totalSize equals all returned rows, no pagination/unknown branches/special KBLB or bad rows. Every bitmap position validated, all teacher/room/class metadata kept, two complete snapshots before native preview. No source code copied or source defaults imported. Exact aTrust sf_request_type=ajax query retained from pinned MIT community route; direct route remains without this proxy parameter."
+    },
+    "EXT/xmu-personal.js": {
+      "sha256": "55117b2922106b234c92baa9386a703a7bd45de86f2b67edaef9eda37e2be428",
+      "sources": [
+        {
+          "adapterId": "ext_xmu_personal",
+          "repository": "https://github.com/human-ego/XMU-Campus-Hub",
+          "revision": "5ddd950bdbba96ef83472e7a6df48ea740540907",
+          "path": "android/app/src/main/java/com/xmu/campushub/auth/XmuScheduleClient.java",
+          "sourceUrl": "https://github.com/human-ego/XMU-Campus-Hub/blob/5ddd950bdbba96ef83472e7a6df48ea740540907/android/app/src/main/java/com/xmu/campushub/auth/XmuScheduleClient.java",
+          "sha256": "38c8cdca6eff1c79219f1efcf28b956c22b480d0217dc7f8fced9425b13ad336",
+          "updated": "2026-09-27T19:36:14Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "unlicensed",
+      "officialProtocolReferences": [
+        {
+          "sourceUrl": "https://jw.xmu.edu.cn/gsapp/sys/wdkbapp/modules/xskcb/xskcb.js",
+          "sha256": "0d8cbee88745efe593f355be550c967501f8b7732898fc4804b58c7f7f68ce99",
+          "bytes": 33134,
+          "scope": "Official public protocol facts only; no implementation code copied"
+        },
+        {
+          "sourceUrl": "https://jw.xmu.edu.cn/gsapp/sys/wdkbapp/modules/xskcb/xskcbBS.js",
+          "sha256": "fb6334d71a1e3caeba7e669fcc4331d2449e8c785b9113835cec43c31493f245",
+          "bytes": 6624,
+          "scope": "Official public protocol facts only; no implementation code copied"
+        }
+      ],
+      "changes": "Original implementation: current-self identity, explicit returned semester, full-term blank ZC, complete server weeks and actual JCFADM/MC/KSSJ/JSSJ mapping. No opaque period-code arithmetic or inferred clocks/semester. TTB/date/ungenerated/unknown branches, missing rows/pages/fields and incompatible used clock schemes abort entirely. Every parsed field/class identity survives; full fresh second snapshots before native preview. Shared undergraduate/graduate endpoint not excluded by gsapp or unused helper presence."
+    },
+    "EXT/fjnu-personal.js": {
+      "sha256": "f8d84a6bec25d6f34e6d6bc9754f25deeb5c8131f651ff1a6ce8bce5604e5dee",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "unlicensed",
+      "sources": [
+        {
+          "adapterId": "ext_fjnu_personal",
+          "repository": "https://github.com/haohao-u/the-assitant-of-study",
+          "revision": "4f4550398349a77e47e5698c9187bca5e4d4bdad",
+          "path": "recommendation/services/jwglxt_portal.py",
+          "sourceUrl": "https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/services/jwglxt_portal.py",
+          "sha256": "a3fe6a9eee292393ca7cedb995439add9ba57c45f05923a76bee2dc9fc76976f",
+          "updated": "2026-10-22T06:13:08Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_fjnu_personal",
+          "repository": "https://github.com/haohao-u/the-assitant-of-study",
+          "revision": "4f4550398349a77e47e5698c9187bca5e4d4bdad",
+          "path": "recommendation/templates/recommendation/pages/jwglxt.html",
+          "sourceUrl": "https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/templates/recommendation/pages/jwglxt.html",
+          "sha256": "8bfd14439ac150ec4f64aa70791217171af527096de0c3358dad4b1ff907e69c",
+          "updated": "2026-10-22T06:13:08Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_fjnu_personal",
+          "repository": "https://github.com/haohao-u/the-assitant-of-study",
+          "revision": "4f4550398349a77e47e5698c9187bca5e4d4bdad",
+          "path": "recommendation/static/recommendation/js/pages/jwglxt.js",
+          "sourceUrl": "https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/static/recommendation/js/pages/jwglxt.js",
+          "sha256": "4658c9a2b68e7102c3557a73012f9aea5cac22d37322eb77a3070bf2f71d0216",
+          "updated": "2026-10-22T06:13:08Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_fjnu_personal",
+          "repository": "https://github.com/haohao-u/the-assitant-of-study",
+          "revision": "4f4550398349a77e47e5698c9187bca5e4d4bdad",
+          "path": "recommendation/views.py",
+          "sourceUrl": "https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/views.py",
+          "sha256": "dd78fce050ccce841045945ed1627378c3fff533d6cdc2f84155e49ca142c84e",
+          "updated": "2026-10-22T06:13:08Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "localFixes": [
+        "Actual2026personal POST contract and explicit user year/term; fresh index first, exact HTTPS origin/path/referrer, no other-student selector or cookie reading.",
+        "No source default term/date/teaching weeks/clocks, arbitrary fallback root, lossy skip or destructive replacement.",
+        "Strict all-row parsing with preserved parity/disjoint periods, complete teacher/campus and metadata, original-row ordinal prevents loss at JS deduplication; native equivalent occurrences retain all detail blocks.",
+        "Unknown nonempty schedule/row branches, bad status/encoding/pages/counts, wrong term, session loss and changed full raw rows/identity reject before any staging; full fresh two-read comparison."
+      ]
+    },
+    "EXT/selected-zf-personal.js": {
+      "sha256": "890f629e801eb281c45451410f53b79411e4f13acd1496f0d4c77c9b4365a737",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only",
+      "sources": [
+        {
+          "adapterId": "ext_smu_personal",
+          "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+          "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+          "path": "resources/SMXY/smxy.js",
+          "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SMXY/smxy.js",
+          "sha256": "3d6855f96ccf306e55aff4deadb2aa679de24fa8c23f15c85a5e478d59bf6617",
+          "updated": "2026-08-31T13:13:03Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true,
+          "author": "Haooz / ShiGuangSchedule community",
+          "sourceIndexUpdated": "2026-08-31T21:13:03+08:00"
+        },
+        {
+          "adapterId": "ext_fzfu_personal",
+          "repository": "https://github.com/kqakqakqa/xiaoai-schedule-parser",
+          "revision": "3a4bbfced68fcda9c4bc0ead5b5996e772164e58",
+          "path": "新正方V9.0_request/provider.js",
+          "sourceUrl": "https://github.com/kqakqakqa/xiaoai-schedule-parser/blob/3a4bbfced68fcda9c4bc0ead5b5996e772164e58/新正方V9.0_request/provider.js",
+          "sha256": "df13562474b03a386c30f41153e5e7bda5eeb3e83b140e6c0f8952012f63858f",
+          "updated": "2025-03-27T09:16:01Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_fzfu_personal",
+          "repository": "https://github.com/kqakqakqa/xiaoai-schedule-parser",
+          "revision": "3a4bbfced68fcda9c4bc0ead5b5996e772164e58",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/kqakqakqa/xiaoai-schedule-parser/blob/3a4bbfced68fcda9c4bc0ead5b5996e772164e58/README.md",
+          "sha256": "5f61e6131bd50e8faa66f1d4430b7ab683963cc5e60c2702c76329ac6ac568b2",
+          "updated": "2025-03-26T21:31:29Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_smu_personal",
+          "repository": "https://github.com/zaochih/zf-to-ics",
+          "revision": "f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1",
+          "path": "extension/content.js",
+          "sourceUrl": "https://github.com/zaochih/zf-to-ics/blob/f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1/extension/content.js",
+          "sha256": "3a986ba07e7351d199b1d16ee3fc9c82ee597719b99110d0d96e9ad9897bfa5d",
+          "updated": "2026-10-12T16:29:07Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_smu_personal",
+          "repository": "https://github.com/zaochih/zf-to-ics",
+          "revision": "f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/zaochih/zf-to-ics/blob/f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1/README.md",
+          "sha256": "b7a75ea6b5c339db6311e598f6bbfa398cd59108508c6d55e83cc07876fb6c19",
+          "updated": "2026-10-12T16:29:07Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_fit_personal",
+          "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+          "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+          "path": "resources/FIT/fit.js",
+          "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FIT/fit.js",
+          "sha256": "9ddaac92c7f8ca83e4225dabf432c0dd8e6bb8c539ee1076af0a8888816919c1",
+          "updated": "2026-08-31T12:42:16Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "localFixes": [
+        "Only2registered school origin profiles; distinct actual request body/query contracts, current selected DOM year/term and explicit confirmation, no crossschool auto detection.",
+        "No source forced pass, skip, majority-clock selection, name merge, current-date semester guess, seasonal switch or unlicensed implementation copied.",
+        "Keep all raw course facts for re-read consistency; reject unknown nonempty branches, inconsistent self/selection, any missing row/page or failed/expired response before staging.",
+        "Authoritative selected labels (or explicit manual page label for source-documented hidden fields), user calendar/week count, native preview clocks; original row detail blocks retained.",
+        "Third explicit FIT profile from recent school-specific MIT source facts; exact reviewed HTTP origin/N2151 and real selects only. Request gnmkdm query with blank kclbdm. No source calendar defaults/skipped rows/save order copied. Existing community FIT entry and known vendor retained."
+      ]
+    },
+    "EXT/lmu-personal.js": {
+      "sha256": "fdc5b5ffab7213a7d9de865acc16f6223afd4de816adb8aa5c1c8d6db73fe0b6",
+      "modifiedFromMitSource": true,
+      "implementationOriginal": false,
+      "implementationLicense": "MIT",
+      "sources": [
+        {
+          "adapterId": "ext_lmu_personal",
+          "repository": "https://github.com/moeshin/ai-schedule-chaoxing",
+          "revision": "4650f59887d119b9c9828fb19447f736b549654e",
+          "path": "scheduleHtmlProvider.js",
+          "sourceUrl": "https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/scheduleHtmlProvider.js",
+          "sha256": "0d9660c12050daeb2c56c315240201f09b2bfc9049f2ae5623f44825bf063337",
+          "updated": "2022-09-25T19:56:56Z",
+          "license": "MIT"
+        },
+        {
+          "adapterId": "ext_lmu_personal",
+          "repository": "https://github.com/moeshin/ai-schedule-chaoxing",
+          "revision": "4650f59887d119b9c9828fb19447f736b549654e",
+          "path": "scheduleHtmlParser.js",
+          "sourceUrl": "https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/scheduleHtmlParser.js",
+          "sha256": "8c40e59c5f322acd2946cf6be7ba3a5c9ac983aa326e4bc529804203114328d1",
+          "updated": "2022-09-25T19:56:56Z",
+          "license": "MIT"
+        },
+        {
+          "adapterId": "ext_lmu_personal",
+          "repository": "https://github.com/moeshin/ai-schedule-chaoxing",
+          "revision": "4650f59887d119b9c9828fb19447f736b549654e",
+          "path": "schools.json",
+          "sourceUrl": "https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/schools.json",
+          "sha256": "1de422fb5fc3a47f37407d182112d6d3580041e1d6ffde0a0d521e8d64d36eb0",
+          "updated": "2022-09-23T17:43:53Z",
+          "license": "MIT"
+        },
+        {
+          "adapterId": "ext_lmu_personal",
+          "repository": "https://github.com/moeshin/ai-schedule-chaoxing",
+          "revision": "4650f59887d119b9c9828fb19447f736b549654e",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/README.md",
+          "sha256": "7f37b8a3b40d856cca3823b687c60f7191844dec0b9330604f8ae96292a64d94",
+          "updated": "2022-09-25T19:56:56Z",
+          "license": "MIT"
+        },
+        {
+          "adapterId": "ext_lmu_personal",
+          "repository": "https://github.com/moeshin/ai-schedule-chaoxing",
+          "revision": "4650f59887d119b9c9828fb19447f736b549654e",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/LICENSE",
+          "sha256": "fe29153f957dcab38042f0a2da081e0b837dcb59265156a4b286d85acf2c8a47",
+          "updated": "2021-03-10T17:22:54Z",
+          "license": "MIT"
+        }
+      ],
+      "localFixes": [
+        "Fully review isolated16KBdraft, pin actual school mapping and complete upstreamMIT.",
+        "Explicit current personal-page selection and exact reviewed origin/path; per-row/whole-array safety and reread gates, no account/term override.",
+        "No type suffix added to actual course name, preserve full teachers/campus/class and row identity.",
+        "Prompt calendar,40week cap, no fixed seasonal clocks or last-course-week inference; all failures before staging reject entire input.",
+        "No arbitrary other-school vendor registration or current-account verification claim."
+      ]
+    },
+    "EXT/mku-personal.js": {
+      "sha256": "db1c6c1403cfd0f3728b0c9139f4bf4fd6d610ba7da06a23c6add9bf817509fb",
+      "implementationOriginal": false,
+      "modifiedFromMitSource": true,
+      "implementationLicense": "MIT",
+      "sources": [
+        {
+          "adapterId": "ext_mku_personal",
+          "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+          "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+          "path": "resources/MKU/mku.js",
+          "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/MKU/mku.js",
+          "sha256": "fdbea6132f9075f2e06f73f116a7527cf6ac38aa2e952ba45b6590424af1ba72",
+          "updated": "2026-09-08T06:49:13Z",
+          "license": "MIT"
+        }
+      ],
+      "localFixes": [
+        "Frozen partial DSH output is not claimed successful; full final candidate read before any execution.",
+        "Both GETs explicitly bind actual selected personal-page term; exact origin/student path/module/URL/labels guarded before all steps.",
+        "All known course cells/li accounted for, semantic day headers, expanded rowspan/colspan; unknown nonempty supplementary tables abort.",
+        "Discrete section groups preserved, no first-last filling; retain full teachers/campus/class/raw details and source row; all raw cell facts stable.",
+        "Fetch timeout/body limit/charset/login checks, inert template parsing without resource execution, failed branches always complete without staging.",
+        "User calendar by cohort, no defaultweek/seasonclock/local date inference; no actual account verification."
+      ]
+    },
+    "EXT/ndnu-personal.js": {
+      "sha256": "8e774e54c95e32e23eb2e5b7cf90b2859c0fbae24e2725d826b813111fa92d86",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "NOASSERTION",
+      "sources": [
+        {
+          "adapterId": "ext_ndnu_personal",
+          "repository": "https://github.com/flame-ray/kezhi",
+          "revision": "b527a12796a30c01636e0d2a4f5ba779550a2539",
+          "path": "src/importing/schoolCatalog.ts",
+          "sourceUrl": "https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src/importing/schoolCatalog.ts",
+          "sha256": "96bfc04b4ae4616a2cfc3496f3ae6f1e9cb6c57d0642bf14f2c665c79e7e74df",
+          "updated": "2026-09-09T13:51:01Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_ndnu_personal",
+          "repository": "https://github.com/flame-ray/kezhi",
+          "revision": "b527a12796a30c01636e0d2a4f5ba779550a2539",
+          "path": "src/importing/zhengfangAdapter.ts",
+          "sourceUrl": "https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src/importing/zhengfangAdapter.ts",
+          "sha256": "429c9b97cdf347025480769706a681da143fe20deca97b9f7e69a89b8016134b",
+          "updated": "2026-08-31T08:31:56Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_ndnu_personal",
+          "repository": "https://github.com/flame-ray/kezhi",
+          "revision": "b527a12796a30c01636e0d2a4f5ba779550a2539",
+          "path": "src-tauri/src/lib.rs",
+          "sourceUrl": "https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src-tauri/src/lib.rs",
+          "sha256": "feb461584d8d237a6314964103d3853821145604a4587800aa65145e69bd6a08",
+          "updated": "2026-10-13T05:51:01Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "localFixes": [
+        "Derived only from KAgenda original FJNU, never upstream TS/Rust code; school-specific exact POST3fields/login referer, no invented index fetch.",
+        "Explicit year2000..2100 and first/second term selection without defaults; no third-term mapping/calendar/date/clock inference.",
+        "All proven aliases agree semantically, reject unparsed nonempty arrangements/pages/errors; full response/raw identity/rows compared before staging.",
+        "Original names/full teachers/campus/class and source-row retained; discrete sections and odd/even weeks; no skipped or truncated records.",
+        "Real school account verification pending; main-owned synthetic/native validation separate."
+      ]
+    }
+  },
+  "licenses": {
+    "single-school-NJU-Apache-2.0.txt": {
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/LICENSE"
+    },
+    "single-school-DNUI-MIT.txt": {
+      "sha256": "2db66567d05ccea0e24d228746b9ee973567ee7d775913ea4fd9f981e0c8f27e",
+      "sourceUrl": "https://github.com/LuBanQAQ/dnui-wakeup-export/blob/1035f4b4ceb7ba3a801325c57547b4def8a697b6/LICENSE"
+    },
+    "single-school-FZU-Apache-2.0.txt": {
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+      "sourceUrl": "https://github.com/west2-online/jwch/blob/81779d5a6307fa46f2017cba89d246691b5be73e/LICENSE"
+    },
+    "single-school-ZJU-MIT.txt": {
+      "sha256": "8f4b857f5de5fd1a9d7ce45a7b7d9413e59c8cac5a7a288645a1ec1b92c6534a",
+      "sourceUrl": "https://github.com/Jnove/ZJUCoursetrace/blob/faed4d975958db8e6277727001081f91f673f048/LICENSE"
+    },
+    "single-school-USST-MIT.txt": {
+      "sha256": "48a8ac2574153bdda9ca29469ea1b8c1186684081bf38bf71f4bc92f4f682d8d",
+      "sourceUrl": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar/blob/bce264b562c198f4bb9863e516cecd92bf4aa306/LICENSE"
+    },
+    "single-school-XJTLU-MIT.txt": {
+      "sha256": "fb8ee234c5b205ac7ca9a6904f25ba66ceb6988903fef8c22ca42b1c582b99c8",
+      "sourceUrl": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet/blob/64951fce1204a3bce92a44885b85040c8996a5c7/LICENSE"
+    },
+    "single-school-ZFJW-MIT.txt": {
+      "sha256": "0ba8555f9b6b5de9d1823dd022aaad586fbae0afa9e1fba9aa94656f3c5ee687",
+      "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/LICENSE"
+    },
+    "single-school-SUSE-MIT.txt": {
+      "sha256": "345530341840e660a46546257b555d3dc8a31ea61d1c3f9ae95b3b52641f2c32",
+      "sourceUrl": "https://github.com/suse-edu-cn/SUSE-OAA-APP/blob/53d06ec130a106f4bf6669e1eb536088a841a9b0/LICENSE"
+    },
+    "single-school-XFY-Apache-2.0.txt": {
+      "sha256": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+      "sourceUrl": "https://github.com/XFY9326/Schedule/blob/d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29/LICENSE"
+    },
+    "single-school-ZZULI-MIT.txt": {
+      "sha256": "06051f72b6a9602d846343345e48bfbdfb9cfea1d82426fc76480cb2750a9a91",
+      "sourceUrl": "https://github.com/LingNc/stnet_syllabus/blob/02e9ff9ff806dcf51f3c475769ed1e64d19b898f/LICENSE"
+    },
+    "single-school-ZF-bundle-MIT.txt": {
+      "sha256": "23ff923285bcd2e8dd9f35c38d162059645b2a057074b282ccee8115571b519e",
+      "components": [
+        "single-school-ZJU-MIT.txt",
+        "single-school-USST-MIT.txt",
+        "single-school-ZFJW-MIT.txt",
+        "single-school-SUSE-MIT.txt"
+      ],
+      "supportingSources": [
+        {
+          "repository": "https://github.com/Harry-Linner/CampusOS",
+          "path": "LICENSE",
+          "revision": "e773a452dad691f8ad77d0b0633a1b93b941e06d",
+          "sourceUrl": "https://github.com/Harry-Linner/CampusOS/blob/e773a452dad691f8ad77d0b0633a1b93b941e06d/LICENSE",
+          "sha256": "58a3c243623f21c48b90c209eab34c3e55a38f58f62147d32f01133004ce4646",
+          "updated": "2026-09-14T18:04:16+08:00"
+        }
+      ]
+    },
+    "zhejiang-school-bundle.txt": {
+      "sha256": "74358a841104dd8b6701de5c190ccaed39c580e4e8d12cca0acd533951f38b6e",
+      "sources": [
+        {
+          "repository": "https://github.com/wow-233/niwin-assistant",
+          "path": "LICENSE",
+          "revision": "6b6de141340523d6cd3776b8f11e035a860c54f2",
+          "sourceUrl": "https://github.com/wow-233/niwin-assistant/blob/6b6de141340523d6cd3776b8f11e035a860c54f2/LICENSE",
+          "sha256": "54c99a8281ebb57e5a455bd17fc8d35ec49d29c1183cf27315811577876fa8d4",
+          "updated": "2026-09-25T13:15:26+08:00"
+        },
+        {
+          "repository": "https://github.com/wow-233/niwin-assistant",
+          "path": "NOTICE",
+          "revision": "6b6de141340523d6cd3776b8f11e035a860c54f2",
+          "sourceUrl": "https://github.com/wow-233/niwin-assistant/blob/6b6de141340523d6cd3776b8f11e035a860c54f2/NOTICE",
+          "sha256": "5997f3b7b2f59b9adfd72674e5c56416c47fd11d5ac9f29550b383149c6e9e0b",
+          "updated": "2026-09-25T13:15:26+08:00"
+        },
+        {
+          "repository": "https://github.com/wow-233/niwin-assistant",
+          "path": "THIRD_PARTY_REFERENCES.md",
+          "revision": "6b6de141340523d6cd3776b8f11e035a860c54f2",
+          "sourceUrl": "https://github.com/wow-233/niwin-assistant/blob/6b6de141340523d6cd3776b8f11e035a860c54f2/THIRD_PARTY_REFERENCES.md",
+          "sha256": "8fe82ced942e492f356c4af7901540fdc04480aece4e1312247b97015b9f2793",
+          "updated": "2026-09-25T12:23:28+08:00"
+        },
+        {
+          "repository": "https://github.com/Yingye66/zjgsu-campus-mcp-open-source",
+          "path": "LICENSE",
+          "revision": "37beae2862bfb05f4471adf446f1d2db5195db0a",
+          "sourceUrl": "https://github.com/Yingye66/zjgsu-campus-mcp-open-source/blob/37beae2862bfb05f4471adf446f1d2db5195db0a/LICENSE",
+          "sha256": "0c48eb32b2bbb38e702a32f3ae39ef3b258e110108807f88b6808f1c6b9b56c0",
+          "updated": "2026-10-19T10:43:21+08:00"
+        },
+        {
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "path": "LICENSE",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/LICENSE",
+          "sha256": "0ba8555f9b6b5de9d1823dd022aaad586fbae0afa9e1fba9aa94656f3c5ee687",
+          "updated": "2025-06-22T09:10:15+08:00"
+        },
+        {
+          "repository": "https://github.com/zhullyb/zf2ics",
+          "path": "LICENSE",
+          "revision": "d5168afd4742ebec4be6f243c27f915dec6117ba",
+          "sourceUrl": "https://github.com/zhullyb/zf2ics/blob/d5168afd4742ebec4be6f243c27f915dec6117ba/LICENSE",
+          "sha256": "bc8400300ad8d60f6369ff2c2e6abbc1b62b06e740e1134dc6e3d82b60a7846b",
+          "updated": "2025-02-12T02:27:03+08:00"
+        },
+        {
+          "repository": "https://github.com/my832/dongfang-timetable",
+          "path": "LICENSE",
+          "revision": "903fe9c313dd0f1c8aa65d55570d73e22ab4b526",
+          "sourceUrl": "https://github.com/my832/dongfang-timetable/blob/903fe9c313dd0f1c8aa65d55570d73e22ab4b526/LICENSE",
+          "sha256": "9d57ba0c763f9666d92be105b7b70e1694933761c19089e39f2b04210c444a67",
+          "updated": "2026-10-13T16:35:30+08:00"
+        },
+        {
+          "repository": "https://github.com/wirano/CJLU_ClassTable",
+          "path": "LICENSE",
+          "revision": "49154bfb9a7be62315046496103ef4f6f0624972",
+          "sourceUrl": "https://github.com/wirano/CJLU_ClassTable/blob/49154bfb9a7be62315046496103ef4f6f0624972/LICENSE",
+          "sha256": "4f8a822c4958067a7135b8a878b441911aa8cb20eb07157aacb0ec42e8215190",
+          "updated": "2023-01-29T19:25:10+08:00"
+        },
+        {
+          "repository": "https://github.com/Mioxiya/AISchedule-shufe-zj",
+          "path": "LICENSE",
+          "revision": "9cfae2a31a3c19ac98bf3e5e4b46517358460728",
+          "sourceUrl": "https://github.com/Mioxiya/AISchedule-shufe-zj/blob/9cfae2a31a3c19ac98bf3e5e4b46517358460728/LICENSE",
+          "sha256": "b592aadbacef692a39db66b5367842c1549783a5433d425e75723ae41a36b048",
+          "updated": "2025-02-26T15:50:00+08:00"
+        },
+        {
+          "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+          "path": "LICENSE",
+          "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+          "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/LICENSE",
+          "sha256": "6cfef739debb4762a22e9c29693175988674f36177646c8d6ec3206c9c6384c9",
+          "updated": "2025-09-23T10:23:47+08:00"
+        }
+      ]
+    },
+    "jiangsu-school-bundle.txt": {
+      "sha256": "31bbe4240011313594e04a1ee89f9604c36bd96a5bd48d11a6a7e297615948b6",
+      "sources": [
+        {
+          "repository": "https://github.com/mico-v/usts-cli",
+          "path": "LICENSE",
+          "revision": "adbe1ee632b0f7ad9e6cce0269563e45e42c673a",
+          "sourceUrl": "https://github.com/mico-v/usts-cli/blob/adbe1ee632b0f7ad9e6cce0269563e45e42c673a/LICENSE",
+          "sha256": "ccea0872c26bed962d11d8ced7b68790523d34e31172b58c7f9dddbd1317c94f",
+          "updated": "2026-09-12T18:09:20+08:00"
+        },
+        {
+          "repository": "https://github.com/Ye111ow/cumt-schedule-desktop",
+          "path": "LICENSE",
+          "revision": "b0b22f9e06b3802755eb976ed07f5dd641f77364",
+          "sourceUrl": "https://github.com/Ye111ow/cumt-schedule-desktop/blob/b0b22f9e06b3802755eb976ed07f5dd641f77364/LICENSE",
+          "sha256": "0520d18d84b85505324b085ad5bf4081f90b9c2a575bd0fda77199df488f3ea8",
+          "updated": "2026-07-18T15:21:30+08:00"
+        },
+        {
+          "repository": "https://github.com/Miao-30/NJUCM-weekdesk",
+          "path": "LICENSE",
+          "revision": "50f9c39cc910aff4ce3d0d55bbba4bae7018e777",
+          "sourceUrl": "https://github.com/Miao-30/NJUCM-weekdesk/blob/50f9c39cc910aff4ce3d0d55bbba4bae7018e777/LICENSE",
+          "sha256": "f1e5ecc881986f1192987b111192bfeee15e0c492c2b771ac49a854977e234c7",
+          "updated": "2026-09-06T20:32:46+08:00"
+        },
+        {
+          "repository": "https://github.com/GiuseppeLR/njtech_timetable",
+          "path": "LICENSE",
+          "revision": "3c529518e2d79fa10e1b9c36b7853246d78d1e16",
+          "sourceUrl": "https://github.com/GiuseppeLR/njtech_timetable/blob/3c529518e2d79fa10e1b9c36b7853246d78d1e16/LICENSE",
+          "sha256": "95c2c9cf581bacab5059d184414c5d0f1a8089f50306f9e275cc84262048c0b5",
+          "updated": "2026-07-24T15:55:49+08:00"
+        },
+        {
+          "repository": "https://github.com/Albiehao/cumtxh-jwxt-api",
+          "path": "LICENSE",
+          "revision": "80b0580b226ea97759ceced499aa41315a03096b",
+          "sourceUrl": "https://github.com/Albiehao/cumtxh-jwxt-api/blob/80b0580b226ea97759ceced499aa41315a03096b/LICENSE",
+          "sha256": "a88657b362317fb32f19f20587cda19619013d74a2eb02da36c72f2666883d9f",
+          "updated": "2025-04-10T15:23:39+08:00"
+        },
+        {
+          "repository": "https://github.com/zyc-816/NUISTTable",
+          "path": "LICENSE",
+          "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+          "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/LICENSE",
+          "sha256": "335244856203396e31ddf8d0d2e0407e6518d5dbd5f3eabbd5a164d79481ed95",
+          "updated": "2026-08-09T19:29:10+08:00"
+        },
+        {
+          "repository": "https://github.com/Haa1024/SEU-Timetable",
+          "path": "LICENSE",
+          "revision": "d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b",
+          "sourceUrl": "https://github.com/Haa1024/SEU-Timetable/blob/d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b/LICENSE",
+          "sha256": "03a198ced59421983fe56eac2152d4f22d9c17a0954b208fdd3a5f5ed7a87ef0",
+          "updated": "2026-09-24T11:26:12+08:00"
+        },
+        {
+          "repository": "https://github.com/sakimidare/SEUTimetable",
+          "path": "LICENSE",
+          "revision": "fc9a384ea37d72ea39223b67c12bbc01383edc35",
+          "sourceUrl": "https://github.com/sakimidare/SEUTimetable/blob/fc9a384ea37d72ea39223b67c12bbc01383edc35/LICENSE",
+          "sha256": "58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd",
+          "updated": "2026-01-30T23:38:44+08:00"
+        },
+        {
+          "repository": "https://github.com/shiywhh/i-niuaa",
+          "path": "LICENSE",
+          "revision": "2acccb997836be11c220bf3e91e25a249fdf0d08",
+          "sourceUrl": "https://github.com/shiywhh/i-niuaa/blob/2acccb997836be11c220bf3e91e25a249fdf0d08/LICENSE",
+          "sha256": "34048a2e9af435a78c13e293f7635051213a1a86fa36eceb3fcdfebffc6ef781",
+          "updated": "2026-09-24T13:09:28+08:00"
+        },
+        {
+          "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+          "path": "LICENSE",
+          "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+          "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/LICENSE",
+          "sha256": "1eb85fc97224598dad1852b5d6483bbcf0aa8608790dcc657a5a2a761ae9c8c6",
+          "updated": "2026-06-27T16:00:41Z"
+        },
+        {
+          "repository": "https://github.com/JirakiRance/NJUST-NannoSchedule",
+          "path": "LICENSE",
+          "revision": "32342f7d66e9b5f3ec46a3d736966dd9ede665e2",
+          "sourceUrl": "https://github.com/JirakiRance/NJUST-NannoSchedule/blob/32342f7d66e9b5f3ec46a3d736966dd9ede665e2/LICENSE",
+          "sha256": "07809f68faabeadebeed1c8e7378dfbd6752ccfa2a798026be15c1156df608f9",
+          "updated": "2026-04-09T17:19:34+08:00"
+        },
+        {
+          "repository": "https://github.com/hlfzsi/Aero_su",
+          "path": "LICENSE",
+          "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+          "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/LICENSE",
+          "sha256": "cdb5acd677ca35587a0eb60bf7c76c1eb89b74fb2e969e9731cd614c924c9233",
+          "updated": "2026-06-09T10:02:31+08:00"
+        },
+        {
+          "repository": "https://github.com/lawrencehaohan-coder/suike",
+          "path": "LICENSE",
+          "revision": "99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b",
+          "sourceUrl": "https://github.com/lawrencehaohan-coder/suike/blob/99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b/LICENSE",
+          "sha256": "f3d8da902ce8d940407eccc7013cf7214a78cb8a0e3b5474d244b47dac03aaaa",
+          "updated": "2026-10-20T13:55:57+08:00"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-schedule/LICENSE-shiguangschedule.txt",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/LICENSE-shiguangschedule.txt",
+          "sha256": "f7da4a65bd5a7c442d33eed9b042a321041096e42149c913c82c01eee3a54f97",
+          "updated": "2026-09-17T19:03:12+08:00"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-schedule/NOTICE.md",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/NOTICE.md",
+          "sha256": "f20a95eef52a3f15496eee8d4beeaea75a4c382c7001857c42747e4d62c014c3",
+          "updated": "2026-09-17T19:03:12+08:00"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-schedule/Cargo.toml",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/Cargo.toml",
+          "sha256": "d4501bd0321a713db0105e16f39d6393fd2b10625e5d37159577f687aa99c9a7",
+          "updated": "2026-09-17T19:03:12+08:00"
+        },
+        {
+          "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+          "path": "crates/campus-auth/Cargo.toml",
+          "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+          "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-auth/Cargo.toml",
+          "sha256": "33343b41eab1b4735e5da9df4ffef8b5950adf80f9b5cc50d1ae6379d103c4c6",
+          "updated": "2026-09-18T19:36:24+08:00"
+        }
+      ]
+    },
+    "nju-personal-bundle.txt": {
+      "sha256": "9db556b33b6ed3beef67e2cc76f2aed1c699a8fa3012022e0a0557f6373988bd",
+      "sources": [
+        {
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/LICENSE"
+        },
+        {
+          "repository": "https://github.com/Fallforgotten/nju-timetable-desktop",
+          "path": "LICENSE",
+          "revision": "2380b4fbbf36e79424e0b3ecf3152658b3d4a61d",
+          "sourceUrl": "https://github.com/Fallforgotten/nju-timetable-desktop/blob/2380b4fbbf36e79424e0b3ecf3152658b3d4a61d/LICENSE",
+          "sha256": "7937a45590c876455065a48224cf8e92b5ddd6cec2d992deb00b5ff3340ccc0f",
+          "updated": "2026-10-13T16:45:56+08:00",
+          "license": "MIT"
+        }
+      ]
+    },
+    "shanghai-tongji-MIT.txt": {
+      "sha256": "b0cc2cb2f538e1dfebb8a434c39c5b67b776677a57b43941a76e50c62f96c83e",
+      "sources": [
+        {
+          "repository": "https://github.com/gzy31007/TJDesktopTimetable",
+          "revision": "4d79f8c0cedc7c8e6058129e6468d6e3365bfc73",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/gzy31007/TJDesktopTimetable/blob/4d79f8c0cedc7c8e6058129e6468d6e3365bfc73/LICENSE",
+          "sha256": "6f4d382ff3c01edb5625584567b1a670ade4527aab308f3e1b3a103c1e2c62a7",
+          "updated": "2026-09-14T11:08:32+08:00"
+        }
+      ],
+      "communityNoticeAsset": "shiguang-warehouse-MIT.txt"
+    },
+    "shanghai-shu-MIT.txt": {
+      "sha256": "363802b244d0d2629c870c86c6edf6b798f2bda4dbad7762e63e7f780554043a",
+      "sources": [
+        {
+          "repository": "https://github.com/zmdld11/SHU-Class-Schedule",
+          "revision": "0c7090795bc3119e6f4c83ff2569d458eada53b2",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/zmdld11/SHU-Class-Schedule/blob/0c7090795bc3119e6f4c83ff2569d458eada53b2/LICENSE",
+          "sha256": "363802b244d0d2629c870c86c6edf6b798f2bda4dbad7762e63e7f780554043a",
+          "updated": "2026-09-16T08:46:10+08:00"
+        }
+      ]
+    },
+    "shanghai-sjtu-undergraduate-MIT.txt": {
+      "sha256": "a76d850583a27bf110d425f1b1807a78ecb1590ac652e625615c51c2ab87a737",
+      "sources": [
+        {
+          "repository": "https://github.com/dujiajun/CourseBlock",
+          "revision": "20feb37e37b2cd5779a7d3e24ef49983df7bbd5e",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/dujiajun/CourseBlock/blob/20feb37e37b2cd5779a7d3e24ef49983df7bbd5e/LICENSE",
+          "sha256": "a76d850583a27bf110d425f1b1807a78ecb1590ac652e625615c51c2ab87a737",
+          "updated": "2021-11-17T16:00:46+08:00"
+        }
+      ]
+    },
+    "shanghai-ecnu-MIT.txt": {
+      "sha256": "a0dd959a345dc265e1d75c65e581baeaa66b9d627be3d3b7050fe472b6e837e9",
+      "sources": [
+        {
+          "repository": "https://github.com/Taulee/ECNUCourseTableTool-2.0",
+          "revision": "d3d60512b3c084df8f65154e6fc5b45fedccb1ea",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/Taulee/ECNUCourseTableTool-2.0/blob/d3d60512b3c084df8f65154e6fc5b45fedccb1ea/LICENSE",
+          "sha256": "a0dd959a345dc265e1d75c65e581baeaa66b9d627be3d3b7050fe472b6e837e9",
+          "updated": "2026-09-22T00:13:57+08:00"
+        }
+      ],
+      "upstreamReadmeDeclaration": {
+        "repository": "https://github.com/SJF-ECNU/ECNUCourseTableToolForIOS",
+        "revision": "530ef2b136bfc78f5a5980e1ec7da455793e3408",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/SJF-ECNU/ECNUCourseTableToolForIOS/blob/530ef2b136bfc78f5a5980e1ec7da455793e3408/README.md",
+        "sha256": "5a6f1d3b38d5b5535ca2d9a6b54d976d872893895265a952b6008aafe5ae2d7e",
+        "updated": "2025-03-18T16:21:34+08:00"
+      },
+      "scope": "Taulee original MIT notice retained. Its acknowledged older upstream README declares MIT without a separate license file. Only DOM protocol facts independently implemented; no older upstream code, binaries, HTML or personal fixtures copied."
+    },
+    "anhui-hfut-bundle.txt": {
+      "sha256": "61e33d1d2dbf5782fe49c414228d3594c93999ee2f5cf026dbc64cada99a4512",
+      "sources": [
+        {
+          "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+          "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/LICENSE",
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+          "updated": "2023-10-16T14:40:16+08:00"
+        },
+        {
+          "repository": "https://github.com/Junpgle/HFUTCampusNet",
+          "revision": "9f62dac63c6a200ef328066e02f7722de8407c45",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/Junpgle/HFUTCampusNet/blob/9f62dac63c6a200ef328066e02f7722de8407c45/LICENSE",
+          "sha256": "44449e1c1223290f96e426ae386b2e2ee079ea465ea6f84cbcf2d814aef6d25c",
+          "updated": "2026-10-09T19:59:28+08:00"
+        }
+      ],
+      "scope": "Complete original Apache-2.0 and MIT notices preserved; upstream protocol facts independently implemented."
+    },
+    "anhui-wuhu-original-MIT.txt": {
+      "sha256": "12bc5ba16ac8c876e7e53a6df4b47a59436a1233ee8761acbc05c50cf2739fd6",
+      "sources": [],
+      "scope": "Full KAgenda MIT license only; reference has no license and no implementation lines are copied.",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09"
+    },
+    "fjjxu-personal-bundle-MIT.txt": {
+      "sha256": "d97e092aa61c1ba752fba9771cb5e51256a6be866a34acc38003d853ade25e80",
+      "sourceUrl": "https://github.com/GUY-ATM/KEBIAO/blob/1a5ba8507c6dd324cc9e91ff98d7584c1b8c654f/LICENSE"
+    },
+    "qnu-personal-bundle-MIT.txt": {
+      "sha256": "b64d0d285b42d408ef29ec4a5be6867cf2a64cfd8ea820086a2cbf99adaa2944",
+      "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/LICENSE"
+    },
+    "hqu-personal-original-MIT.txt": {
+      "sha256": "3c174bad4edd9c96630fe2f8909261350ac8e23d254fa96971171bfdf7e076e5",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "sourceUrl": "KAgenda LICENSE (original code only); upstream has no established license"
+    },
+    "xmu-personal-original-MIT.txt": {
+      "sha256": "511b9d38e3a82bf255cbc6c4897c1b8d481f8910a6ddcadfc89423814871e6b2",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "sourceUrl": "KAgenda LICENSE (original implementation only); no license grant established for protocol reference"
+    },
+    "fjnu-personal-original-MIT.txt": {
+      "sha256": "50081cf6c6f7c2d8390c9e120bb46a573b80b2168af9451266de8d69e9df07ca",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceRepository": "https://github.com/haohao-u/the-assitant-of-study",
+      "referenceLicense": "NOASSERTION"
+    },
+    "selected-zf-personal-original-MIT.txt": {
+      "sha256": "55e0d4846056ef2cfc0ed8589389677cc5cd1a7e12a8117145fa826ba817269e",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only"
+    },
+    "lmu-personal-MIT.txt": {
+      "sha256": "efbf3054a4fd8fc568f400d7e5268d7a7d484bf973a36f6ebd17ff04d66c302c",
+      "scope": "modified-MIT-upstream-and-KAgenda",
+      "upstreamLicense": "MIT",
+      "originalCopyright": "Copyright (c) 2021 MoeShin"
+    },
+    "mku-personal-MIT.txt": {
+      "sha256": "1a65a1f76a773f68cb6f49760e90b99606b950081322ebf9e23feae682c0975d",
+      "scope": "modified-MIT-upstream-and-KAgenda",
+      "upstreamLicense": "MIT",
+      "originalCopyright": "Copyright (c) 2025 星河欲转"
+    },
+    "ndnu-personal-original-MIT.txt": {
+      "sha256": "4373dd1ba822468db4c4a6649152515147b3ed98c47a75efcc28e32ee0d6092c",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceRepository": "https://github.com/flame-ray/kezhi",
+      "referenceLicense": "NOASSERTION"
+    }
+  },
+  "systemEvidence": {
+    "asset": "academic/school-systems.json",
+    "sha256": "be3b5408fe3d6720f7d5a33d6786a1ac53edbdd17a2e6ee1a74e68daff5d3df2",
+    "schools": 10,
+    "scope": "Exact school vendor labels only. Does not add import URLs/adapters/support flags; does not copy referenced code.",
+    "lastVerifiedAddition": {
+      "school": "福州外语外贸学院",
+      "type": "zf_new",
+      "observedAt": "2026-10-26T01:16:59.103016+00:00",
+      "officialUrl": "http://portal.fzfu.edu.cn/jwglxt/xtgl/login_slogin.html",
+      "sourceCodeCopied": false,
+      "change": "Refine existing vendor evidence label 正方 to 新正方; no importer added"
+    }
+  },
+  "commonChanges": {
+    "updatedAt": "2026-10-25T08:46:27.098298+00:00",
+    "origin": "KAgenda original MIT host helpers",
+    "changes": [
+      "Never infer semester length from last scheduled course week; prompt explicitly with no default when source did not supply total weeks.",
+      "Validate user-provided count against all parsed course weeks before staging config/courses/timed slots.",
+      "Nonzero/invalid omitted-course count rejects before any config/courses staging; no partial-import confirmation bypass."
+    ],
+    "accountValidated": false
+  }
+}

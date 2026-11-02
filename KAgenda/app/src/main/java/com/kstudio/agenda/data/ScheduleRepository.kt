@@ -195,7 +195,7 @@ class ScheduleRepository private constructor(private val appContext: Context) {
         verifyCredentials: Boolean = false,
     ) {
         // 社区脚本需要用户在可见浏览器中完成交互，不进入后台自动登录引擎。
-        if (com.kstudio.agenda.model.Schools.of(com.kstudio.agenda.model.Schools.currentId).warehouseId.isNotBlank()) return
+        if (SchoolCatalog.usesBrowserImport(com.kstudio.agenda.model.Schools.of(com.kstudio.agenda.model.Schools.currentId))) return
         // 防误操作/并发：互斥判定在进入协程之前完成（原实现两次快速调用可能同时通过检查，
         // 导致两个同步流程并发运行、状态互相覆盖）
         synchronized(this) {

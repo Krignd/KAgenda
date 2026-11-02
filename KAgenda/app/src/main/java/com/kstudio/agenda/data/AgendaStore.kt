@@ -116,7 +116,7 @@ object AgendaStore {
         }
     }
 
-    private fun parse(text: String): List<AgendaEvent> = try {
+    internal fun parse(text: String): List<AgendaEvent> = try {
         val arr = JSONArray(text)
         val result = mutableListOf<AgendaEvent>()
         for (i in 0 until arr.length()) {
@@ -139,6 +139,7 @@ object AgendaStore {
                     endTime = o.optString("endTime"),
                     location = o.optString("location"),
                     note = o.optString("note"),
+                    originalText = o.optString("originalText"),
                     createdAt = o.optLong("createdAt", System.currentTimeMillis()),
                     isLong = o.optBoolean("isLong", false),
                     // 重复条目的 ed 是“重复截止”：≤ 开始日（含与开始同日＝不限的约定）一律视为持续延伸。
@@ -161,7 +162,7 @@ object AgendaStore {
         emptyList()
     }
 
-    private fun toJson(list: List<AgendaEvent>): String {
+    internal fun toJson(list: List<AgendaEvent>): String {
         val arr = JSONArray()
         for (e in list) {
             arr.put(
@@ -173,6 +174,7 @@ object AgendaStore {
                     put("endTime", e.endTime)
                     put("location", e.location)
                     put("note", e.note)
+                    put("originalText", e.originalText)
                     put("createdAt", e.createdAt)
                     put("isLong", e.isLong)
                     if (e.endDateEpochDay != null) put("endDateEpochDay", e.endDateEpochDay)

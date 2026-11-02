@@ -56,14 +56,14 @@ object LocalSmartParser {
     /** 课程字段匹配（常量） */
     private val DAY_CN_REGEX = Regex("(周|星期|礼拜)\\s*([一二三四五六日天1-7])")
     private val DAY_EN_REGEX = Regex("\\b(mon|tue|wed|thu|fri|sat|sun)[a-z]*\\.?")
-    private val PERIOD_RANGE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*[-~—到至,，、]\\s*(\\d{1,2})\\s*节")
+    private val PERIOD_RANGE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*[-~—–～到至,，、]\\s*(\\d{1,2})\\s*节")
     private val PERIOD_SINGLE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*节")
     private val PERIOD_TIME_REGEX =
-        Regex("(\\d{1,2})[:：](\\d{2})\\s*[-~—到至]\\s*(\\d{1,2})[:：](\\d{2})")
+        Regex("(\\d{1,2})[:：](\\d{2})\\s*[-~—–～到至]\\s*(\\d{1,2})[:：](\\d{2})")
     /** 表格里光写 “1-2” 的节次格（没有“节”字） */
     private val BARE_PERIOD_RANGE_REGEX =
         Regex("(?:^|[^\\d:：])(\\d{1,2})\\s*[-~—–]\\s*(\\d{1,2})\\s*$")
-    private val WEEKS_RANGE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*[-~—到至]\\s*(\\d{1,2})\\s*周")
+    private val WEEKS_RANGE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*[-~—–～到至]\\s*(\\d{1,2})\\s*周")
     private val WEEKS_LIST_REGEX = Regex("((?:\\d{1,2}\\s*[,，、]\\s*)+\\d{1,2})\\s*周")
     private val WEEKS_SINGLE_REGEX = Regex("第?\\s*(\\d{1,2})\\s*周")
     private val CODE_REGEX = Regex("[A-Za-z]{2,6}\\d{3,6}[A-Za-z]?")
@@ -82,8 +82,8 @@ object LocalSmartParser {
     )
 
     /** 课程名清理（常量） */
-    private val TITLE_PERIOD_REGEX = Regex("第?\\s*\\d{1,2}\\s*[-~—到至,，、]?\\s*\\d{0,2}\\s*节")
-    private val TITLE_TIME_REGEX = Regex("\\d{1,2}[:：]\\d{2}\\s*[-~—到至]?\\s*\\d{0,2}[:：]?\\d{0,2}")
+    private val TITLE_PERIOD_REGEX = Regex("第?\\s*\\d{1,2}\\s*[-~—–～到至,，、]?\\s*\\d{0,2}\\s*节")
+    private val TITLE_TIME_REGEX = Regex("\\d{1,2}[:：]\\d{2}\\s*[-~—–～到至]?\\s*\\d{0,2}[:：]?\\d{0,2}")
     private val TITLE_UNIT_REGEX = Regex("(单周|双周)")
     private val TITLE_SEP_REGEX = Regex("[|\\t]")
     private val TITLE_WS_REGEX = Regex("\\s+")
@@ -236,7 +236,8 @@ object LocalSmartParser {
         return when {
             c.isBlank() -> null
             listOf("星期", "周几", "weekday", "day").any { c.contains(it) } -> "day"
-            listOf("节次", "节", "period", "时间", "时段", "上课时间").any { c == it || c.contains(it) } -> "period"
+            listOf("节次", "节", "period").any { c == it || c.contains(it) } -> "period"
+            listOf("时间", "时段", "上课时间", "time").any { c.contains(it) } -> "time"
             listOf("周次", "周数", "weeks", "week").any { c.contains(it) } -> "weeks"
             listOf("教室", "地点", "上课地点", "room", "location", "场地").any { c.contains(it) } -> "room"
             listOf("教师", "老师", "任课", "授课", "teacher").any { c.contains(it) } -> "teacher"
@@ -254,46 +255,68 @@ object LocalSmartParser {
      * 3. 每门课一块（课程名一行 + 细节行）。
      */
     fun parseCourses(text: String): List<Course> {
-        val lines = text.lines().map { it.trim() }.filter { it.isNotEmpty() }
+        val clean = text.trimStart('\uFEFF')
+        if (clean.trimStart().startsWith("{") || clean.trimStart().startsWith("```json")) {
+            return runCatching { CourseImportCodec.decode(clean).takeIf { it.issues.isEmpty() }?.courses.orEmpty() }
+                .getOrDefault(emptyList())
+        }
+        val lines = clean.lines().map { it.trim(' ', '\r') }.filter { it.isNotBlank() }
         if (lines.isEmpty()) return emptyList()
-
         val out = mutableListOf<Course>()
-        // 1) 表格形态
-        val header = splitCells(lines[0])
-        val mapping = header.map { headerField(it) }
-        if (mapping.count { it != null } >= 3 && mapping.contains("title")) {
-            for (i in 1 until lines.size) {
-                val cells = splitCells(lines[i])
-                if (cells.size < 2) continue
-                fun col(f: String): String {
-                    val idx = mapping.indexOf(f)
-                    return if (idx >= 0 && idx < cells.size) cells[idx] else ""
-                }
-                out += buildCourse(
-                    title = col("title"),
-                    day = col("day"),
-                    period = col("period"),
-                    weeks = col("weeks"),
-                    room = col("room"),
-                    teacher = col("teacher"),
-                    code = col("code"),
-                ) ?: continue
-                continue
+        val headerIndex = lines.indexOfFirst { line ->
+            val fields = splitCells(line).map { headerField(it) }
+            fields.count { it != null } >= 3 && fields.contains("title")
+        }
+        if (headerIndex >= 0) {
+            val header = splitCells(lines[headerIndex])
+            val mapping = header.map { headerField(it) }
+            val raw = lines.drop(headerIndex).joinToString("\n")
+            val delimiter = when { lines[headerIndex].contains('\t') -> '\t'
+                lines[headerIndex].contains('|') -> '|'; lines[headerIndex].contains(',') -> ','; else -> null }
+            val rows = delimiter?.let { DelimitedCourseText.rows(raw, it) } ?: lines.drop(headerIndex).map(::splitCells)
+            for (cells in rows.drop(1)) {
+                if (cells.all { it.matches(Regex(":?-+:?")) } || cells.size != header.size) continue
+                fun col(f: String) = mapping.indexOf(f).takeIf { it >= 0 }?.let { cells.getOrNull(it) }.orEmpty()
+                out += buildCourse(col("title"), col("day"), col("period").ifBlank { col("time") },
+                    col("weeks"), col("room"), col("teacher"), col("code")) ?: continue
             }
-            if (out.isNotEmpty()) return dedupe(out)
+            // A recognized table must not fall back to guessing malformed rows.
+            return dedupe(out)
+        }
+        // Week-grid: headers identify weekdays; row labels identify periods.
+        val gridIndex = lines.indexOfFirst { line -> splitCells(line).count { findDayOfWeek(it) != null } >= 2 }
+        if (gridIndex >= 0) {
+            val days = splitCells(lines[gridIndex]).map(::findDayOfWeek)
+            for (line in lines.drop(gridIndex + 1)) {
+                val cells = splitCells(line)
+                if (cells.size != days.size) continue
+                val period = cells.firstOrNull().orEmpty()
+                for (j in 1 until cells.size) {
+                    val day = days[j] ?: continue
+                    val body = cells[j]
+                    if (body.isBlank()) continue
+                    val title = findCourseTitle(body)
+                    if (title.isBlank()) continue
+                    out += buildCourse(title, "周$day", period, findWeeks(body), findRoom(body), findTeacher(body), findCode(body)) ?: continue
+                }
+            }
+            return dedupe(out)
         }
 
         // 2/3) 逐行 / 分块
         // 先按“含星期信息”的行切块：不含星期的行作为上一块的补充（例如课程名行 + 时间行）
         val blocks = mutableListOf<StringBuilder>()
+        var pendingTitle = ""
         for (line in lines) {
-            val hasDay = findDayOfWeek(line) != null
-            if (hasDay || blocks.isEmpty()) {
-                blocks.add(StringBuilder(line))
+            if (findDayOfWeek(line) != null) {
+                val prefix = if (pendingTitle.isNotBlank()) "$pendingTitle " else ""
+                blocks.add(StringBuilder(prefix + line))
+                pendingTitle = ""
+            } else if (findPeriods(line) != null || findWeeks(line).isNotBlank() ||
+                DETAIL_PREFIXES.any { line.startsWith(it) } || findRoom(line).isNotBlank()) {
+                if (blocks.isNotEmpty()) blocks.last().append(' ').append(line)
             } else {
-                // 该行没有星期信息：若上一块已有星期则并入，否则并入上一块（补充课程名/教室）
-                if (blocks.last().isNotEmpty()) blocks.last().append(' ')
-                blocks.last().append(line)
+                pendingTitle = line.trim()
             }
         }
         for (b in blocks) {
@@ -319,6 +342,27 @@ object LocalSmartParser {
     }
 
     /** 由表格字段构造课程（字段缺失时尽量从同排其他单元格推断） */
+    fun invalidCourseRows(text: String): Int {
+        val lines = text.trimStart('\uFEFF').lines().filter { it.isNotBlank() }
+        val index = lines.indexOfFirst { line ->
+            val fields = splitCells(line).map(::headerField)
+            fields.count { it != null } >= 3 && fields.contains("title")
+        }
+        if (index < 0) return 0
+        val head = lines[index]
+        val mapping = splitCells(head).map(::headerField)
+        val delimiter = when { head.contains('\t') -> '\t'; head.contains('|') -> '|'; head.contains(',') -> ','; else -> null }
+        val rows = delimiter?.let { DelimitedCourseText.rows(lines.drop(index).joinToString("\n"), it) }
+            ?: lines.drop(index).map(::splitCells)
+        return rows.drop(1).takeWhile { row -> row.size > 1 && !row.first().startsWith("#") }
+            .filterNot { row -> row.all { it.matches(Regex(":?-+:?")) } }
+            .count { cells ->
+                fun col(field: String) = mapping.indexOf(field).takeIf { it >= 0 }?.let { cells.getOrNull(it) }.orEmpty()
+                cells.size != mapping.size || buildCourse(col("title"), col("day"), col("period").ifBlank { col("time") },
+                    col("weeks"), col("room"), col("teacher"), col("code")) == null
+            }
+    }
+
     private fun buildCourse(
         title: String,
         day: String,
@@ -344,28 +388,20 @@ object LocalSmartParser {
     }
 
     private fun dedupe(list: List<Course>): List<Course> {
-        val map = LinkedHashMap<String, Course>()
-        list.forEach { map[it.id] = it }
-        return map.values.sortedWith(compareBy({ it.dayOfWeek }, { it.startPeriod }, { it.title }))
+        return CourseImportCodec.merge(list)
     }
 
-    /** 按 Tab / 竖线 / 逗号 / 多个空格切分单元格 */
     private fun splitCells(line: String): List<String> {
-        val sep = when {
-            line.contains('\t') -> "\t"
-            line.contains('|') -> "|"
-            line.contains(',') -> ","
-            line.contains('，') -> "，"
-            CELLS_SPLIT_REGEX.containsMatchIn(line) -> null
-            else -> return listOf(line)
-        }
-        val raw = if (sep == null) line.split(CELLS_SPLIT_REGEX) else line.split(sep)
-        return raw.map { it.trim() }.filter { it.isNotEmpty() }
+        val separator = when { line.contains('\t') -> '\t'; line.contains('|') -> '|'
+            line.contains(',') -> ','; line.contains('，') -> '，'; else -> null }
+        return separator?.let { DelimitedCourseText.rows(line, it).firstOrNull().orEmpty() }
+            ?: line.trim().split(CELLS_SPLIT_REGEX)
     }
 
     private fun findDayOfWeek(s: String): Int? {
+        s.trim().toIntOrNull()?.takeIf { it in 1..7 }?.let { return it }
         DAY_EN_REGEX.find(s.lowercase())?.let { m ->
-            DAY_MAP[m.value.trim('.', ' ')]?.let { return it }
+            DAY_MAP[m.value.take(3)]?.let { return it }
         }
         DAY_CN_REGEX.find(s)?.let { m ->
             DAY_MAP[(m.groupValues[1] + m.groupValues[2])]?.let { return it }
@@ -378,7 +414,7 @@ object LocalSmartParser {
         PERIOD_RANGE_REGEX.find(s)?.let { m ->
             val a = m.groupValues[1].toIntOrNull() ?: return@let
             val b = m.groupValues[2].toIntOrNull() ?: return@let
-            if (a in 1..PeriodTimes.MAX_COUNT && b in a..PeriodTimes.MAX_COUNT) return a to b
+            return if (a in 1..PeriodTimes.MAX_COUNT && b in a..PeriodTimes.MAX_COUNT) a to b else null
         }
         PERIOD_SINGLE_REGEX.find(s)?.let { m ->
             val a = m.groupValues[1].toIntOrNull() ?: return@let
@@ -392,26 +428,27 @@ object LocalSmartParser {
             val et = runCatching {
                 LocalTime.of(m.groupValues[3].toInt(), m.groupValues[4].toInt())
             }.getOrNull() ?: return@let
-            val sp = nearestPeriod(st) ?: return@let
-            val ep = nearestPeriod(et) ?: return@let
-            return sp to maxOf(sp, ep)
+            val sp = nearestPeriod(st, false) ?: return@let
+            val ep = nearestPeriod(et, true) ?: return@let
+            if (et > st && ep >= sp) return sp to ep
         }
         // 兼容从教务系统表格里直接复制的“1-2 / 3-4”（这一格没有“节”字）
         BARE_PERIOD_RANGE_REGEX.find(s)?.let { m ->
             val a = m.groupValues[1].toIntOrNull() ?: return@let
             val b = m.groupValues[2].toIntOrNull() ?: return@let
-            if (a in 1..PeriodTimes.MAX_COUNT && b in a..PeriodTimes.MAX_COUNT) return a to b
+            return if (a in 1..PeriodTimes.MAX_COUNT && b in a..PeriodTimes.MAX_COUNT) a to b else null
         }
+        s.trim().toIntOrNull()?.takeIf { it in 1..PeriodTimes.MAX_COUNT }?.let { return it to it }
         return null
     }
 
     /** 找出与给定时间最接近的节次（相差不超过 15 分钟才算命中） */
-    private fun nearestPeriod(t: LocalTime): Int? {
+    private fun nearestPeriod(t: LocalTime, end: Boolean): Int? {
         var best = -1
         var bestDiff = Long.MAX_VALUE
         for (p in 1..PeriodTimes.count) {
             val diff = kotlin.math.abs(
-                PeriodTimes.startOf(p).toSecondOfDay().toLong() - t.toSecondOfDay().toLong()
+                (if (end) PeriodTimes.endOf(p) else PeriodTimes.startOf(p)).toSecondOfDay().toLong() - t.toSecondOfDay().toLong()
             )
             if (diff < bestDiff) {
                 bestDiff = diff
@@ -423,29 +460,19 @@ object LocalSmartParser {
 
     /** 周次：“1-16周” / “第2周” / “1,3,5周” / “单周” / “双周”（无则回空串=每周） */
     private fun findWeeks(s: String): String {
-        WEEKS_RANGE_REGEX.find(s)?.let { range ->
-            val a = range.groupValues[1].toIntOrNull() ?: 0
-            val b = range.groupValues[2].toIntOrNull() ?: 0
-            if (a in 1..40 && b in a..40) return "$a-$b"
-        }
-        WEEKS_LIST_REGEX.find(s)?.let { list ->
-            val nums = list.groupValues[1].split(',', '，', '、').mapNotNull { it.trim().toIntOrNull() }
-                .filter { it in 1..40 }
-            if (nums.isNotEmpty()) return nums.joinToString(",")
-        }
-        WEEKS_SINGLE_REGEX.find(s)?.let { single ->
-            val a = single.groupValues[1].toIntOrNull() ?: 0
-            if (a in 1..40) return "$a"
-        }
-        // 单/双周：展开为显式周次列表（教务系统里常见“1-16周(单)”）
-        if (s.contains("单周") || s.contains("(单)") || s.contains("（单）")) {
-            return (1..19 step 2).joinToString(",")
-        }
-        if (s.contains("双周") || s.contains("(双)") || s.contains("（双）")) {
-            return (2..20 step 2).joinToString(",")
-        }
-        return ""
+        val normalized = s.replaceFirst(Regex("^(?:周次|周数|weeks)\\s*[:：]?\\s*", RegexOption.IGNORE_CASE), "").replace('～', '-').replace('~', '-').replace('—', '-').replace('–', '-').replace('至', '-').replace('到', '-').replace(" ", "")
+        val expression = Regex("(?:第\\s*)?([0-9]{1,2}(?:\\s*-\\s*[0-9]{1,2})?(?:\\s*[,，、]\\s*[0-9]{1,2}(?:\\s*-\\s*[0-9]{1,2})?)*)\\s*周")
+            .find(normalized)?.groupValues?.get(1)
+            ?: normalized.trim().takeIf { it.matches(Regex("[0-9]{1,2}(?:-[0-9]{1,2})?(?:[,，、][0-9]{1,2}(?:-[0-9]{1,2})?)*")) }
+        val odd = Regex("单周|[（(]单[）)]").containsMatchIn(s)
+        val even = Regex("双周|[（(]双[）)]").containsMatchIn(s)
+        val parsed = expression?.let { Course.parseWeeks(it.replace(" ", "")).flatMap { r -> r.toList() } }
+        // Without a range, 单/双周 does not identify the semester length.
+        val weeks = parsed ?: return ""
+        return Course.encodeWeeks(weeks.filter { (!odd || it % 2 == 1) && (!even || it % 2 == 0) })
     }
+
+    internal fun normalizeImportWeeks(raw: String): String = findWeeks(raw)
 
     private fun findCode(s: String): String = CODE_REGEX.find(s)?.value.orEmpty()
 
@@ -459,14 +486,15 @@ object LocalSmartParser {
     }
 
     private fun findRoom(s: String): String {
+        val withoutTimes = s.replace(PERIOD_TIME_REGEX, " ")
         // 1) “教室：xxx” / “地点：xxx”
         ROOM_LABEL_REGEX.find(s)?.let { return it.groupValues[1] }
         // 2) 形如 “教1-101 / A301 / C1-2003 / 主楼B201”；
         //    必须排除周次/节次片段（“1-16周”“第1-2节”），否则会把周次误当教室
-        for (m in ROOM_CODE_REGEX.findAll(s)) {
+        for (m in ROOM_CODE_REGEX.findAll(withoutTimes)) {
             val v = m.value.trim()
-            val after = s.getOrNull(m.range.last + 1)
-            val before = if (m.range.first > 0) s[m.range.first - 1] else null
+            val after = withoutTimes.getOrNull(m.range.last + 1)
+            val before = if (m.range.first > 0) withoutTimes[m.range.first - 1] else null
             if (after == '周' || after == '节' || before == '第') continue
             if (v.isEmpty()) continue
             return v.replace(" ", "")
@@ -485,11 +513,11 @@ object LocalSmartParser {
     /** 课程名：去掉星期/节次/周次/教室/教师等已识别片段后剩下的最长中文片段 */
     private fun findCourseTitle(block: String): String {
         var s = block
-        s = s.replace(DAY_CN_REGEX, " ")
+        s = s.replace(DAY_CN_REGEX, " ").replace(DAY_EN_REGEX, " ")
         s = s.replace(TITLE_PERIOD_REGEX, " ")
         s = s.replace(TITLE_TIME_REGEX, " ")
-        s = s.replace(WEEKS_RANGE_REGEX, " ")
-        s = s.replace(TITLE_UNIT_REGEX, " ")
+        s = s.replace(Regex("(?:第\\s*)?[0-9]{1,2}(?:\\s*[-~—–～到至,，、]\\s*[0-9]{1,2})*\\s*周"), " ")
+        s = s.replace(TITLE_UNIT_REGEX, " ").replace(Regex("[（(][单双][）)]"), " ")
         s = s.replace(CODE_REGEX, " ")
         val room = findRoom(s)
         if (room.isNotBlank()) s = s.replace(room, " ")

@@ -7,7 +7,7 @@
     android:background="@drawable/bg_overlay_panel"
     android:focusable="true"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="12dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -16,11 +16,11 @@
         android:orientation="horizontal">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
             android:layout_marginEnd="8dp"
             android:contentDescription="@null"
-            android:src="@drawable/ic_deepseek" />
+            android:src="@drawable/ic_overlay_ball_icon" />
 
         <TextView
             android:id="@+id/overlay_title"
@@ -50,8 +50,8 @@
         android:background="@drawable/bg_notif_input"
         android:gravity="top|start"
         android:inputType="textMultiLine|textCapSentences"
-        android:maxLines="6"
-        android:minLines="3"
+        android:maxLines="4"
+        android:minLines="2"
         android:padding="10dp"
         android:textSize="14sp" />
 
@@ -66,26 +66,39 @@
             android:id="@+id/overlay_open"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
+            android:layout_weight="0.8"
+            android:minHeight="48dp"
+            android:gravity="center_vertical"
             android:paddingTop="6dp"
             android:paddingBottom="6dp"
             android:textSize="12sp" />
 
         <Button
             android:id="@+id/overlay_parse"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
             android:minWidth="0dp"
             android:textSize="13sp" />
 
         <Button
             android:id="@+id/overlay_add"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1.4"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
             android:layout_marginStart="8dp"
             android:minWidth="0dp"
             android:textSize="13sp" />
     </LinearLayout>
+
+    <CheckBox
+        android:id="@+id/overlay_keep_original"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
 
     <TextView
         android:id="@+id/overlay_msg"

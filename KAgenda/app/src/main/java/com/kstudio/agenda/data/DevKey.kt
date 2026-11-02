@@ -13,7 +13,7 @@ object DevKey {
     private const val MASK = "kagenda-2026-kstudio-mask"
 
     /** 混淆串（反转的 Base64；与掩码异或后还原明文） */
-    private const val OBFUSCATED_REVERSED = "=EgBIl1VNYwAVxFXHhVVU0wCVZBQDt1TTRACEkUWBwVAKpAG"
+    private const val OBFUSCATED_REVERSED = "=QVAIJlBWxlBUhwWWQFVb4gWWREQL5VHPsgAKwBAcpVXKpAG"
 
     @Volatile
     private var cached: String? = null

@@ -1,0 +1,264 @@
+{
+  "termData": {
+    "lessonIds": [
+      11,
+      12
+    ],
+    "lessons": [
+      {
+        "id": 11,
+        "nameZh": "教学班11",
+        "remark": "合成备注",
+        "code": "CLASS-11",
+        "scheduleText": {
+          "dateTimePlacePersonText": {
+            "textZh": "合成课次"
+          }
+        },
+        "stdCount": 30,
+        "course": {
+          "id": 111,
+          "nameZh": "合成课程11",
+          "credits": 2,
+          "code": "COURSE-11",
+          "periodInfo": {
+            "weeks": 18
+          },
+          "courseType": {
+            "id": 2,
+            "nameZh": "必修"
+          }
+        },
+        "courseType": {
+          "id": 2,
+          "nameZh": "必修"
+        },
+        "openDepartment": {
+          "id": 3,
+          "nameZh": "合成学院"
+        },
+        "examMode": {
+          "id": 4,
+          "nameZh": "考查"
+        },
+        "scheduleWeeksInfo": "1-18",
+        "planExamWeek": 18,
+        "teacherAssignmentList": [
+          {
+            "teacher": null,
+            "age": 30,
+            "person": {
+              "id": 1,
+              "nameZh": "合成教师11"
+            }
+          }
+        ],
+        "semester": {
+          "id": 101,
+          "nameZh": "2026-2027学年第1学期",
+          "startDate": "2026-08-31",
+          "endDate": "2027-01-03"
+        }
+      },
+      {
+        "id": 12,
+        "nameZh": "教学班12",
+        "remark": "合成备注",
+        "code": "CLASS-12",
+        "scheduleText": {
+          "dateTimePlacePersonText": {
+            "textZh": "合成课次"
+          }
+        },
+        "stdCount": 30,
+        "course": {
+          "id": 112,
+          "nameZh": "合成课程12",
+          "credits": 2,
+          "code": "COURSE-12",
+          "periodInfo": {
+            "weeks": 18
+          },
+          "courseType": {
+            "id": 2,
+            "nameZh": "必修"
+          }
+        },
+        "courseType": {
+          "id": 2,
+          "nameZh": "必修"
+        },
+        "openDepartment": {
+          "id": 3,
+          "nameZh": "合成学院"
+        },
+        "examMode": {
+          "id": 4,
+          "nameZh": "考查"
+        },
+        "scheduleWeeksInfo": "1-18",
+        "planExamWeek": 18,
+        "teacherAssignmentList": [
+          {
+            "teacher": null,
+            "age": 30,
+            "person": {
+              "id": 2,
+              "nameZh": "合成教师12"
+            }
+          }
+        ],
+        "semester": {
+          "id": 101,
+          "nameZh": "2026-2027学年第1学期",
+          "startDate": "2026-08-31",
+          "endDate": "2027-01-03"
+        }
+      }
+    ],
+    "timeTableLayoutId": 7,
+    "weekIndices": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18
+    ],
+    "currentWeek": 3
+  },
+  "datumData": {
+    "result": {
+      "lessonList": [
+        {
+          "courseName": "合成课程11",
+          "name": "教学班11",
+          "id": "11",
+          "suggestScheduleWeekInfo": "1-18",
+          "courseTypeName": "必修",
+          "remark": "合成备注",
+          "teacherAssignmentList": [
+            {
+              "code": "SYNTH",
+              "name": "合成教师11",
+              "age": 30,
+              "titleName": "讲师"
+            }
+          ]
+        },
+        {
+          "courseName": "合成课程12",
+          "name": "教学班12",
+          "id": "12",
+          "suggestScheduleWeekInfo": "1-18",
+          "courseTypeName": "必修",
+          "remark": "合成备注",
+          "teacherAssignmentList": [
+            {
+              "code": "SYNTH",
+              "name": "合成教师12",
+              "age": 30,
+              "titleName": "讲师"
+            }
+          ]
+        }
+      ],
+      "scheduleList": [
+        {
+          "lessonId": 11,
+          "room": {
+            "id": 31,
+            "nameZh": "合成实验室A"
+          },
+          "weekday": 2,
+          "personName": "合成甲",
+          "weekIndex": 1,
+          "startTime": 800,
+          "endTime": 945,
+          "periods": 2,
+          "date": "2026-09-01",
+          "lessonType": "THEORY"
+        },
+        {
+          "lessonId": 11,
+          "room": {
+            "id": 31,
+            "nameZh": "合成实验室A"
+          },
+          "weekday": 2,
+          "personName": "合成甲",
+          "weekIndex": 3,
+          "startTime": 800,
+          "endTime": 945,
+          "periods": 2,
+          "date": "2026-09-15",
+          "lessonType": "THEORY"
+        },
+        {
+          "lessonId": 12,
+          "room": {
+            "id": 32,
+            "nameZh": "合成实验室B"
+          },
+          "weekday": 4,
+          "personName": "合成乙",
+          "weekIndex": 2,
+          "startTime": 1000,
+          "endTime": 1045,
+          "periods": 1,
+          "date": "2026-09-10",
+          "lessonType": "LAB"
+        }
+      ],
+      "scheduleGroupList": [
+        {
+          "lessonId": 11,
+          "stdCount": 30
+        },
+        {
+          "lessonId": 12,
+          "stdCount": 30
+        }
+      ]
+    }
+  },
+  "layoutData": {
+    "result": {
+      "courseUnitList": [
+        {
+          "nameZh": "第1节",
+          "startTime": 800,
+          "endTime": 845,
+          "startTimeText": "08:00",
+          "endTimeText": "08:45"
+        },
+        {
+          "nameZh": "第2节",
+          "startTime": 900,
+          "endTime": 945,
+          "startTimeText": "09:00",
+          "endTimeText": "09:45"
+        },
+        {
+          "nameZh": "第3节",
+          "startTime": 1000,
+          "endTime": 1045,
+          "startTimeText": "10:00",
+          "endTimeText": "10:45"
+        }
+      ]
+    }
+  }
+}

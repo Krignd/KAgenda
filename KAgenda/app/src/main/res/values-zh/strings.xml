@@ -28,9 +28,9 @@
     <string name="widget_next_agenda">下一日程</string>
     <string name="widget_ongoing">进行中</string>
     <string name="widget_today">今天</string>
-    <string name="feature_global_reminder">全局提醒</string>
+    <string name="feature_global_reminder">提醒全局设置</string>
     <string name="feature_follow_global">跟随全局设置</string>
-    <string name="feature_apply_global">一键全部设为跟随全局</string>
+    <string name="feature_apply_global">全部提醒跟随全局设置</string>
     <string name="feature_notify_event">通知提醒</string>
     <string name="feature_alarm_event">闹钟提醒</string>
     <string name="feature_alarm_hint">到时使用闹钟音量响铃，通知中可停止，最长响铃两分钟。</string>
@@ -60,7 +60,7 @@
     <string name="feature_widget_week_courses">周课表</string>
     <string name="feature_widget_empty">暂无安排</string>
     <string name="feature_widget_more">点击查看全部</string>
-    <string name="feature_ai_context_note">AI 识别会发送现有日程的标题、日期、时间、地点、标签和重复规则，以便准确修改。</string>
+    <string name="feature_ai_context_note">AI 助手会发送现有日程的标题、日期、时间、地点、标签和重复规则，以便准确修改。</string>
     <string name="feature_reminder_needs_time">提醒需要精确开始时间</string>
     <string name="feature_workday_mark">班</string>
     <string name="feature_stop_alarm">停止闹钟</string>

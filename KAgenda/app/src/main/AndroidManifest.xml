@@ -38,6 +38,7 @@
     <!-- 承载悬浮球的前台服务 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <application
@@ -54,6 +55,11 @@
         android:theme="@style/Theme.KAgenda"
         android:usesCleartextTraffic="false"
         tools:targetApi="35">
+
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:foregroundServiceType="dataSync"
+            tools:node="merge" />
 
         <activity
             android:name=".ui.MainActivity"
@@ -72,6 +78,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:mimeType="text/*" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="image/*" />
                 <data android:mimeType="application/json" />
                 <data android:mimeType="application/xml" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
@@ -85,6 +92,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/*" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="image/*" />
                 <data android:mimeType="application/octet-stream" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
                 <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
@@ -214,6 +222,7 @@
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_week_courses" />
         </receiver>
+        <service android:name=".widget.OverviewWidgetService" android:permission="android.permission.BIND_REMOTEVIEWS" android:exported="false" />
         <!-- 小组件定时刷新链（每次触发后自动安排下一次） -->
         <receiver
             android:name=".widget.WidgetRefreshReceiver"

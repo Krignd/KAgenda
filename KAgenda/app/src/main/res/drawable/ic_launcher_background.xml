@@ -1,21 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 自适应图标背景：品牌蓝渐变（保持原深蓝风格，增加质感） -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endColor="#1B44C0"
-                android:endX="108"
-                android:endY="108"
-                android:startColor="#2E5FE6"
-                android:startX="0"
-                android:startY="0"
-                android:type="linear" />
-        </aapt:attr>
-    </path>
+<vector xmlns:android="http://schemas.android.com/apk/res/android" xmlns:aapt="http://schemas.android.com/aapt" android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:pathData="M0,0H108V108H0Z"><aapt:attr name="android:fillColor"><gradient android:startX="12" android:startY="0" android:endX="95" android:endY="108" android:type="linear"><item android:color="#38CDE0" android:offset="0"/><item android:color="#3979ED" android:offset="0.43"/><item android:color="#6345D8" android:offset="1"/></gradient></aapt:attr></path>
+    <path android:fillColor="#16FFFFFF" android:pathData="M0,0H108V15C79,13 71,43 43,49C23,54 7,43 0,40Z"/>
+    <path android:fillColor="#0EFFFFFF" android:pathData="M108,57C88,65 79,92 48,108H108Z"/>
 </vector>

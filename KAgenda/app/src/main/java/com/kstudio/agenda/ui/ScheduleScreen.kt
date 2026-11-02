@@ -29,6 +29,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.ui.components.segmentedStrokeColor
+import com.kstudio.agenda.ui.components.AnimatedPage
+import com.kstudio.agenda.ui.components.GlassViewSwitcher
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
 import kotlinx.coroutines.delay
 import java.time.LocalDate
 
@@ -64,7 +67,11 @@ fun ScheduleScreen(vm: AppViewModel) {
 
     Column(Modifier.fillMaxSize()) {
         // 顶部：视图切换（日 / 周 / 月）
-        SingleChoiceSegmentedButtonRow(
+        if (LocalGlassEnabled.current) {
+            GlassViewSwitcher(listOf(t.viewDay, t.viewWeek, t.viewMonth), mode.ordinal) {
+                modeName = ScheduleMode.entries[it].name
+            }
+        } else SingleChoiceSegmentedButtonRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -112,7 +119,8 @@ fun ScheduleScreen(vm: AppViewModel) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        when (mode) {
+        AnimatedPage(mode.ordinal, Modifier.weight(1f).fillMaxWidth()) { pageIndex ->
+        when (ScheduleMode.entries[pageIndex]) {
             ScheduleMode.Day -> DayScreen(vm, timetableMode = settings.timetableMode, flash = focus)
             ScheduleMode.Week -> WeekScreen(
                 vm = vm,
@@ -129,6 +137,7 @@ fun ScheduleScreen(vm: AppViewModel) {
                 },
                 flash = focus,
             )
+        }
         }
     }
 }

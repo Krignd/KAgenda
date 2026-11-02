@@ -108,22 +108,20 @@ data class Course(
         fun parseWeeks(raw: String): List<IntRange> {
             if (raw.isBlank()) return emptyList()
             val result = mutableListOf<IntRange>()
-            raw.split(',', '，', '、').forEach { part ->
-                val p = part.trim()
-                if (p.isEmpty()) return@forEach
-                val dash = p.indexOf('-')
-                try {
-                    if (dash > 0) {
-                        val a = p.substring(0, dash).trim().toInt()
-                        val b = p.substring(dash + 1).trim().toInt()
-                        if (a in 1..40 && b in a..40) result.add(a..b)
-                    } else {
-                        val a = p.toInt()
-                        if (a in 1..40) result.add(a..a)
-                    }
-                } catch (_: NumberFormatException) {
-                    // 忽略无法解析的片段
+            val normalized = raw.replace(Regex("[~～—－–]"), "-")
+            normalized.split(',', '，', '、').forEach { part ->
+                val parity = when {
+                    part.contains('单') -> 1
+                    part.contains('双') -> 0
+                    else -> null
                 }
+                val clean = part.replace(Regex("[周\\s（）()单双]"), "")
+                val match = Regex("([0-9]{1,2})(?:-([0-9]{1,2}))?").matchEntire(clean) ?: return@forEach
+                val a = match.groupValues[1].toInt()
+                val b = match.groupValues[2].toIntOrNull() ?: a
+                if (a !in 1..MAX_WEEK || b !in a..MAX_WEEK) return@forEach
+                if (parity == null) result.add(a..b)
+                else (a..b).filter { it % 2 == parity }.forEach { result.add(it..it) }
             }
             return result
         }

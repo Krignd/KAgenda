@@ -1,0 +1,324 @@
+[
+  {
+    "name": "安徽大学",
+    "type": "eams",
+    "sources": [
+      {
+        "repository": "https://github.com/lingion/sleepy",
+        "revision": "3dafa110f74ac4f32464ce1efddb24197a4091d9",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/lingion/sleepy/blob/3dafa110f74ac4f32464ce1efddb24197a4091d9/README.md",
+        "sha256": "e3a27dce37854499587560231f92e47dbc6fe1e8c2db318bd0b13c499d554f3b",
+        "updated": "2026-10-21T23:42:45+08:00"
+      }
+    ],
+    "basis": "Explicit EAMS5 school entry; corroborated by current official jw.ahu.edu.cn login eams-ui assets. Historical old Zhengfang entry is retained.",
+    "referenceLicense": "GPL-3.0",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://jw.ahu.edu.cn/student/login",
+      "finalUrl": "https://jw.ahu.edu.cn/student/login",
+      "sha256": "31a2fb889608cc49081c419b64268ca28db2664c1a098a3f4f69d443ffc2fdc8",
+      "observedAt": "2026-10-23T06:46:47.230434+00:00",
+      "status": 200,
+      "unauthenticated": true,
+      "identityLines": [
+        "<title>登入页面</title>",
+        "<!--  <link th:href=\"@{/static/eams-ui/css/eams-ui-home.min.css}\" rel=\"stylesheet\"/>-->",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui.min.css?v=00012\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui-plugin.min.css?v=00010\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/default.css?v=00014\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/iconfont.css\" />",
+        "<script src=\"/student/static/eams-ui/js/html5shiv.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/respond.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/eams-ui.js?v=00017\"></script>",
+        "<script src=\"/student/static/eams-ui/js/eams-ui.zh.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/iconfont.js\"></script>",
+        "<script src=\"/student/static/eams-ui/js/global-iconfont.js?v=00000\"></script>",
+        "<script type=\"text/javascript\" src=\"/student/static/eams-ui/js/DOMPurify/purify.min.js?v=02\"></script>",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/font-awesome.min.css\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui-home.css?v=05\" />",
+        "<script src=\"/student/static/eams-ui/js/require.js\"></script>",
+        "data.copyright = 'Copyright \\xA9 2024 \\u5B89\\u5FBD\\u5927\\u5B66\\u6559\\u52A1\\u5904';",
+        "text: window.CONTEXT_PATH + '/static/eams-ui/js/text'",
+        "<script src=\"/student/static/eams-ui/js/eams-ui-home.js\"></script>",
+        "<script src=\"/student/static/eams-ui/js/require.js\"></script>"
+      ]
+    }
+  },
+  {
+    "name": "安庆师范大学",
+    "type": "eams",
+    "sources": [
+      {
+        "repository": "https://github.com/HualiNox/AISchedule",
+        "revision": "1c73ff77da04b249ab56271b7a4741191bdea90b",
+        "path": "localTools/code/provider.js",
+        "sourceUrl": "https://github.com/HualiNox/AISchedule/blob/1c73ff77da04b249ab56271b7a4741191bdea90b/localTools/code/provider.js",
+        "sha256": "b54fadba81de861693d1da49b08e3550615f3de6fbb2f250afde51c8fc40b258",
+        "updated": "2024-12-14T18:48:32+08:00"
+      }
+    ],
+    "basis": "School-specific official host and course-table contracts; current official login exposes eams-ui assets. No version or import availability inferred.",
+    "referenceLicense": "unlicensed",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://jwxt.aqnu.edu.cn/student/login",
+      "finalUrl": "https://jwxt.aqnu.edu.cn/student/login",
+      "sha256": "3ef493c4fd3b8dc0b6720741ccbdb3e3daabcfca63fb32308e48c14b66b43703",
+      "observedAt": "2026-10-23T06:46:47.230970+00:00",
+      "status": 200,
+      "unauthenticated": true,
+      "identityLines": [
+        "<title>登入页面</title>",
+        "<!--<title layout:title-pattern=\"$DECORATOR_TITLE - $CONTENT_TITLE\" th:text=\"#{system.title}\">教务系统</title>-->",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui.min.css?v=00010\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui-plugin.min.css?v=00010\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/default.css?v=00012\" />",
+        "<script src=\"/student/static/eams-ui/js/html5shiv.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/respond.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/eams-ui.min.js?v=00016\"></script>",
+        "<script src=\"/student/static/eams-ui/js/eams-ui.zh.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/iconfont.js\"></script>",
+        "//    eamsUiUtil.cascadeScrollParentWindowToTop(window);",
+        "<!--  <link th:href=\"${cdnPath} + '/static/eams-ui/css/eams-ui-home.min.css'\" rel=\"stylesheet\"/>-->",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui-home.min.css\" />",
+        "<!--<div class=\"row copyright-div\">-->",
+        "<!--<h6 class=\"copyright\" th:utext=\"${systemCopyright}\" style=\"color:#ccc;\">-->",
+        "var href = window.CONTEXT_PATH + '/static/eams-ui/' + themeName;",
+        "var cssArray = ['eams-ui.min.css', 'eams-ui-home.min.css', 'eams-ui-plugin.min.css', 'eams-ui.css', 'eams-ui-home.css', 'eams-ui-plugin.css'];"
+      ]
+    }
+  },
+  {
+    "name": "安徽工业大学",
+    "type": "cf",
+    "sources": [
+      {
+        "repository": "https://github.com/no-hair-student/AHUT-Helper",
+        "revision": "b14ac9efc7a030725210b09fb7fb7a1be7c2ad66",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/no-hair-student/AHUT-Helper/blob/b14ac9efc7a030725210b09fb7fb7a1be7c2ad66/README.md",
+        "sha256": "5b6837ffa7ad8f5c8ddd60a1a75273e0a4aa9dc0a6f0c2299f8d02aab7bf96f7",
+        "updated": "2026-09-13T23:11:25+08:00"
+      }
+    ],
+    "basis": "Explicit school full name and 青果教务 course synchronization. Fixed tree contains README only; label does not create an importer.",
+    "referenceLicense": "unlicensed",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "阜阳师范大学",
+    "type": "cf",
+    "sources": [
+      {
+        "repository": "https://github.com/shixiaogaoya/Mi-schedule",
+        "revision": "7bb15a5696111e76636685fa140f07b6088071a8",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/shixiaogaoya/Mi-schedule/blob/7bb15a5696111e76636685fa140f07b6088071a8/README.md",
+        "sha256": "0e5748d8dcac4f6bbd322e65fdd3633ec5bc27cae8cfb48fa797cff3710b2bd0",
+        "updated": "2025-03-28T21:02:48+08:00"
+      }
+    ],
+    "basis": "Explicit new 青果教务 statement. GPL implementation is not copied; no clock/calendar constants adopted.",
+    "referenceLicense": "GPL-3.0",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "淮北理工学院",
+    "type": "qz",
+    "sources": [
+      {
+        "repository": "https://github.com/XIA020/hblgxy-edu-backend",
+        "revision": "ac99846b0080a81ccb5e45e3ace21f465edb0f86",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/XIA020/hblgxy-edu-backend/blob/ac99846b0080a81ccb5e45e3ace21f465edb0f86/README.md",
+        "sha256": "86d41aa31b7dc0963d800a04bf136088a4ca20ba1badf0e163c7903bcc7238c7",
+        "updated": "2026-08-22T00:43:07+08:00"
+      }
+    ],
+    "basis": "Explicit 强智教务 school statement; placeholder/unsafe parser is not imported and does not establish availability.",
+    "referenceLicense": "unlicensed",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "淮北师范大学",
+    "type": "zf_new",
+    "sources": [
+      {
+        "repository": "https://github.com/Zguigo00/hnu-student-assistant",
+        "revision": "3182cb0978775004efe56c0aed92a2a3bedda7a7",
+        "path": "backend/schedule/service.go",
+        "sourceUrl": "https://github.com/Zguigo00/hnu-student-assistant/blob/3182cb0978775004efe56c0aed92a2a3bedda7a7/backend/schedule/service.go",
+        "sha256": "bbf2a10ed9f8b05ead90172879ec528ae636691086151fffe807f1718bbf393f",
+        "updated": "2026-08-05T09:38:11+08:00"
+      }
+    ],
+    "basis": "Official current login declares zfsoft, 正方软件股份有限公司 and V-9.0; personal kbcx contract independently corroborates the school host. No importer inferred.",
+    "referenceLicense": "MIT",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://jwglxt.chnu.edu.cn/xtgl/login_slogin.html",
+      "finalUrl": "https://jwglxt.chnu.edu.cn/xtgl/login_slogin.html",
+      "sha256": "439451969ef1a46ff010da4c3ec58aab3ac6c3deb4203a3e23736a8622496344",
+      "observedAt": "2026-10-23T07:28:39.658092+00:00",
+      "status": 200,
+      "unauthenticated": true,
+      "identityLines": [
+        "<title>教学管理信息服务平台</title>",
+        "<meta name=\"Copyright\" content=\"zfsoft\" />",
+        "<p>版权所有&#169; Copyright 1999-2026 正方软件股份有限公司　　中国·杭州西湖区三墩镇数治路99号901室&nbsp;&nbsp;&nbsp;版本V-9.0</p>"
+      ]
+    }
+  },
+  {
+    "name": "安徽师范大学",
+    "type": "eams",
+    "sources": [
+      {
+        "repository": "https://github.com/AHNU2019/curriculum_to_ics",
+        "revision": "861c35df0f436089013d02e64409a4ac99cd97c1",
+        "path": "ahnu_course.py",
+        "sourceUrl": "https://github.com/AHNU2019/curriculum_to_ics/blob/861c35df0f436089013d02e64409a4ac99cd97c1/ahnu_course.py",
+        "sha256": "d7c6da57e44a584c33e4b68203d7aad42bf115b389e267836d02f626afb2ab66",
+        "updated": "2020-09-17T20:41:22+08:00"
+      }
+    ],
+    "basis": "School-specific course-table source corroborated by current official jw.ahnu.edu.cn login eams-ui assets. Old script constants and limited schedule-text parser are not adopted.",
+    "referenceLicense": "MIT",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://jw.ahnu.edu.cn/student/login",
+      "finalUrl": "https://jw.ahnu.edu.cn/student/login",
+      "sha256": "98ac0638707b0454cf67facab2fe9f624f602c33020dcdd8b216ea437513c12c",
+      "observedAt": "2026-10-23T07:41:26.865395+00:00",
+      "status": 200,
+      "unauthenticated": true,
+      "identityLines": [
+        "<title>登入页面</title>",
+        "<!--<title layout:title-pattern=\"$DECORATOR_TITLE - $CONTENT_TITLE\" th:text=\"#{system.title}\">教务系统</title>-->",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui.min.css?v=00010\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui-plugin.min.css?v=00010\" />",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/default.css?v=00012\" />",
+        "<script src=\"/student/static/eams-ui/js/html5shiv.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/respond.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/eams-ui.min.js?v=00016\"></script>",
+        "<script src=\"/student/static/eams-ui/js/eams-ui.zh.min.js?v=00002\"></script>",
+        "<script src=\"/student/static/eams-ui/js/iconfont.js\"></script>",
+        "<script type=\"text/javascript\" src=\"/student/static/eams-ui/js/DOMPurify/purify.min.js?v=02\"></script>",
+        "//    eamsUiUtil.cascadeScrollParentWindowToTop(window);",
+        "<!--  <link th:href=\"${cdnPath} + '/static/eams-ui/css/eams-ui-home.min.css'\" rel=\"stylesheet\"/>-->",
+        "<link rel=\"stylesheet\" href=\"/student/static/eams-ui/css/eams-ui-home.min.css\" />",
+        "<!--<div class=\"row copyright-div\">-->",
+        "<!--<h6 class=\"copyright\" th:utext=\"${systemCopyright}\" style=\"color:#ccc;\">-->",
+        "var href = window.CONTEXT_PATH + '/static/eams-ui/' + themeName;",
+        "var cssArray = ['eams-ui.min.css', 'eams-ui-home.min.css', 'eams-ui-plugin.min.css', 'eams-ui.css', 'eams-ui-home.css', 'eams-ui-plugin.css'];"
+      ]
+    }
+  },
+  {
+    "name": "福建江夏学院",
+    "type": "zf_new",
+    "sources": [],
+    "basis": "学校官方教务登录页版权为正方软件股份有限公司、版本V-9.0；仅厂商身份，不以金智CAS代替教务系统，不新增导入支持声明。",
+    "referenceLicense": "Official public-page identity evidence only; no upstream code copied",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://jwxt.fjjxu.edu.cn/jwglxt/xtgl/login_slogin.html",
+      "finalUrl": "https://jwxt.fjjxu.edu.cn/jwglxt/xtgl/login_slogin.html",
+      "sha256": "6ad028191eff640a1c4cc1f440c0871692b1dcf21c85f199fe101b0b139c4f7b",
+      "observedAt": "2026-10-25T12:43:27.858144+00:00",
+      "status": 200,
+      "unauthenticated": true,
+      "identityLines": [
+        "版权所有 Copyright1999-2026 正方软件股份有限公司；版本V-9.0"
+      ],
+      "title": "教学管理信息服务平台"
+    }
+  },
+  {
+    "name": "福州外语外贸学院",
+    "type": "zf_new",
+    "sources": [],
+    "basis": "学校教务处当前可访问的“正方教务管理系统”说明页直接链接本校portal.fzfu.edu.cn/jwglxt，匿名访问重定向的登录页明确标注正方软件股份有限公司、版本V-9.0；据此细化为新正方。仅厂商/版本证据，不代表课表接口完整性或账号已验证。",
+    "referenceLicense": "Official public-page identity evidence only; no upstream code copied",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://www.fzfu.com/jwc/info/1086/1463.htm",
+      "sha256": "2ed65dd5c9c220b9346c7906538009dd8fb40268d4ed85ce9c0b0befc50616cf",
+      "observedAt": "2026-10-26T01:16:59.101637+00:00",
+      "identityLines": [
+        "<title>正方教务管理系统-福州外语外贸学院-教务处</title><META Name=\"keywords\" Content=\"福州外语外贸学院-教务处,教学系统,正方教务管理系统,正方,教务管理系统,教务管理,教务,管理,系统\" />",
+        "<p><a title=\"正方教务管理系统\" href=\"http://portal.fzfu.edu.cn/jwglxt\" target=\"_blank\">http://portal.fzfu.edu.cn/jwglxt</a></p>",
+        "<p class=\"text\" style=\"color: #666;padding-bottom: 10px;\">福州外语外贸学院教务处 版权所有</p><p class=\"text\" style=\"color: #666;padding-bottom: 10px;\">闽ICP备11014646号-1</p>"
+      ],
+      "finalUrl": "https://www.fzfu.com/jwc/info/1086/1463.htm",
+      "status": 200,
+      "unauthenticated": true,
+      "linkedLoginPage": {
+        "url": "http://portal.fzfu.edu.cn/jwglxt",
+        "finalUrl": "http://portal.fzfu.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "sha256": "ce2e31c704836f17e807b45f39997a22d231cc37f48f17526a50f0f9e3037de2",
+        "observedAt": "2026-10-26T01:16:59.103016+00:00",
+        "status": 200,
+        "unauthenticated": true,
+        "identityLines": [
+          "<p>版权所有&#169; Copyright 1999-2026 正方软件股份有限公司　　中国·杭州西湖区三墩镇数治路99号901室&nbsp;&nbsp;&nbsp;版本V-9.0</p>"
+        ]
+      }
+    }
+  },
+  {
+    "name": "三明学院",
+    "type": "zf_new",
+    "sources": [
+      {
+        "repository": "https://github.com/zaochih/zf-to-ics",
+        "revision": "f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/zaochih/zf-to-ics/blob/f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1/README.md",
+        "sha256": "b7a75ea6b5c339db6311e598f6bbfa398cd59108508c6d55e83cc07876fb6c19"
+      }
+    ],
+    "basis": "学校教务处官网确认fjsmu.edu.cn域名体系；固定来源README明确jwxxt.fjsmu.edu.cn为三明部署示例。本校匿名教务登录页直接显示正方软件股份有限公司、版本V-9.0。该证据只确认厂商版本，不代替本科账号/课表完整性验证。",
+    "referenceLicense": "Official identity evidence and public protocol metadata only; no upstream code copied",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://www.smxy.cn/jwc/2023/0705/c1473a139760/page.htm",
+      "finalUrl": "https://www.smxy.cn/jwc/2023/0705/c1473a139760/page.htm",
+      "sha256": "9d7f084e5bf9b5577c3058f3fe88b2b6b5cc0c99eebd639c90b6c5c34d5a2835",
+      "status": 200,
+      "unauthenticated": true,
+      "observedAt": "2026-10-26T03:51:47.887656+00:00",
+      "identityLines": [
+        "“课表查询”权限已开放，请各位老师及时登陆教务",
+        "版权所有: 三明学院教务处",
+        "地址：三明市三元区荆东路25号     闽ICP备09009580号"
+      ],
+      "domainLinkOnly": true,
+      "studentRouteProvenByThisNotice": false,
+      "linkedLoginPage": {
+        "url": "http://jwxxt.fjsmu.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "finalUrl": "http://jwxxt.fjsmu.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "sha256": "982f1e02a8a9ee7d46437bbe7e0699a516ec5abf855c79a58d5c909971f89ea1",
+        "status": 200,
+        "unauthenticated": true,
+        "observedAt": "2026-10-26T03:51:48.232302+00:00",
+        "identityLines": [
+          "版权所有© Copyright 1999-2025 正方软件股份有限公司　　中国·杭州西湖区三墩镇数治路99号901室   版本V-9.0"
+        ],
+        "linkBasis": "Explicit fixed README deployment URL and official domain-family link, not a claim that the notice directly links this student endpoint."
+      }
+    }
+  }
+]

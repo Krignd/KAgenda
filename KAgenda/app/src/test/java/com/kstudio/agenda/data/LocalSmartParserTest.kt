@@ -210,7 +210,7 @@ class LocalSmartParserTest {
         assertEquals(1, courses.size)
         assertEquals(2, courses[0].dayOfWeek)
         assertEquals(3, courses[0].startPeriod)
-        assertTrue(courses[0].weeksRaw.isNotBlank())
+        assertTrue(courses[0].weeksRaw.isBlank())
     }
 
     @Test

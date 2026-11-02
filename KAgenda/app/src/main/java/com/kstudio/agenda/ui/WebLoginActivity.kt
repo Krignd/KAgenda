@@ -11,6 +11,10 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebChromeClient
+import android.webkit.ConsoleMessage
+import android.webkit.WebResourceError
+import com.kstudio.agenda.data.WebViewLanguageDiagnostics
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -21,14 +25,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.AlertDialog
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -393,9 +397,26 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                         overScrollMode = android.view.View.OVER_SCROLL_NEVER
                         // 页面脚本会探测桥的存在，这里给一个空实现即可
                         addJavascriptInterface(KebiaoBridge { _, _ -> }, "KebiaoBridge")
+                        webChromeClient = object : WebChromeClient() {
+                            override fun onConsoleMessage(message: ConsoleMessage): Boolean {
+                                WebViewLanguageDiagnostics.console(message, "WebLogin")
+                                return super.onConsoleMessage(message)
+                            }
+                        }
                         webViewClient = object : WebViewClient() {
+                            override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                                WebViewLanguageDiagnostics.resourceError(request, error.errorCode, false, "WebLogin")
+                                super.onReceivedError(view, request, error)
+                            }
+
+                            override fun onReceivedHttpError(view: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                                WebViewLanguageDiagnostics.resourceError(request, response.statusCode, true, "WebLogin")
+                                super.onReceivedHttpError(view, request, response)
+                            }
+
                             override fun onPageFinished(view: WebView, url: String?) {
                                 AppLog.d("WebLogin", "加载完成: ${url?.take(90)}")
+                                WebViewLanguageDiagnostics.environment(view, "WebLogin")
                                 view.evaluateJavascript(JsScripts.HOOKS, null)
                                 // 滑块触摸修复：每个页面都注入一次（登录页/认证页都可能出现滑块）。
                                 // 幂等，重复加载不会叠加副作用。返回值记入日志，便于排查是否生效。
@@ -424,6 +445,7 @@ private fun WebLoginScreen(onBack: () -> Unit, onDone: (Boolean) -> Unit) {
                                 request: WebResourceRequest,
                             ): WebResourceResponse? {
                                 val u = request.url?.toString().orEmpty()
+                                WebViewLanguageDiagnostics.request(request, "WebLogin")
                                 // 外部 CDN（jsdelivr）在国内网络常被墙/挂起；
                                 // <link> 样式表会阻塞整页渲染（白屏），而页面自带本地 vant.css，
                                 // 这里直接返回空 CSS 跳过它

@@ -261,7 +261,7 @@ object ScheduleParser {
     private fun normalizeWeeks(raw: String): String {
         val t = raw.trim()
         if (t.isEmpty()) return ""
-        return if (t.matches(Regex("^[0-9,\\-]+$"))) t else ""
+        return Course.encodeWeeks(Course.parseWeeks(t).flatMap { it.toList() })
     }
 
     /**
@@ -315,7 +315,7 @@ object ScheduleParser {
 
     private val roomPattern = Regex("楼|室|场|馆|机房|中心|R[0-9]|区")
     private val weeksPattern =
-        Regex("\\[?([0-9]{1,2}(?:-[0-9]{1,2})?(?:,[0-9]{1,2}(?:-[0-9]{1,2})?)*)周\\]?")
+        Regex("\\[?([0-9]{1,2}(?:-[0-9]{1,2})?(?:周?[,，][0-9]{1,2}(?:-[0-9]{1,2})?)*)周\\]?")
 
     /** 从多个接口捕获信封中解析课程（当前解析 getMyScheduleDetail 的响应） */
     fun parseApiEnvelopes(raws: List<String>): List<Course> {

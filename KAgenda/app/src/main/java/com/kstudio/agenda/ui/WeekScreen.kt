@@ -35,7 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,12 +45,27 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.kstudio.agenda.ui.components.CalendarMotion
+import com.kstudio.agenda.ui.components.CalendarFrame
+import com.kstudio.agenda.ui.theme.dialogAnchor
+import com.kstudio.agenda.ui.components.CalendarLabel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import com.kstudio.agenda.ui.components.cardBaseColor
+import com.kstudio.agenda.ui.components.cardGlassBorder
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+import com.kstudio.agenda.ui.theme.glassAccentColor
+import com.kstudio.agenda.ui.theme.glassFrost
+import com.kstudio.agenda.ui.theme.glassSheen
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.onSizeChanged
+import com.kstudio.agenda.ui.components.fittedPeriodHeight
+import com.kstudio.agenda.ui.components.fittedMinuteScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -122,10 +137,14 @@ fun WeekScreen(
     // 复制课程（用原课程信息预填新增页面）
     var copyFrom by remember { mutableStateOf<Course?>(null) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
+    val agendaAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
     var editorOpen by remember { mutableStateOf(false) }
     // 双指缩放（0.7x~2x）；默认列宽：课程表模式一屏显示周一到周五，时间线模式一屏显示周一至周日
     val screenW = LocalConfiguration.current.screenWidthDp.dp
     var zoom by rememberSaveable { mutableStateOf(1f) }
+    val density = LocalDensity.current
+    var viewportHeight by remember { mutableStateOf(600.dp) }
+    val gridHeight = (viewportHeight - 112.dp).coerceAtLeast(120.dp)
 
     val currentWeek = week
     // 没有课表数据时不再整页早退：仍保留周导航与本地日程（课程网格区变为同步引导）
@@ -138,7 +157,9 @@ fun WeekScreen(
     val flashDate = flash?.let { LocalDate.ofEpochDay(it.epochDay) }
     val flashTitle = flash?.title.orEmpty()
 
-    Column(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize().onSizeChanged {
+        viewportHeight = with(density) { it.height.toDp() }
+    }) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -146,7 +167,7 @@ fun WeekScreen(
             IconButton(onClick = { vm.stepWeek(-1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevWeek)
             }
-            Text(
+            CalendarLabel(
                 text = buildString {
                     val weekNo = currentWeek?.weekNo ?: vm.teachingWeekOf(selDate)
                     if (weekNo != null) append(t.weekNo(weekNo))
@@ -170,117 +191,123 @@ fun WeekScreen(
             }
         }
 
-        // 纵向滚动容器：周网格 + 本周日程同屏滚动（滚动位置由页面级保持）
-        Column(
-            Modifier
-                .fillMaxSize()
-                .pinchZoom { f -> zoom = (zoom * f).coerceIn(0.7f, 2f) }
-                .verticalScroll(contentScroll)
-        ) {
-            // 周网格区：先在内层横向滚动；已滑到边界时继续横滑才切周
-            // （无课表数据时跳过网格，直接显示下方的同步引导与日程）
-            if (currentWeek != null) {
-                Column(
-                    Modifier.swipeStep(
-                        key = "week-grid",
-                        canStep = { dir ->
-                            val max = gridScroll.maxValue
-                            when {
-                                max <= 0 || max == Int.MAX_VALUE -> true
-                                dir > 0 -> gridScroll.value >= max
-                                else -> gridScroll.value <= 0
-                            }
-                        },
-                        onStep = { vm.stepWeek(it) },
-                    )
-                ) {
-                    if (timetableMode) {
-                        WeekGrid(
-                            week = currentWeek,
-                            hScroll = gridScroll,
-                            screenW = screenW,
-                            zoom = zoom,
-                            days = settings.weekDays,
-                            flashDate = flashDate,
-                            flashTitle = flashTitle,
-                            onLongPressDate = { d ->
-                                if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday)
-                                else rescheduleSource = d
-                            },
-                        ) { selected = it }
-                    } else {
-                        // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
-                        val (timelineStartMin, timelineEndMin) = settings.timelineWindow
-                        WeekTimelineGrid(
-                            week = currentWeek,
-                            hScroll = gridScroll,
-                            screenW = screenW,
-                            zoom = zoom,
-                            days = settings.weekDays,
-                            startMin = timelineStartMin,
-                            endMin = timelineEndMin,
-                            flashDate = flashDate,
-                            flashTitle = flashTitle,
-                            onLongPressDate = { d ->
-                                if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday)
-                                else rescheduleSource = d
-                            },
-                        ) { selected = it }
-                    }
-                }
-            }
-
-            // ---------------- 我的日程（本周，按时间排序） ----------------
-            // 该区域内横滑始终切换周（不在课表上，无需让横向滚动先消费）
-            val weekEvents = agenda
-                .filter { ev -> (0L..6L).any { off -> ev.occursOn(monday.plusDays(off)) } }
-                .sortedWith(compareBy({ it.dateEpochDay }, { com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
+        CalendarMotion(CalendarFrame(monday, currentWeek), Modifier.weight(1f).fillMaxWidth()) { frame ->
+            val monday = frame.date
+            val currentWeek = frame.data
+            // 纵向滚动容器：周网格 + 本周日程同屏滚动（滚动位置由页面级保持）
             Column(
                 Modifier
-                    .swipeStep(key = "week-agenda", onStep = { vm.stepWeek(it) })
-                    .padding(horizontal = 16.dp)
+                    .fillMaxSize()
+                    .pinchZoom { f -> zoom = (zoom * f).coerceIn(0.7f, 2f) }
+                    .verticalScroll(contentScroll)
             ) {
-                Spacer(Modifier.height(10.dp))
-                // 无课表数据：先给出同步引导（不影响下方日程展示）
-                if (currentWeek == null) {
-                    SyncHint(sync)
-                    Spacer(Modifier.height(12.dp))
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = t.myAgendaWeek,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.weight(1f))
-                    TextButton(onClick = {
-                        editing = null
-                        editorOpen = true
-                    }) { Text(t.addAgendaBtn) }
-                }
-                if (weekEvents.isEmpty()) {
-                    Text(
-                        text = t.emptyAgendaHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    for (ev in weekEvents) {
-                        val d = ev.date
-                        AgendaCard(
-                            event = ev,
-                            dateLabel = "${d.monthValue}/${d.dayOfMonth} ${t.weekdayShort(d.dayOfWeek.value)}",
-                            flash = flashDate != null && flashTitle.isNotBlank() &&
-                                ev.title.trim() == flashTitle && ev.coversDate(flashDate),
-                            onClick = {
-                                editing = ev
-                                editorOpen = true
+                // 周网格区：先在内层横向滚动；已滑到边界时继续横滑才切周
+                // （无课表数据时跳过网格，直接显示下方的同步引导与日程）
+                if (currentWeek != null) {
+                    Column(
+                        Modifier.swipeStep(
+                            key = "week-grid",
+                            canStep = { dir ->
+                                val max = gridScroll.maxValue
+                                when {
+                                    max <= 0 || max == Int.MAX_VALUE -> true
+                                    dir > 0 -> gridScroll.value >= max
+                                    else -> gridScroll.value <= 0
+                                }
                             },
+                            onStep = { vm.stepWeek(it) },
                         )
-                        Spacer(Modifier.height(10.dp))
+                    ) {
+                        if (timetableMode) {
+                            WeekGrid(
+                                week = currentWeek,
+                                hScroll = gridScroll,
+                                screenW = screenW,
+                                zoom = zoom,
+                                availableHeight = gridHeight,
+                                days = settings.weekDays,
+                                flashDate = flashDate,
+                                flashTitle = flashTitle,
+                                onLongPressDate = { d ->
+                                    if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday)
+                                    else rescheduleSource = d
+                                },
+                            ) { selected = it }
+                        } else {
+                            // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
+                            val (timelineStartMin, timelineEndMin) = settings.timelineWindow
+                            WeekTimelineGrid(
+                                week = currentWeek,
+                                hScroll = gridScroll,
+                                screenW = screenW,
+                                zoom = zoom,
+                                availableHeight = gridHeight,
+                                days = settings.weekDays,
+                                startMin = timelineStartMin,
+                                endMin = timelineEndMin,
+                                flashDate = flashDate,
+                                flashTitle = flashTitle,
+                                onLongPressDate = { d ->
+                                    if (vm.coursesRawOnDate(d).isEmpty()) vm.message(t.noCoursesToday)
+                                    else rescheduleSource = d
+                                },
+                            ) { selected = it }
+                        }
                     }
                 }
-                Spacer(Modifier.height(24.dp))
+
+                // ---------------- 我的日程（本周，按时间排序） ----------------
+                // 该区域内横滑始终切换周（不在课表上，无需让横向滚动先消费）
+                val weekEvents = agenda
+                    .filter { ev -> (0L..6L).any { off -> ev.occursOn(monday.plusDays(off)) } }
+                    .sortedWith(compareBy({ it.dateEpochDay }, { com.kstudio.agenda.model.FuzzyTime.sortKey(it.startTime) }))
+                Column(
+                    Modifier
+                        .swipeStep(key = "week-agenda", onStep = { vm.stepWeek(it) })
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Spacer(Modifier.height(10.dp))
+                    // 无课表数据：先给出同步引导（不影响下方日程展示）
+                    if (currentWeek == null) {
+                        SyncHint(sync)
+                        Spacer(Modifier.height(12.dp))
+                    }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = t.myAgendaWeek,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.weight(1f))
+                        TextButton(modifier = Modifier.dialogAnchor(agendaAnchor), onClick = {
+                            editing = null
+                            editorOpen = true
+                        }) { Text(t.addAgendaBtn) }
+                    }
+                    if (weekEvents.isEmpty()) {
+                        Text(
+                            text = t.emptyAgendaHint,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        for (ev in weekEvents) {
+                            val d = ev.date
+                            AgendaCard(
+                                event = ev,
+                                dateLabel = "${d.monthValue}/${d.dayOfMonth} ${t.weekdayShort(d.dayOfWeek.value)}",
+                                flash = flashDate != null && flashTitle.isNotBlank() &&
+                                    ev.title.trim() == flashTitle && ev.coversDate(flashDate),
+                                onClick = {
+                                    editing = ev
+                                    editorOpen = true
+                                },
+                            )
+                            Spacer(Modifier.height(10.dp))
+                        }
+                    }
+                    Spacer(Modifier.height(24.dp))
+                }
             }
         }
     }
@@ -359,6 +386,7 @@ fun WeekScreen(
 
     if (editorOpen) {
         AgendaEditorDialog(
+            origin = if (editing == null) agendaAnchor.bounds else null,
             initial = editing,
             defaultDate = selDate,
             onDismiss = { editorOpen = false },
@@ -424,6 +452,9 @@ private fun WeekHeaderRow(
                 modifier = Modifier
                     .width(dayWidth)
                     .height(58.dp)
+                    .then(if (LocalGlassEnabled.current && isToday) Modifier
+                        .padding(2.dp).clip(RoundedCornerShape(14.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer).glassSheen() else Modifier)
                     .combinedClickable(
                         onClick = {},
                         onLongClick = onLongPressDate?.let { lp -> { lp(date) } },
@@ -452,7 +483,11 @@ private fun WeekHeaderRow(
                 Text(
                     text = holiday ?: " ",
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                    color = if (holiday != null) MaterialTheme.colorScheme.error else Color.Transparent,
+                    color = when {
+                        HolidayTable.isWorkday(date) -> MaterialTheme.colorScheme.primary
+                        holiday != null -> MaterialTheme.colorScheme.error
+                        else -> Color.Transparent
+                    },
                     maxLines = 1,
                 )
             }
@@ -466,6 +501,7 @@ private fun WeekGrid(
     hScroll: ScrollState,
     screenW: Dp,
     zoom: Float,
+    availableHeight: Dp,
     days: Int = 5,
     flashDate: LocalDate? = null,
     flashTitle: String = "",
@@ -473,7 +509,7 @@ private fun WeekGrid(
     onSelect: (Course) -> Unit,
 ) {
     // 默认列宽按设置的天数（5=周一~周五 / 7=周一~周日）撑满屏宽；双指缩放可调整（0.7x~2x）
-    val rowHeight = 58.dp * zoom
+    val rowHeight = fittedPeriodHeight(availableHeight.value, PeriodTimes.count, LocalDensity.current.fontScale).dp * zoom
     val timeColWidth = 52.dp
     val dayWidth = ((screenW - timeColWidth) / days.toFloat()) * zoom
 
@@ -508,6 +544,14 @@ private fun WeekGrid(
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            if (rowHeight < 45.dp) {
+                                Text(
+                                    text = PeriodTimes.format(PeriodTimes.startOf(p)) + "–" + PeriodTimes.format(PeriodTimes.endOf(p)),
+                                    fontSize = 7.sp, lineHeight = 9.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                )
+                            } else {
                             Text(
                                 text = PeriodTimes.format(PeriodTimes.startOf(p)),
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
@@ -518,6 +562,7 @@ private fun WeekGrid(
                                 style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                             )
+                            }
                         }
                     }
                 }
@@ -615,46 +660,56 @@ private fun DayColumn(
         for ((course, row, span) in layout.second) {
             // CoursePalette 返回 Android 原生 ARGB Int，这里转换为 Compose Color
             val color = Color(CoursePalette.colorFor(course))
+            val tintAlpha = if (LocalGlassEnabled.current) 0.09f else 0.22f
             val flashing = flashTitle.isNotBlank() && course.title.trim() == flashTitle
             val pulse = rememberFlashPulse(flashing)
-            Box(
+            BoxWithConstraints(
                 Modifier
                     .offset(y = rowHeight * row)
                     .width(width)
                     .height(rowHeight * span)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(color.copy(alpha = 0.22f + if (flashing) 0.33f * pulse else 0f))
+                    .glassFrost(RoundedCornerShape(10.dp))
+                    .then(if (LocalGlassEnabled.current) Modifier.background(cardBaseColor()) else Modifier)
+                    .background(color.copy(alpha = tintAlpha + if (flashing) 0.33f * pulse else 0f))
+                    .glassSheen()
+                    .cardGlassBorder(RoundedCornerShape(10.dp))
                     .clickable { onSelect(course) }
-                    .padding(6.dp)
+                    .padding(5.dp)
             ) {
+                val showTime = maxHeight >= 28.dp
+                val showRoom = course.room.isNotBlank() && maxHeight >= 42.dp
+                val reserved = (if (showTime) 12.dp else 0.dp) + (if (showRoom) 12.dp else 0.dp)
+                val lineHeight = with(LocalDensity.current) { 14.sp.toDp() }
+                val titleLines = ((maxHeight - reserved) / lineHeight).toInt().coerceIn(1, 3)
                 Column {
                     Text(
                         text = markedTitle(course),
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 3,
+                        maxLines = titleLines,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    if (course.room.isNotBlank()) {
-                        Spacer(Modifier.height(2.dp))
+                    if (showRoom) {
                         Text(
                             text = course.room,
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 12.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
+                            maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
                     // 课程块下方显示起止时间
-                    Spacer(Modifier.height(2.dp))
-                    Text(
-                        text = course.timeRange,
-                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                        color = color.copy(alpha = 0.95f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                    if (showTime) {
+                        Text(
+                            text = course.timeRange,
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 12.sp),
+                            color = glassAccentColor(color, color.copy(alpha = tintAlpha).compositeOver(cardBaseColor())),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
         }
@@ -663,7 +718,6 @@ private fun DayColumn(
 
 // ---------------------------------------------------------------- 时间线网格（非课程表模式）
 
-private const val MINUTE_SCALE = 0.85f            // 每 1 分钟 ≈ 0.85dp，方格大小与持续时间成正比
 
 private data class MinuteRange(val start: Int, val end: Int)
 
@@ -689,6 +743,7 @@ private fun WeekTimelineGrid(
     hScroll: ScrollState,
     screenW: Dp,
     zoom: Float,
+    availableHeight: Dp,
     startMin: Int,
     endMin: Int,
     days: Int = 5,
@@ -700,7 +755,8 @@ private fun WeekTimelineGrid(
     // 默认列宽按设置的天数（5/7）撑满屏宽；双指缩放只横向缩放（竖向保持 0.85dp/分）
     val timeColWidth = 56.dp
     val dayWidth = ((screenW - timeColWidth) / days.toFloat()) * zoom
-    val totalH = ((endMin - startMin) * MINUTE_SCALE).dp
+    val minuteScale = fittedMinuteScale(availableHeight.value, endMin - startMin, LocalDensity.current.fontScale) * zoom
+    val totalH = ((endMin - startMin) * minuteScale).dp
     // 首个整点刻度（起始恰为整点时从该整点开始）
     val firstHour = (startMin + 59) / 60
 
@@ -724,7 +780,7 @@ private fun WeekTimelineGrid(
                 Box(Modifier.width(timeColWidth).height(totalH)) {
                     var h = firstHour
                     while (h * 60 <= endMin) {
-                        val y = ((h * 60 - startMin) * MINUTE_SCALE).dp
+                        val y = ((h * 60 - startMin) * minuteScale).dp
                         Text(
                             text = timelineClock(h * 60),
                             modifier = Modifier.offset(x = 4.dp, y = y - 6.dp),
@@ -743,6 +799,7 @@ private fun WeekTimelineGrid(
                         height = totalH,
                         startMin = startMin,
                         endMin = endMin,
+                        minuteScale = minuteScale,
                         flashTitle = if (flashDate == dayDate) flashTitle else "",
                         onSelect = onSelect,
                     )
@@ -750,7 +807,8 @@ private fun WeekTimelineGrid(
             }
 
             // 整点参考线（Canvas 一次绘制，节点更少）
-            val lineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.35f)
+            val outline = MaterialTheme.colorScheme.outlineVariant
+            val lineColor = outline.copy(alpha = if (LocalGlassEnabled.current) outline.alpha * 0.8f else 0.35f)
             Canvas(
                 Modifier
                     .offset(x = timeColWidth)
@@ -760,7 +818,7 @@ private fun WeekTimelineGrid(
                 val lineH = 0.5.dp.toPx()
                 var h = firstHour
                 while (h * 60 <= endMin) {
-                    val y = ((h * 60 - startMin) * MINUTE_SCALE).dp.toPx()
+                    val y = ((h * 60 - startMin) * minuteScale).dp.toPx()
                     drawRect(
                         color = lineColor,
                         topLeft = Offset(0f, y),
@@ -771,19 +829,19 @@ private fun WeekTimelineGrid(
             }
 
             // ---------------- 当前时间横线（今天在本周时显示；计时器只重组线条本身） ----------------
-            TimelineNowLine(week, dayWidth, timeColWidth, startMin, endMin)
+            TimelineNowLine(week, dayWidth, timeColWidth, startMin, endMin, minuteScale)
         }
     }
 }
 
 /** 时间线模式当前时刻横线：自持 30 秒计时器，定时刷新只重组这一小块 */
 @Composable
-private fun TimelineNowLine(week: WeekSchedule, dayWidth: Dp, timeColWidth: Dp, startMin: Int, endMin: Int) {
+private fun TimelineNowLine(week: WeekSchedule, dayWidth: Dp, timeColWidth: Dp, startMin: Int, endMin: Int, minuteScale: Float) {
     val today = LocalDate.now()
     if (!week.containsDate(today)) return
     val nowMin = rememberNowMinutes()
     if (nowMin < startMin || nowMin > endMin) return
-    val nowY = ((nowMin - startMin) * MINUTE_SCALE).dp
+    val nowY = ((nowMin - startMin) * minuteScale).dp
     Box(
         Modifier
             .offset(x = timeColWidth + dayWidth * (today.dayOfWeek.value - 1), y = nowY)
@@ -800,6 +858,7 @@ private fun TimelineDayColumn(
     height: Dp,
     startMin: Int,
     endMin: Int,
+    minuteScale: Float,
     flashTitle: String = "",
     onSelect: (Course) -> Unit,
 ) {
@@ -836,21 +895,21 @@ private fun TimelineDayColumn(
             for (r in rests) {
                 drawRoundRect(
                     color = restColor,
-                    topLeft = Offset(insetX, ((r.start - startMin) * MINUTE_SCALE).dp.toPx() + insetY),
+                    topLeft = Offset(insetX, ((r.start - startMin) * minuteScale).dp.toPx() + insetY),
                     size = Size(
                         size.width - insetX * 2,
-                        ((r.end - r.start) * MINUTE_SCALE).dp.toPx() - insetY * 2,
+                        ((r.end - r.start) * minuteScale).dp.toPx() - insetY * 2,
                     ),
                     cornerRadius = radius,
                 )
             }
         }
         for (r in rests) {
-            val blockH = ((r.end - r.start) * MINUTE_SCALE).dp
+            val blockH = ((r.end - r.start) * minuteScale).dp
             if (blockH >= 34.dp) {
                 Box(
                     modifier = Modifier
-                        .offset(y = ((r.start - startMin) * MINUTE_SCALE).dp)
+                        .offset(y = ((r.start - startMin) * minuteScale).dp)
                         .fillMaxWidth()
                         .height(blockH),
                     contentAlignment = Alignment.Center,
@@ -869,18 +928,23 @@ private fun TimelineDayColumn(
             val (course, cs, ce) = positioned.item
             val laneWidth = width / positioned.columns.toFloat()
             val mins = ce - cs
-            val blockH = (mins * MINUTE_SCALE).dp
+            val blockH = (mins * minuteScale).dp
             val color = Color(CoursePalette.colorFor(course))
+            val tintAlpha = if (LocalGlassEnabled.current) 0.09f else 0.22f
             val flashing = flashTitle.isNotBlank() && course.title.trim() == flashTitle
             val pulse = rememberFlashPulse(flashing)
             BoxWithConstraints(
                 Modifier
-                    .offset(x = laneWidth * positioned.column, y = ((cs - startMin) * MINUTE_SCALE).dp)
+                    .offset(x = laneWidth * positioned.column, y = ((cs - startMin) * minuteScale).dp)
                     .width(laneWidth)
                     .height(blockH)
                     .padding(2.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(color.copy(alpha = 0.22f + if (flashing) 0.33f * pulse else 0f))
+                    .glassFrost(RoundedCornerShape(10.dp))
+                    .then(if (LocalGlassEnabled.current) Modifier.background(cardBaseColor()) else Modifier)
+                    .background(color.copy(alpha = tintAlpha + if (flashing) 0.33f * pulse else 0f))
+                    .glassSheen()
+                    .cardGlassBorder(RoundedCornerShape(10.dp))
                     .clickable { onSelect(course) }
                     .padding(5.dp)
             ) {
@@ -895,7 +959,9 @@ private fun TimelineDayColumn(
                         fontWeight = FontWeight.SemiBold, maxLines = titleLines, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false))
                     if (showRoom) Text(course.room, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    if (showTime) Text(course.timeRange, fontSize = 9.sp, lineHeight = 12.sp, color = color, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    if (showTime) Text(course.timeRange, fontSize = 9.sp, lineHeight = 12.sp,
+                        color = glassAccentColor(color, color.copy(alpha = tintAlpha).compositeOver(cardBaseColor())),
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

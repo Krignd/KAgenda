@@ -2,6 +2,8 @@ package com.kstudio.agenda.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,9 +33,9 @@ import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import com.kstudio.agenda.ui.theme.FrostedSurface as Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -44,15 +46,25 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import com.kstudio.agenda.ui.components.CalendarMotion
+import com.kstudio.agenda.ui.components.CalendarFrame
+import com.kstudio.agenda.ui.theme.dialogAnchor
+import com.kstudio.agenda.ui.components.CalendarLabel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.SyncUi
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+import com.kstudio.agenda.ui.theme.glassAccentColor
+import com.kstudio.agenda.ui.theme.glassFrost
+import com.kstudio.agenda.ui.theme.glassSheen
+import com.kstudio.agenda.ui.components.cardGlassBorder
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.CoursePalette
@@ -98,6 +110,8 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     val t = LocalStrings.current
 
     // 日程新建/编辑对话框状态
+    val agendaAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
+    val courseAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
     var editorOpen by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<AgendaEvent?>(null) }
     // 课程详情（点课程卡片）与课程修改（详情 → 「修改课程」）
@@ -143,7 +157,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             IconButton(onClick = { vm.stepWeek(-1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevWeek)
             }
-            Text(
+            CalendarLabel(
                 text = buildString {
                     // 无课表数据时用已保存的学期锚点推算周次（仍让用户知道现在是第几周）
                     val weekNo = currentWeek?.weekNo ?: vm.teachingWeekOf(selected)
@@ -167,7 +181,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             // 两个图标统一显式尺寸，避免新增按钮后保存图标看起来变小
             IconButton(
                 onClick = { addCourseFor = selected },
-                modifier = Modifier.size(44.dp),
+                modifier = Modifier.size(44.dp).dialogAnchor(courseAnchor),
             ) {
                 Icon(Icons.Filled.Add, contentDescription = t.btnAddCourse)
             }
@@ -179,137 +193,141 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
             }
         }
 
-        val courses = remember(selected, currentWeek, settings.periodTimesRaw) {
-            currentWeek?.coursesOnDate(selected).orEmpty()
-        }
-        // 显示覆盖当天的所有日程（含跨天长日程），按时间排序
-        val dayEvents = agenda
-            // 用 occursOn：重复日程（如“每周一”）与跨天长日程都能在命中的每一天出现
-            .filter { it.occursOn(selected) }
-            .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
-
-        if (timetableMode) {
-            LazyColumn(
-                modifier = Modifier.weight(1f).swipeStep(key = "day", onStep = { vm.stepDay(it) }),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                // 无课表数据：把同步引导放在列表首项，不影响下方日程展示
-                if (currentWeek == null) {
-                    item(key = "sync-hint") { SyncHint(sync) }
-                }
-                if (courses.isEmpty()) {
-                    item(key = "empty") {
-                        EmptyState(
-                            title = if (currentWeek == null) t.noScheduleTitle else t.noCoursesToday,
-                            hint = if (currentWeek == null) t.noScheduleHintDay else t.noCoursesTodayHint,
-                        )
-                    }
-                } else {
-                    items(courses, key = { it.id }) { course ->
-                        CourseCard(
-                            course = course,
-                            highlight = isOngoing(course, selected),
-                            flash = matchesFlash(course.title),
-                            onClick = { detailCourse = course },
-                        )
-                    }
-                }
-
-                // ---------------- 我的日程（本地自建，可增删改） ----------------
-                item(key = "agenda-header") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = t.myAgenda,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.weight(1f))
-                        TextButton(onClick = {
-                            editing = null
-                            editorOpen = true
-                        }) { Text(t.addAgendaBtn) }
-                    }
-                }
-                if (dayEvents.isEmpty()) {
-                    item(key = "agenda-empty") {
-                        Text(
-                            text = t.emptyAgendaHint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp),
-                        )
-                    }
-                } else {
-                    items(dayEvents, key = { "agenda-" + it.id }) { ev ->
-                        AgendaCard(event = ev, flash = matchesFlash(ev.title), onClick = {
-                            editing = ev
-                            editorOpen = true
-                        })
-                    }
-                }
+        CalendarMotion(CalendarFrame(selected, currentWeek), Modifier.weight(1f).fillMaxWidth()) { frame ->
+            val selected = frame.date
+            val currentWeek = frame.data
+            val courses = remember(selected, currentWeek, settings.periodTimesRaw) {
+                currentWeek?.coursesOnDate(selected).orEmpty()
             }
-        } else {
-            // ---------------- 混合模式：课程与日程按时间混排 ----------------
-            val merged = mergeDayItems(courses, dayEvents)
-            LazyColumn(
-                modifier = Modifier.weight(1f).swipeStep(key = "day", onStep = { vm.stepDay(it) }),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                // 无课表数据：把同步引导放在列表首项，不影响下方日程展示
-                if (currentWeek == null) {
-                    item(key = "sync-hint") { SyncHint(sync) }
-                }
-                item(key = "mixed-header") {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = t.mixedTitle,
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.weight(1f))
-                        TextButton(onClick = {
-                            editing = null
-                            editorOpen = true
-                        }) { Text(t.addAgendaBtn) }
+            // 显示覆盖当天的所有日程（含跨天长日程），按时间排序
+            val dayEvents = agenda
+                // 用 occursOn：重复日程（如“每周一”）与跨天长日程都能在命中的每一天出现
+                .filter { it.occursOn(selected) }
+                .sortedWith(compareBy({ FuzzyTime.sortKey(it.startTime) }, { it.dateEpochDay }))
+
+            if (timetableMode) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().swipeStep(key = "day", onStep = { vm.stepDay(it) }),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    // 无课表数据：把同步引导放在列表首项，不影响下方日程展示
+                    if (currentWeek == null) {
+                        item(key = "sync-hint") { SyncHint(sync) }
                     }
-                }
-                if (merged.isEmpty()) {
-                    item(key = "mixed-empty") {
-                        EmptyState(
-                            title = if (currentWeek == null) t.noScheduleTitle else t.noCoursesToday,
-                            hint = if (currentWeek == null) t.noScheduleHintDay else t.noCoursesTodayHint,
-                        )
-                    }
-                } else {
-                    items(merged, key = { item ->
-                        when (item) {
-                            is DayItem.CourseItem -> "c-" + item.course.id
-                            is DayItem.EventItem -> "e-" + item.event.id
+                    if (courses.isEmpty()) {
+                        item(key = "empty") {
+                            EmptyState(
+                                title = if (currentWeek == null) t.noScheduleTitle else t.noCoursesToday,
+                                hint = if (currentWeek == null) t.noScheduleHintDay else t.noCoursesTodayHint,
+                            )
                         }
-                    }) { item ->
-                        when (item) {
-                            is DayItem.CourseItem -> CourseCard(
-                                course = item.course,
-                                highlight = isOngoing(item.course, selected),
-                                flash = matchesFlash(item.course.title),
-                                onClick = { detailCourse = item.course },
+                    } else {
+                        items(courses, key = { it.id }) { course ->
+                            CourseCard(
+                                course = course,
+                                highlight = isOngoing(course, selected),
+                                flash = matchesFlash(course.title),
+                                onClick = { detailCourse = course },
                             )
-                            is DayItem.EventItem -> AgendaCard(
-                                event = item.event,
-                                flash = matchesFlash(item.event.title),
-                                onClick = {
-                                    editing = item.event
-                                    editorOpen = true
-                                },
+                        }
+                    }
+
+                    // ---------------- 我的日程（本地自建，可增删改） ----------------
+                    item(key = "agenda-header") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = t.myAgenda,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                            Spacer(Modifier.weight(1f))
+                            TextButton(modifier = Modifier.dialogAnchor(agendaAnchor), onClick = {
+                                editing = null
+                                editorOpen = true
+                            }) { Text(t.addAgendaBtn) }
+                        }
+                    }
+                    if (dayEvents.isEmpty()) {
+                        item(key = "agenda-empty") {
+                            Text(
+                                text = t.emptyAgendaHint,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 4.dp),
+                            )
+                        }
+                    } else {
+                        items(dayEvents, key = { "agenda-" + it.id }) { ev ->
+                            AgendaCard(event = ev, flash = matchesFlash(ev.title), onClick = {
+                                editing = ev
+                                editorOpen = true
+                            })
+                        }
+                    }
+                }
+            } else {
+                // ---------------- 混合模式：课程与日程按时间混排 ----------------
+                val merged = mergeDayItems(courses, dayEvents)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().swipeStep(key = "day", onStep = { vm.stepDay(it) }),
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    // 无课表数据：把同步引导放在列表首项，不影响下方日程展示
+                    if (currentWeek == null) {
+                        item(key = "sync-hint") { SyncHint(sync) }
+                    }
+                    item(key = "mixed-header") {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = t.mixedTitle,
+                                style = MaterialTheme.typography.titleSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.weight(1f))
+                            TextButton(modifier = Modifier.dialogAnchor(agendaAnchor), onClick = {
+                                editing = null
+                                editorOpen = true
+                            }) { Text(t.addAgendaBtn) }
+                        }
+                    }
+                    if (merged.isEmpty()) {
+                        item(key = "mixed-empty") {
+                            EmptyState(
+                                title = if (currentWeek == null) t.noScheduleTitle else t.noCoursesToday,
+                                hint = if (currentWeek == null) t.noScheduleHintDay else t.noCoursesTodayHint,
+                            )
+                        }
+                    } else {
+                        items(merged, key = { item ->
+                            when (item) {
+                                is DayItem.CourseItem -> "c-" + item.course.id
+                                is DayItem.EventItem -> "e-" + item.event.id
+                            }
+                        }) { item ->
+                            when (item) {
+                                is DayItem.CourseItem -> CourseCard(
+                                    course = item.course,
+                                    highlight = isOngoing(item.course, selected),
+                                    flash = matchesFlash(item.course.title),
+                                    onClick = { detailCourse = item.course },
+                                )
+                                is DayItem.EventItem -> AgendaCard(
+                                    event = item.event,
+                                    flash = matchesFlash(item.event.title),
+                                    onClick = {
+                                        editing = item.event
+                                        editorOpen = true
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -319,6 +337,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
 
     if (editorOpen) {
         AgendaEditorDialog(
+            origin = if (editing == null) agendaAnchor.bounds else null,
             initial = editing,
             defaultDate = selected,
             onDismiss = { editorOpen = false },
@@ -373,6 +392,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         val base = copyFrom
         val date = addCourseFor ?: selected
         CourseAddDialog(
+            origin = if (addCourseFor != null) courseAnchor.bounds else null,
             defaultDay = base?.dayOfWeek ?: date.dayOfWeek.value,
             defaultWeek = vm.teachingWeekOf(date) ?: 1,
             initial = base,
@@ -526,6 +546,7 @@ internal fun DayStrip(
 ) {
     val today = LocalDate.now()
     val calendarRevision by HolidayTable.revision.collectAsState()
+    val motion = com.kstudio.agenda.ui.theme.LocalMotionSettings.current
     val t = LocalStrings.current
     // 7 个日期框等宽排列（用 weight(1f)，不再横向滚动，宽度完全一致）
     Row(
@@ -540,27 +561,22 @@ internal fun DayStrip(
             val isToday = date == today
             val holiday = HolidayTable.nameOf(date)?.let(t::holidayLabel) ?: if (HolidayTable.isWorkday(date)) t.workdayMark else null
             val isWeekend = date.dayOfWeek.value >= 6
-            val bg = when {
-                isSelected -> Brush.linearGradient(
-                    listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.primary)
-                )
-                isToday -> Brush.linearGradient(
-                    listOf(MaterialTheme.colorScheme.primaryContainer, MaterialTheme.colorScheme.primaryContainer)
-                )
+            val targetBg = when {
+                isSelected -> MaterialTheme.colorScheme.primary
+                isToday -> MaterialTheme.colorScheme.primaryContainer
                 // 周末底色：页面底 ≈ #F2F5F9、工作日卡片 = 纯白，而本主题的 surfaceVariant 与页面底几乎同色
                 // （实测周六卡 240,243,247 vs 页面底 242,245,249，只差 2/255）→ 旧写法“周末卡片”看着与背景融为一体。
                 // 这里改用 onSurface 的 12% 淡染：浅色下 ≈ #E4E6EA（明显深于页面底、又明显区别于白卡），
                 // 深色与玻璃主题下同样能拉开层次。
                 isWeekend -> {
                     val weekendColor = MaterialTheme.colorScheme.onSurface
-                        .copy(alpha = 0.12f)
+                        .copy(alpha = if (LocalGlassEnabled.current) 0.04f else 0.12f)
                         .compositeOver(cardBaseColor())
-                    Brush.linearGradient(listOf(weekendColor, weekendColor))
+                    weekendColor
                 }
-                else -> Brush.linearGradient(
-                    listOf(cardBaseColor(), cardBaseColor())
-                )
+                else -> cardBaseColor()
             }
+            val bg by animateColorAsState(targetBg, tween(if (LocalGlassEnabled.current) motion.duration(180) else 0), label = "daySelection")
             val fg = when {
                 isSelected -> MaterialTheme.colorScheme.onPrimary
                 isToday -> MaterialTheme.colorScheme.onPrimaryContainer
@@ -573,7 +589,11 @@ internal fun DayStrip(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(14.dp))
+                    .glassFrost(RoundedCornerShape(14.dp))
                     .background(bg)
+                    .then(if (!isSelected) Modifier.glassSheen() else Modifier)
+                    .cardGlassBorder(RoundedCornerShape(14.dp))
+                    .semantics { this.selected = isSelected }
                     // 定位闪烁：底色深浅变化提醒（三下）
                     .then(
                         if (flashing) Modifier.background(
@@ -609,9 +629,17 @@ internal fun DayStrip(
                 )
                 Text(
                     text = holiday ?: if (isToday) t.today else " ",
+                    maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (holiday != null && !isSelected) MaterialTheme.colorScheme.error
-                    else fg.copy(alpha = 0.75f),
+                    color = when {
+                        HolidayTable.isWorkday(date) -> MaterialTheme.colorScheme.primary
+                        holiday != null && !isSelected -> MaterialTheme.colorScheme.error
+                        else -> fg.copy(alpha = 0.75f)
+                    },
+                    modifier = if (HolidayTable.isWorkday(date) && isSelected) Modifier
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.onPrimary)
+                        .padding(horizontal = 4.dp) else Modifier,
                 )
             }
         }
@@ -650,12 +678,8 @@ fun CourseCard(
                     2.dp,
                     color.copy(alpha = 0.35f + 0.65f * pulse),
                     RoundedCornerShape(18.dp),
-                ) else if (com.kstudio.agenda.ui.theme.LocalGlassEnabled.current) Modifier.border(
-                    // 液态玻璃：不要纯色描边，用半透明白微光边 → 体现玻璃的“厚度”（与设置页卡片同一套观感）
-                    1.dp,
-                    com.kstudio.agenda.ui.components.cardBorderColor(),
-                    RoundedCornerShape(18.dp),
-                ) else Modifier.border(
+                ) else if (LocalGlassEnabled.current) Modifier.cardGlassBorder()
+                else Modifier.border(
                     1.dp,
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.45f),
                     RoundedCornerShape(18.dp),
@@ -666,7 +690,7 @@ fun CourseCard(
                 else Modifier
             ),
     ) {
-        Row(Modifier.height(IntrinsicSize.Min)) {
+        Row(Modifier.glassSheen().height(IntrinsicSize.Min)) {
             Box(
                 Modifier
                     .width(6.dp)
@@ -697,7 +721,7 @@ fun CourseCard(
                 Text(
                     text = "${course.timeRange}  ·  ${course.periodLabel}",
                     style = MaterialTheme.typography.labelLarge,
-                    color = color,
+                    color = glassAccentColor(color),
                 )
                 val info = listOfNotNull(
                     course.teacher.ifBlank { null },

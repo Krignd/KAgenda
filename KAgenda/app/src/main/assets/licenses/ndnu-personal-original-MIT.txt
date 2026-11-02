@@ -1,0 +1,46 @@
+KAgenda original implementation only; MIT applies to KAgenda code only.
+Public protocol author/account: flame-ray; repository: flame-ray/kezhi.
+Fixed revision b527a12796a30c01636e0d2a4f5ba779550a2539.
+No applicable upstream root/file code grant established (NOASSERTION).
+No upstream implementation is copied, translated, adapted, packaged or relicensed.
+The local parser is derived from KAgenda's own original FJNU implementation.
+School catalog explicitly maps NDNU, 宁德师范学院, 正方 and the official school host.
+Rust source lines275..307,669..762,1080..1155 were statically reviewed, not executed;
+schoolCatalog.ts and zhengfangAdapter.ts were read through EOF. Other source files
+are not claimed fully reviewed. Actual personal POST uses xnm/xqm/kzlx=ck, maps
+first/second semester to3/12, and uses the reviewed login URL as Referer.
+No index GET, login bypass, other-student selector, third-term mapping, local
+calendar/month heuristic, upstream defaults, stale cache, row skipping/truncation,
+placeholder teachers/rooms or lossy first-last period merging is adopted.
+Aliases must agree, all raw rows/identity/response facts are stable across two reads.
+Unknown nonempty additional arrangements, partial pages, missing fields, session
+loss and conflicting terms abort before any staging. No account verification claimed.
+References with actual path date and SHA-256:
+https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src/importing/schoolCatalog.ts
+2026-09-09T13:51:01Z; SHA-256 96bfc04b4ae4616a2cfc3496f3ae6f1e9cb6c57d0642bf14f2c665c79e7e74df
+https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src/importing/zhengfangAdapter.ts
+2026-08-31T08:31:56Z; SHA-256 429c9b97cdf347025480769706a681da143fe20deca97b9f7e69a89b8016134b
+https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src-tauri/src/lib.rs
+2026-10-13T05:51:01Z; SHA-256 feb461584d8d237a6314964103d3853821145604a4587800aa65145e69bd6a08
+
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

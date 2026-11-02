@@ -49,17 +49,53 @@ object SchoolDirectory {
         data class Header(val letter: String) : Row
         data class Item(val entry: Entry) : Row
     }
-    data class Listing(val rows: List<Row>, val positions: Map<String, Int>)
+    data class Listing(val rows: List<Row>, val positions: Map<String, Int>, val searching: Boolean = false)
+    // Administrative order groups equal search matches without restoring a pinyin sort.
+    private val provinces = listOf("北京市", "天津市", "河北省", "山西省", "内蒙古自治区", "辽宁省", "吉林省", "黑龙江省",
+        "上海市", "江苏省", "浙江省", "安徽省", "福建省", "江西省", "山东省", "河南省", "湖北省", "湖南省",
+        "广东省", "广西壮族自治区", "海南省", "重庆市", "四川省", "贵州省", "云南省", "西藏自治区",
+        "陕西省", "甘肃省", "青海省", "宁夏回族自治区", "新疆维吾尔自治区")
+    private fun normalized(value: String) = Normalizer.normalize(value, Normalizer.Form.NFKC)
+        .lowercase(Locale.ROOT).filter { it.isLetterOrDigit() }
+    private fun orderedMatch(name: String, query: String): Boolean {
+        var next = 0
+        for (char in name) if (next < query.length && char == query[next]) next++
+        return next == query.length
+    }
+    private data class Match(val entry: Entry, val tier: Int, val overlap: Double)
+    private fun match(entry: Entry, query: String): Match? {
+        val name = normalized(entry.school.name)
+        val han = query.all { Character.UnicodeScript.of(it.code) == Character.UnicodeScript.HAN }
+        val frequencies = name.groupingBy { it }.eachCount()
+        val overlap = query.groupingBy { it }.eachCount().entries.sumOf { (char, count) -> minOf(count, frequencies[char] ?: 0) }
+        val tier = when {
+            name == query || entry.spelling.full == query -> 0
+            name.startsWith(query) -> 1
+            name.contains(query) -> 2
+            han && query.length > 1 && orderedMatch(name, query) -> 3
+            entry.spelling.initials == query -> 3
+            entry.spelling.full.contains(query) || entry.spelling.initials.contains(query) -> 4
+            han && query.length > 2 && overlap >= 2 && overlap.toDouble() / query.length >= .6 -> 5
+            normalized(entry.school.province).contains(query) -> 6
+            normalized(entry.school.id).contains(query) -> 7
+            else -> return null
+        }
+        return Match(entry, tier, 2.0 * overlap / (name.length + query.length).coerceAtLeast(1))
+    }
     fun sorted(schools: List<School>, index: SchoolNameIndex): List<Entry> = schools.map { Entry(it, index.spelling(it.name)) }
         .sortedWith(compareBy<Entry> { alphabet.indexOf(it.spelling.letter) }.thenBy { it.spelling.full }.thenBy { it.school.name }.thenBy { it.school.id })
     fun filter(entries: List<Entry>, query: String): Listing {
-        val q = query.trim().lowercase(Locale.ROOT)
-        val roman = q.filter { !it.isWhitespace() }
-        val matched = entries.filter { entry -> q.isBlank() || entry.school.name.contains(q, true) || entry.school.province.contains(q, true) ||
-            entry.school.id.contains(q, true) || entry.spelling.full.contains(roman) || entry.spelling.initials.contains(roman) }
+        val q = normalized(query)
+        if (q.isNotEmpty()) {
+            val matched = entries.mapNotNull { match(it, q) }.sortedWith(compareBy<Match> { it.tier }
+                .thenByDescending { it.overlap }
+                .thenBy { provinces.indexOf(it.entry.school.province).takeIf { i -> i >= 0 } ?: provinces.size }
+                .thenBy { it.entry.school.province }.thenBy { it.entry.school.name }.thenBy { it.entry.school.id })
+            return Listing(matched.map { Row.Item(it.entry) }, emptyMap(), searching = true)
+        }
         val rows = mutableListOf<Row>()
         val positions = linkedMapOf<String, Int>()
-        matched.forEach { entry ->
+        entries.forEach { entry ->
             val letter = entry.spelling.letter
             if (letter !in positions) { positions[letter] = rows.size; rows += Row.Header(letter) }
             rows += Row.Item(entry)

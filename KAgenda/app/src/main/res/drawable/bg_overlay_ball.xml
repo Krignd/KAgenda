@@ -1,9 +1,2 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 系统悬浮球：白色圆形底（图标保持 DeepSeek 原色） -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="oval">
-    <solid android:color="#F7FFFFFF" />
-    <stroke
-        android:width="0.5dp"
-        android:color="#22000000" />
-</shape>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval"><gradient android:angle="315" android:startColor="#38CDE0" android:centerColor="#3979ED" android:endColor="#6345D8"/><stroke android:width="0.7dp" android:color="#55FFFFFF"/></shape>

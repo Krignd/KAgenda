@@ -136,6 +136,14 @@ interface AppStrings {
     // ---------------- 同步状态 ----------------
     val syncSyncedAt: String
     val syncNotLoggedIn: String
+    val syncFailed: String
+    val helpTitle: String
+    val helpSubtitle: String
+    val helpSearch: String
+    val helpClearSearch: String
+    val helpNoResults: String
+    val helpQuestions: List<HelpQuestion>
+    val ujsLoginContinue: String
     val syncRunning: String
     val syncHintNeedLogin: String
     val syncHintRunning: String
@@ -420,8 +428,6 @@ interface AppStrings {
     val aiKeyLabel: String
     val aiKeyKeepHint: String
     val aiUseDevKey: String
-    val aiDevKeyInUse: String
-    val aiDevModelFixed: String
     val aiModelLabel: String
     val aiSave: String
     val aiClear: String
@@ -441,7 +447,6 @@ interface AppStrings {
     val statusSrcAgenda: String
     /** 常驻通知里的「AI 快速添加」文本框入口开关 */
     val statusSrcAi: String
-    val statusHint: String
     val statusChannelName: String
     val statusChannelDesc: String
     fun statusInClassFmt(name: String, end: String): String
@@ -483,7 +488,6 @@ interface AppStrings {
     val secLangSub: String
     // 权限设置卡片
     val secPermissions: String
-    val secPermissionsSub: String
     val permGranted: String
     val permNotGranted: String
     val permRequest: String
@@ -671,6 +675,13 @@ interface AppStrings {
     val uiStyleDefault: String
     val uiStyleDefaultSub: String
     val uiStyleGlass: String
+    val glassColorDepth: String
+    val glassDepthHint: String
+    val glassDepthLight: String
+    val glassDepthRich: String
+    val glassDepthReset: String
+    val glassBackgroundMotion: String
+    val glassBackgroundMotionHint: String
     val uiStyleGlassSub: String
 
     // ---------------- 文档导入 / 导出 ----------------
@@ -678,7 +689,6 @@ interface AppStrings {
     val secDocsSub: String
     val docTitle: String
     val docIntro: String
-    val docOpenHint: String
     val docPick: String
     val docReading: String
     fun docReadFail(msg: String): String
@@ -692,6 +702,7 @@ interface AppStrings {
     fun docAnchorLabel(date: String): String
     val docAnchorHint: String
     fun docImportedList(n: Int): String
+    val docNoImportedCourses: String
     val docClearImported: String
     val docExport: String
     val docExportHint: String
@@ -716,9 +727,7 @@ interface AppStrings {
     val courseEditIntro: String
     val editScopeLabel: String
     val editScopeOne: String
-    val editScopeOneHint: String
     val editScopeAll: String
-    val editScopeAllHint: String
     val fieldCourseName: String
     val editWeeksHint: String
     val editPeriodStart: String
@@ -741,7 +750,6 @@ interface AppStrings {
     val courseEditsIntro: String
     val btnRestoreCourseEdits: String
     val btnSyncClearCourseEdits: String
-    val courseEditsHint: String
     val askRestoreEditsTitle: String
     val askRestoreEditsBody: String
     val askSyncClearEditsTitle: String
@@ -816,9 +824,7 @@ interface AppStrings {
 
     // ---------------- 数据备份与导入 ----------------
     val secBackup: String
-    val secBackupSub: String
     val backupIntro: String
-    val backupIncludes: String
     val btnBackupExport: String
     val btnBackupImport: String
     val backupAskImportTitle: String
@@ -888,9 +894,9 @@ object ZhStrings : AppStrings {
     override val sampleCourse = "高等数学"
     override val sampleLocation = "教学楼 A201"
 
-    override val globalReminder = "全局提醒"
+    override val globalReminder = "提醒全局设置"
     override val followGlobal = "跟随全局设置"
-    override val applyGlobal = "一键全部设为跟随全局"
+    override val applyGlobal = "全部提醒跟随全局设置"
     override val notifyEvent = "通知提醒"
     override val alarmEvent = "闹钟提醒"
     override val alarmHint = "到时使用闹钟音量响铃，通知中可停止，最长响铃两分钟。"
@@ -920,7 +926,7 @@ object ZhStrings : AppStrings {
     override val widgetWeekCourses = "周课表"
     override val widgetEmpty = "暂无安排"
     override val widgetMore = "点击查看全部"
-    override val aiContextNote = "AI 识别会发送现有日程的标题、日期、时间、地点、标签和重复规则，以便准确修改。"
+    override val aiContextNote = "本地模式在手机内识别；云端模式会发送输入文本与修改所需的日程字段。请核对结果后确认。"
     override val reminderNeedsTime = "提醒需要精确开始时间"
 
     override val appTitle = "K日程"
@@ -935,6 +941,14 @@ object ZhStrings : AppStrings {
 
     override val syncSyncedAt = "已同步 · "
     override val syncNotLoggedIn = "未登录"
+    override val syncFailed = "同步失败"
+    override val helpTitle = "帮助"
+    override val helpSubtitle = "常见问题与使用说明"
+    override val helpSearch = "搜索问题或关键词"
+    override val helpClearSearch = "清空搜索"
+    override val helpNoResults = "未找到相关问题，请尝试其他关键词。"
+    override val helpQuestions = HelpContent.zh
+    override val ujsLoginContinue = "③ 若页面出现「点此直接登录」或「CAS 统一身份认证登录」，请点击该入口；否则等待跳转至课表页。"
     override val syncRunning = "正在同步…"
     override val syncHintNeedLogin = "尚未登录。请在「设置」页输入学号密码并同步。"
     override val syncHintRunning = "正在从教务系统获取课表…"
@@ -1089,7 +1103,7 @@ object ZhStrings : AppStrings {
 
     override val pasteLabel = "粘贴通知文字，自动识别时间 / 地点 / 类型"
     override val pastePlaceholder = "例如：9月18日下午3点50分在C1-2003参加宣讲会"
-    override val pasteBtn = "智能识别填充"
+    override val pasteBtn = "规则填充"
     override val parseOk = "已识别，请核对以下内容"
     override val parsePartial = "部分识别成功，请补充缺失项"
     override val parseFail = "未识别到有效信息，请手动填写"
@@ -1114,7 +1128,7 @@ object ZhStrings : AppStrings {
     override val labelStudentId = "学号"
     override val secProfile = "身份预设"
     override val secProfileSub =
-        "填写学院/专业/年级/班级后，AI 助手遇到「多个班级 / 多个时间分支」的通知时，只添加与你相符的那一条"
+        "填写学院/专业/年级/班级后，AI 助手能更准确地添加通知"
     override val labelCollege = "学院"
     override val labelMajor = "专业"
     override val labelGrade = "年级"
@@ -1142,7 +1156,7 @@ object ZhStrings : AppStrings {
             "「退出登录」则连同网页会话一起清除；如遇验证码等无法自动完成的情况，请稍后重试。"
     override val labelViaWebVpn = "通过 WebVPN"
     override val labelViaWebVpnSub =
-        "勾选：通过 WebVPN 访问教务系统；取消：使用默认方式。两种方式各自独立实现，改动其一不影响另一。"
+        "通过学校的 WebVPN 访问教务系统（非校园网环境访问）"
     override val askClearCredTitle = "删除保存的账密？"
     override val askClearCredBody = "将删除本机保存的学号与密码；网页登录会话与课表缓存保留。之后可随时重新输入保存。"
 
@@ -1191,8 +1205,8 @@ object ZhStrings : AppStrings {
     // AI 助手（悬浮入口）
     override val qaTitle = "AI 助手"
     override val qaHint = "输入或粘贴内容：可添加新日程/计划，也可让 AI 修改、删除已有条目（如“把体检改到明天下午”）"
-    override val qaParse = "AI 识别"
-    override val qaConfirm = "全部执行"
+    override val qaParse = "智能识别"
+    override val qaConfirm = "确认全部操作"
     override val qaNothing = "未识别到可执行的操作"
     override val qaStaleResult = "内容已修改，本次识别结果已忽略，请重新识别"
     override val qaReparseTitle = "重新识别？"
@@ -1240,32 +1254,29 @@ object ZhStrings : AppStrings {
     override val qaReParse = "内容已修改，请重新识别"
 
     // AI 识别（DeepSeek）
-    override val secAi = "AI 识别（DeepSeek）"
-    override val secAiSub = "配置 API Key 后，可用一句话添加、修改或删除日程/计划"
+    override val secAi = "AI 识别"
+    override val secAiSub = "本地模型可选下载，也可选择云端识别"
     override val aiKeyLabel = "DeepSeek API Key"
     override val aiKeyKeepHint = "已保存（留空则不修改）"
     override val aiUseDevKey = "使用开发者的 API key"
-    override val aiDevKeyInUse = "已启用内置 API Key，无需自行申请即可使用 AI 识别"
-    override val aiDevModelFixed = "使用开发者 Key 时固定为 deepseek-flash（不可修改）"
     override val aiModelLabel = "模型"
     override val aiSave = "保存 AI 设置"
     override val aiClear = "清除 Key"
     override val aiSavedToast = "AI 设置已保存（Key 加密存储于本机）"
     override val aiClearedToast = "已清除 AI Key"
-    override val aiBtn = "AI 识别"
-    override val aiRunning = "正在请求 AI…"
+    override val aiBtn = "模型识别"
+    override val aiRunning = "正在识别…"
     override val aiOk = "AI 识别完成"
     override val aiNeedKey = "请先在 设置 → AI 识别 配置 DeepSeek API Key"
 
     // 常驻通知
     override val secStatus = "常驻通知"
-    override val secStatusSub = "在锁屏与通知栏常驻显示（静默、内容可选）"
+    override val secStatusSub = "在锁屏与通知栏常驻显示（静默）"
     override val statusEnable = "开启常驻通知"
     override val statusSrcCourse = "下一节课与当前课程"
     override val statusSrcPlan = "当前 / 下一计划"
     override val statusSrcAgenda = "下一日程"
-    override val statusSrcAi = "AI 快速添加入口"
-    override val statusHint = "可多选；选中项会常驻显示在锁屏与通知栏"
+    override val statusSrcAi = "AI 助手入口"
     override val statusChannelName = "状态常驻"
     override val statusChannelDesc = "锁屏与通知栏常驻显示课表/日程状态"
     override fun statusInClassFmt(name: String, end: String) = "正在上课：$name · 至 $end"
@@ -1283,7 +1294,7 @@ object ZhStrings : AppStrings {
     override val secDataSub = "课表从教务系统同步后缓存在本机"
     override val autoRefresh = "自动同步"
     override val autoCheckUpdate = "自动检查更新"
-    override val fieldRepeatUntil = "重复截止"
+    override val fieldRepeatUntil = "重复截止日期（可选）"
     override val repeatUntilNone = "不限"
     override val tabSchool = "学校"
     override val comingSoon = "暂未完成"
@@ -1299,12 +1310,11 @@ object ZhStrings : AppStrings {
     override val settingsTabFeatureSub = "权限、课前提醒、AI、悬浮球、常驻通知、小组件"
     override val settingsTabCustomSub = "时间线显示范围、小组件刷新频率"
     override val secPermissions = "权限设置"
-    override val secPermissionsSub = "按需开启；未授予时对应功能不可用（可随时在此查看状态）"
     override val permGranted = "已授予"
     override val permNotGranted = "未授予"
     override val permRequest = "去申请"
     override val permNetworkName = "网络访问"
-    override val permNetworkWhy = "从教务系统同步课表（安装时即已具备，无需授权）"
+    override val permNetworkWhy = "从教务系统同步课表"
     override val permNotifName = "通知权限"
     override val permNotifWhy = "课前提醒、常驻通知、测试通知"
     override val permOverlayName = "悬浮窗权限（显示在其他应用上层）"
@@ -1321,14 +1331,14 @@ object ZhStrings : AppStrings {
     override val imgDirNote = "图片会保存到系统相册的 Pictures/K日程 目录。"
 
     override val secLang = "语言"
-    override val secLangSub = "简体中文 / English / Français（默认跟随系统）"
+    override val secLangSub = "简体中文 / English / Français"
     override val langSystem = "跟随系统"
 
     override val secDev = "开发者工具"
     override val secDevSub = "运行日志与诊断信息"
     override val openDevTools = "打开开发者工具"
     override val secDevBrowser = "内置浏览器"
-    override val secDevBrowserSub = "普通浏览器（不注入脚本、不自动跳转），带访问记录，用于手动观察页面流程"
+    override val secDevBrowserSub = "普通浏览器（不注入脚本、不自动跳转、带访问记录）"
     override val btnOpenDevBrowser = "打开内置浏览器"
     override val devBrowserTitle = "内置浏览器"
     override val devBrowserAddress = "地址"
@@ -1343,7 +1353,7 @@ object ZhStrings : AppStrings {
     override val secNotifTestSub = "验证通知与提醒链路是否正常"
     override val sendTestNotifBtn = "立即发送测试通知"
     override val sendTestReminderBtn = "约 15 秒后发送测试提醒"
-    override val testNotifSent = "已发送测试通知（若通知权限开启，应能在通知栏看到）"
+    override val testNotifSent = "已发送测试通知"
     override val testReminderScheduled = "已安排测试提醒：约 15 秒后触发（未授权精确提醒时可能延后）"
     override val secReminderTools = "提醒调度工具"
     override fun reminderCountLabel(n: Int) = "当前已排提醒：$n 条"
@@ -1359,8 +1369,8 @@ object ZhStrings : AppStrings {
     override val resetClearCache = "清除缓存与日志"
     override val resetClearCacheDesc = "删除课表缓存与运行日志。"
     override val resetLogoutDesc = "清除本机保存的学号密码、网页会话与内置浏览器状态；课表缓存与日程保留。"
-    override val resetAll = "重置应用（恢复初始状态）"
-    override val resetAllDesc = "将清除账号、网页会话、内置浏览器的缓存与本地存储、课表缓存、日程与计划、提醒与闹钟、日志及语言等设置，等价于刚安装好的状态。"
+    override val resetAll = "重置应用"
+    override val resetAllDesc = "将清除账号、网页会话、内置浏览器的缓存与本地存储、课表缓存、日程与计划、提醒与闹钟、日志及语言等设置。"
     override val askResetTitle = "确认重置？"
     override val askResetBody = "所有数据与设置将被清除，应用回到初始状态。"
     override val askClearDataTitle = "清除全部日程与计划？"
@@ -1374,10 +1384,10 @@ object ZhStrings : AppStrings {
     override val aboutBody =
         "本地优先的课表与日程应用：课表从学校教务系统同步后缓存在本机，" +
             "支持日/周/月视图（左右滑动切换）、日程与计划、课前提醒、桌面小组件与常驻通知；" +
-            "内置 DeepSeek AI 助手（可添加/修改/删除日程，入口：顶栏按钮或悬浮球）。" +
+            "AI 助手支持可选下载本地模型或云端识别（可添加/修改/删除日程，入口：顶栏按钮或悬浮球）。" +
             "除用户自行配置的 AI 接口外，不上传任何个人信息。"
-    override val aboutTip = "提示：若同步失败而网页可正常访问，多为学校页面改版——北航可到「开发者工具」分享运行日志；其他学校可在「设置 → 学校 → 添加学校」更新适配代码。"
-    override val aboutPeriods = "课程节数与时间均可自定义：默认 14 节（上午 4 + 下午 5 + 晚上 5），可在「设置 → 用户自定义 → 课程时间」中增删节次并修改起止时间。课程信息已经变了但教务系统还没更新时，可在课程详情里用「修改课程」做本地修正（支持「仅这一次」与「全部同一课程」），设置里可一键还原或清除后重新同步。"
+    override val aboutTip = "提示：若同步失败而网页可正常访问，多为学校页面改版，可到「开发者工具」分享运行日志。"
+    override val aboutPeriods = "课程节数与时间均可自定义：「设置 → 用户自定义 → 课程时间」。可在课程详情里用「修改课程」做本地修正，设置里可一键还原或清除后重新同步。"
 
     override val updateCheck = "检查更新"
     override fun updateCurrent(name: String) = "当前版本：$name"
@@ -1455,7 +1465,7 @@ object ZhStrings : AppStrings {
     override val secPeriodTimesSub = "自定义每一节课的起止时间（默认与学校作息一致，共 14 节）"
     override val btnEditPeriodTimes = "自定义课程时间"
     override val periodTimesTitle = "课程时间"
-    override val periodTimesHint = "节数可增删（1–24 节）；时间按 24 小时制填写 HH:mm（也支持 800 / 0800 / 8.00）。修改后日/周视图、小组件与常驻通知立即更新。"
+    override val periodTimesHint = "节数可增删（1–24 节）；时间按 24 小时制填写 HH:mm（也支持 800 / 0800 / 8.00）。"
     override val periodTimesRestoreDefault = "恢复默认"
     override val periodTimesRowFmt = "第%d节"
     override fun periodTimesCount(n: Int) = "当前共 $n 节"
@@ -1471,20 +1481,26 @@ object ZhStrings : AppStrings {
     override val secLockScreen = "锁屏显示"
     override val secLockScreenSub = "关闭后常驻通知不会出现在锁屏上"
     override val btnOpenNotifSettings = "打开系统通知设置"
-    override val lockScreenHint = "锁屏上看不到通知？部分系统（如 MIUI/HyperOS、EMUI）会默认隐藏静默通知；可在系统通知设置里为本应用开启「锁屏通知」。"
+    override val lockScreenHint = "锁屏上看不到通知？"
 
     override val secUiStyle = "界面风格"
-    override val secUiStyleSub = "选择整体视觉风格（默认保留原样式）"
-    override val uiStyleDefault = "默认(简约)"
-    override val uiStyleDefaultSub = "当前的不透明卡片样式"
+    override val secUiStyleSub = "选择整体视觉风格"
+    override val uiStyleDefault = "简约"
+    override val uiStyleDefaultSub = "不透明卡片与简洁布局"
     override val uiStyleGlass = "液态玻璃"
-    override val uiStyleGlassSub = "渐变背景 + 半透明毛玻璃卡片，圆角更柔和"
+    override val glassColorDepth = "颜色深度"
+    override val glassDepthHint = "调节背景色浓淡与玻璃透色，默认使用柔和浅色。"
+    override val glassDepthLight = "浅"
+    override val glassDepthRich = "深"
+    override val glassDepthReset = "恢复浅色"
+    override val glassBackgroundMotion = "背景颜色动效"
+    override val glassBackgroundMotionHint = "让背景色缓慢流动；默认关闭。"
+    override val uiStyleGlassSub = "默认风格：渐变背景与半透明毛玻璃卡片"
 
     override val secDocs = "文档导入"
     override val secDocsSub = "读取 Word / Excel / PPT / PDF / 文本，自动识别课程表、日程与计划"
     override val docTitle = "文档导入"
-    override val docIntro = "选择本地文档，应用会在本机提取文字并自动识别课程表、日程与计划（不上传任何内容）。"
-    override val docOpenHint = "在文件管理或其他应用里选择「用 K日程 打开」也能直接进入本页。"
+    override val docIntro = "选择本地文档，应用会在本机提取文字并自动识别课程表、日程与计划。"
     override val docPick = "选择文档"
     override val docReading = "正在读取文档…"
     override fun docReadFail(msg: String) = "读取失败：$msg"
@@ -1498,9 +1514,10 @@ object ZhStrings : AppStrings {
     override fun docAnchorLabel(date: String) = "第 1 教学周周一：$date"
     override val docAnchorHint = "课程周次按该日期换算，与本学期同步数据保持一致；可左右微调"
     override fun docImportedList(n: Int) = "已导入课程（$n）"
+    override val docNoImportedCourses = "暂无导入课程"
     override val docClearImported = "清空导入课程"
     override val docExport = "导出为文档"
-    override val docExportHint = "把当前课表与日程导出为 CSV / Markdown 文件（存到你选择的位置）"
+    override val docExportHint = "把当前课表与日程导出为 CSV / Markdown 文件"
     override val docExportCsv = "导出 CSV"
     override val docExportMd = "导出 Markdown"
     override val docExported = "已导出到所选位置"
@@ -1509,22 +1526,20 @@ object ZhStrings : AppStrings {
     override val msgImportedCoursesCleared = "已清空导入课程"
     override val msgImportNoCourses = "未识别到课程，请确认文档里有「星期 + 节次」信息"
     override val msgImportNoEvents = "未识别到日程或计划"
-    override val docLocalOnly = "全部在本机完成，不发送到网络"
+    override val docLocalOnly = "本机完成"
 
-    override val aiOfflineParse = "本地识别"
-    override fun aiOfflineDone(n: Int) = "本地识别到 $n 条（未调用 AI）"
+    override val aiOfflineParse = "快速规则识别"
+    override fun aiOfflineDone(n: Int) = "规则识别到 $n 条，未调用 AI 模型；确认后才会保存"
 
     // ---------------- 课程修改 ----------------
     override val tagEdited = "已修改"
     override val btnEditCourse = "修改课程"
     override val courseEditTitle = "修改课程"
     override val courseEditIntro =
-        "用于教务系统还没更新、但课程信息已经变了的情况：修改只保存在本机，不会改动教务系统。"
+        "修改保存在本机。"
     override val editScopeLabel = "修改范围"
     override val editScopeOne = "仅修改这一次"
-    override val editScopeOneHint = "只改动这一个课程块（星期与节次也可以一起调整）"
     override val editScopeAll = "修改全部同一课程"
-    override val editScopeAllHint = "这门课在各个星期/节次的安排都会套用这次修改"
     override val fieldCourseName = "课程名"
     override val editWeeksHint = "如 2-17；留空表示每周"
     override val editPeriodStart = "起始节次"
@@ -1540,15 +1555,13 @@ object ZhStrings : AppStrings {
     override fun msgEditConflicts(n: Int) = "有 $n 门课程的修改与教务系统不一致，请确认"
 
     override val secCourseEdits = "课程修改"
-    override val secCourseEditsSub = "教务系统还没更新时的本地修正"
+    override val secCourseEditsSub = "本地修正"
     override fun courseEditsCount(n: Int) = "$n 门已修改"
     override val courseEditsNone = "暂无课程修改"
     override val courseEditsIntro =
-        "点课表里的课程卡片即可修改课程信息；教务系统之后同步到同样内容时，「已修改」标记会自动消失。"
+        "点课表里的课程卡片即可修改课程信息。"
     override val btnRestoreCourseEdits = "仅还原课程修改"
     override val btnSyncClearCourseEdits = "与教务系统同步并清除所有课程修改"
-    override val courseEditsHint =
-        "「仅还原」只把课表恢复成教务系统的原样（不联网）；「同步并清除」会先清掉全部修改，再重新拉取教务课表。"
     override val askRestoreEditsTitle = "还原全部课程修改？"
     override val askRestoreEditsBody = "全部课程会恢复为教务系统保存的原样，「已修改」标记一并消失。"
     override val askSyncClearEditsTitle = "与教务系统同步并清除修改？"
@@ -1569,20 +1582,20 @@ object ZhStrings : AppStrings {
     override val editActionDelete = "删除课程"
     override val editActionMove = "调课"
     override val editDeleteIntro =
-        "选中的周次里不再显示这门课（只在本机生效，不会改动教务系统）。"
+        "选中的周次不再显示这门课。"
     override val editDeleteWeeksHint = "全选 = 整门课都隐藏"
     override fun editMoveIntro(n: Int) = "把这一天的课整体或单门迁到其他日期（只在本机生效）。这一天共 $n 门课。"
-    override val editMoveWholeDay = "整天的课一起调"
+    override val editMoveWholeDay = "这一天调课"
     override fun editMoveWholeDayHint(n: Int) = "这一天全部 $n 门课都迁到目标日期"
     override val editMoveSingle = "只调某几节"
-    override val editMoveSingleHint = "勾选要迁过去的课（可多选），其余不动"
+    override val editMoveSingleHint = "勾选要迁过去的课，其余不动"
     override val editMoveTarget = "目标日期"
     override val editMovePickDate = "选择日期"
     override val weeksAll = "全选"
     override val weeksNone = "清空"
     override val courseAddTitle = "新增课程"
     override val courseAddIntro =
-        "教务系统里没有的课可以在这里本地添加（只在课表里显示，不会上传）。"
+        "本地新增课程。"
     override val btnAddCourse = "添加课程"
     override val btnCopyCourse = "复制课程"
     override val aboutOfficialSite = "官方网站 / 下载页"
@@ -1604,17 +1617,17 @@ object ZhStrings : AppStrings {
     override val msgFeedbackFailed = "提交失败，请检查网络后重试"
     override val feedbackEmpty = "请先填写反馈内容"
     override val feedbackIncludeNote =
-        "提交时会附带：应用版本、Android 版本、当前学校（不含学号、密码、课表内容）"
+        "提交时会附带：应用版本、Android 版本、当前学校名称"
     override val btnRescheduleDate = "调整至..."
     override val longPressHint = "长按日期可调整至其他日期"
     override val rescheduleTitle = "调整至..."
     override fun rescheduleIntro(month: Int, day: Int, n: Int) =
         "$month/$day 共有 $n 门课。选择要迁移的课与目标日期。"
-    override val rescheduleSingleHint = "只调某一节（在下方选择）"
-    override val msgCourseDeleted = "已删除（仅本机生效）"
-    override val msgCourseAdded = "已添加课程（仅本机生效）"
+    override val rescheduleSingleHint = "可多选"
+    override val msgCourseDeleted = "已删除"
+    override val msgCourseAdded = "已添加课程"
     override fun msgCourseMoved(n: Int, month: Int, day: Int) = "已把 $n 门课调整到 $month/$day"
-    override val msgMoveSameDay = "目标日期与原来相同"
+    override val msgMoveSameDay = "目标日期与原日期相同"
     override val msgMoveNoWeek = "无法确定教学周，请先同步一次课表"
 
     override val secHolidayCourses = "节假日显示课表"
@@ -1624,11 +1637,8 @@ object ZhStrings : AppStrings {
         "开启后，法定节假日当天的课会照常显示、提醒也会照常触发（方便查看与调休节假日课程）。"
 
     override val secBackup = "数据备份与导入"
-    override val secBackupSub = "换机 / 重装前先导出一份"
     override val backupIntro =
-        "导出一个备份文件（课表缓存、日程与计划、课程修正、全部设置），重装或换机后可导入恢复。"
-    override val backupIncludes =
-        "备份包含学号、课表、日程与设置；不含登录密码与 API Key（换机后无法解密，需重新输入）。"
+        "导出一个备份文件（课表缓存、日程与计划、课程修正、全部设置）。不含密码与 API Key。"
     override val btnBackupExport = "导出备份"
     override val btnBackupImport = "导入备份"
     override val backupAskImportTitle = "导入备份？"
@@ -1701,9 +1711,9 @@ object EnStrings : AppStrings {
     override val sampleCourse = "Mathematics"
     override val sampleLocation = "Building A201"
 
-    override val globalReminder = "Global reminders"
+    override val globalReminder = "Global reminder settings"
     override val followGlobal = "Use global settings"
-    override val applyGlobal = "Apply global settings to all"
+    override val applyGlobal = "Use global settings for all reminders"
     override val notifyEvent = "Notification"
     override val alarmEvent = "Alarm"
     override val alarmHint = "Rings at alarm volume. Stop from the notification; ringing ends after two minutes."
@@ -1733,7 +1743,7 @@ object EnStrings : AppStrings {
     override val widgetWeekCourses = "Weekly classes"
     override val widgetEmpty = "No events"
     override val widgetMore = "Tap to view all"
-    override val aiContextNote = "AI recognition sends existing event titles, dates, times, locations, tags and recurrence rules to improve edits."
+    override val aiContextNote = "Local mode processes text on your phone. Cloud mode sends your input and relevant event fields. Review before confirming."
     override val reminderNeedsTime = "A precise start time is required for reminders"
 
     override val appTitle = "K Agenda"
@@ -1748,6 +1758,14 @@ object EnStrings : AppStrings {
 
     override val syncSyncedAt = "Synced · "
     override val syncNotLoggedIn = "Not signed in"
+    override val syncFailed = "Sync failed"
+    override val helpTitle = "Help"
+    override val helpSubtitle = "Common questions and usage tips"
+    override val helpSearch = "Search questions or keywords"
+    override val helpClearSearch = "Clear search"
+    override val helpNoResults = "No matching questions. Try other keywords."
+    override val helpQuestions = HelpContent.en
+    override val ujsLoginContinue = "③ If the page shows “点此直接登录” (direct login) or “CAS 统一身份认证登录” (CAS login), tap that link; otherwise wait for the timetable page."
     override val syncRunning = "Syncing…"
     override val syncHintNeedLogin = "Not signed in yet. Enter your student ID and password in Settings, then sync."
     override val syncHintRunning = "Fetching schedule from the academic system…"
@@ -1904,7 +1922,7 @@ object EnStrings : AppStrings {
 
     override val pasteLabel = "Paste a notice — time / location / type are detected automatically"
     override val pastePlaceholder = "e.g. Sep 18, 3:50 pm, lecture at C1-2003"
-    override val pasteBtn = "Recognize & fill"
+    override val pasteBtn = "Fill using rules"
     override val parseOk = "Recognized — please review"
     override val parsePartial = "Partially recognized — complete the missing fields"
     override val parseFail = "Could not recognize — please fill in manually"
@@ -1929,7 +1947,7 @@ object EnStrings : AppStrings {
     override val labelStudentId = "Student ID"
     override val secProfile = "Identity profile"
     override val secProfileSub =
-        "Fill in your college/major/grade/class: when a notice lists several classes or time slots, the AI adds only the one matching you"
+        "Enter your college, major, year and class to help the AI assistant add events from notices more accurately."
     override val labelCollege = "College"
     override val labelMajor = "Major"
     override val labelGrade = "Grade"
@@ -1957,7 +1975,7 @@ object EnStrings : AppStrings {
             "\"Sign out\" clears the web session as well. If a captcha blocks auto sign-in, please retry later."
     override val labelViaWebVpn = "Via WebVPN"
     override val labelViaWebVpnSub =
-        "Checked: reach the academic system through WebVPN. Unchecked: use the default route. The two routes are implemented separately and do not affect each other."
+        "Access the school system through its WebVPN when off campus"
     override val askClearCredTitle = "Delete saved credentials?"
     override val askClearCredBody = "The local student ID and password will be deleted; web session and schedule cache are kept. You can save them again anytime."
 
@@ -2007,8 +2025,8 @@ object EnStrings : AppStrings {
     // AI assistant (overlay entry)
     override val qaTitle = "AI Assistant"
     override val qaHint = "Type or paste: add new events/plans, or ask AI to update/delete existing ones (e.g. \"move the checkup to tomorrow afternoon\")"
-    override val qaParse = "AI parse"
-    override val qaConfirm = "Run all"
+    override val qaParse = "Smart parse"
+    override val qaConfirm = "Confirm all changes"
     override val qaNothing = "Nothing to run"
     override val qaStaleResult = "Text changed — result ignored. Please recognize again."
     override val qaReparseTitle = "Recognize again?"
@@ -2056,32 +2074,29 @@ object EnStrings : AppStrings {
     override val qaReParse = "Text changed — tap AI parse again"
 
     // AI (DeepSeek)
-    override val secAi = "AI recognition (DeepSeek)"
-    override val secAiSub = "With an API key, add, edit or delete events/plans in natural language"
+    override val secAi = "AI recognition"
+    override val secAiSub = "Download an optional local model, or choose cloud parsing"
     override val aiKeyLabel = "DeepSeek API Key"
     override val aiKeyKeepHint = "Saved (leave blank to keep)"
     override val aiUseDevKey = "Use developer's API key"
-    override val aiDevKeyInUse = "Built-in API key enabled — AI works out of the box"
-    override val aiDevModelFixed = "Fixed to deepseek-flash when using the developer key"
     override val aiModelLabel = "Model"
     override val aiSave = "Save AI settings"
     override val aiClear = "Clear key"
     override val aiSavedToast = "AI settings saved (key encrypted on device)"
     override val aiClearedToast = "AI key cleared"
-    override val aiBtn = "AI parse"
-    override val aiRunning = "Calling AI…"
+    override val aiBtn = "Parse with model"
+    override val aiRunning = "Parsing…"
     override val aiOk = "AI parse done"
     override val aiNeedKey = "Configure the DeepSeek API key in Settings → AI first"
 
     // Persistent notification
     override val secStatus = "Persistent notification"
-    override val secStatusSub = "Always shown on lock screen & shade (silent, selectable)"
+    override val secStatusSub = "Always shown on the lock screen and notification shade (silent)"
     override val statusEnable = "Enable persistent notification"
     override val statusSrcCourse = "Next/current class"
     override val statusSrcPlan = "Ongoing / next plan"
     override val statusSrcAgenda = "Next event"
-    override val statusSrcAi = "AI quick-add entry"
-    override val statusHint = "Multi-select; shown silently on lock screen"
+    override val statusSrcAi = "AI assistant entry"
     override val statusChannelName = "Status"
     override val statusChannelDesc = "Always-on status of classes & events"
     override fun statusInClassFmt(name: String, end: String) = "In class: $name · until $end"
@@ -2099,7 +2114,7 @@ object EnStrings : AppStrings {
     override val secDataSub = "Schedule is cached locally after sync"
     override val autoRefresh = "Auto-sync"
     override val autoCheckUpdate = "Auto-check for updates"
-    override val fieldRepeatUntil = "Repeat until"
+    override val fieldRepeatUntil = "Repeat until (optional)"
     override val repeatUntilNone = "No end"
     override val tabSchool = "School"
     override val comingSoon = "Coming soon"
@@ -2116,13 +2131,11 @@ object EnStrings : AppStrings {
         "Permissions, reminders, AI, floating ball, persistent notification, widgets"
     override val settingsTabCustomSub = "Timeline range and widget refresh rate"
     override val secPermissions = "Permissions"
-    override val secPermissionsSub =
-        "Grant on demand; the related feature stays unavailable without it (status is shown here)"
     override val permGranted = "Granted"
     override val permNotGranted = "Not granted"
     override val permRequest = "Request"
     override val permNetworkName = "Network access"
-    override val permNetworkWhy = "Sync the timetable from the school system (granted at install)"
+    override val permNetworkWhy = "Sync the timetable from the school system"
     override val permNotifName = "Notifications"
     override val permNotifWhy = "Class reminders, persistent notification, test notification"
     override val permOverlayName = "Overlay (display over other apps)"
@@ -2141,7 +2154,7 @@ object EnStrings : AppStrings {
     override val imgDirNote = "Images are saved to Pictures/K日程 in your gallery."
 
     override val secLang = "Language"
-    override val secLangSub = "简体中文 / English / Français (system default)"
+    override val secLangSub = "简体中文 / English / Français"
     override val langSystem = "System default"
 
     override val secDev = "Developer tools"
@@ -2149,7 +2162,7 @@ object EnStrings : AppStrings {
     override val openDevTools = "Open developer tools"
     override val secDevBrowser = "Built-in browser"
     override val secDevBrowserSub =
-        "A plain browser (no script injection, no auto-navigation) with history, for observing page flows manually"
+        "A regular browser (no script injection or automatic redirects, with browsing history)"
     override val btnOpenDevBrowser = "Open built-in browser"
     override val devBrowserTitle = "Built-in browser"
     override val devBrowserAddress = "Address"
@@ -2164,7 +2177,7 @@ object EnStrings : AppStrings {
     override val secNotifTestSub = "Verify the notification & reminder pipeline"
     override val sendTestNotifBtn = "Send test notification now"
     override val sendTestReminderBtn = "Send test reminder in ~15 s"
-    override val testNotifSent = "Test notification sent (check the notification shade if notifications are enabled)"
+    override val testNotifSent = "Test notification sent"
     override val testReminderScheduled = "Test reminder scheduled in ~15 s (may be delayed without exact-alarm permission)"
     override val secReminderTools = "Reminder scheduling tools"
     override fun reminderCountLabel(n: Int) = "Scheduled reminders: $n"
@@ -2181,7 +2194,7 @@ object EnStrings : AppStrings {
     override val resetClearCacheDesc = "Delete the schedule cache and runtime logs."
     override val resetLogoutDesc = "Clears the saved student ID & password, the web session and the built-in browser state; schedule cache and events are kept."
     override val resetAll = "Reset app"
-    override val resetAllDesc = "Clears account, web session, built-in browser cache & local storage, schedule cache, events & plans, reminders, logs and language settings — equivalent to a freshly installed state."
+    override val resetAllDesc = "Clears account, web session, built-in browser cache and local storage, timetable cache, events and plans, reminders and alarms, logs and settings including language."
     override val askResetTitle = "Reset the app?"
     override val askResetBody = "All data and settings will be cleared."
     override val askClearDataTitle = "Clear all events and plans?"
@@ -2195,10 +2208,10 @@ object EnStrings : AppStrings {
     override val aboutBody =
         "Local-first timetable & agenda app: your schedule is fetched from the school's academic system and cached on-device. " +
             "Day/week/month views (swipe to switch), local events & plans, class reminders, home-screen widgets, " +
-            "persistent status notification, and a DeepSeek AI assistant (add/update/delete events; toolbar button or floating ball over other apps). " +
+            "persistent status notification, and an AI assistant with optional local models or cloud parsing (add/update/delete events; toolbar button or floating ball over other apps). " +
             "No personal data is uploaded except to the AI endpoint you configure."
-    override val aboutTip = "Note: if syncing fails while the website works, the school pages may have changed. BUAA users can share the runtime log from Developer tools; other schools can update the adapter code in Settings → School → Add school."
-    override val aboutPeriods = "Period count and times are fully customizable: 14 by default (4 morning + 5 afternoon + 5 evening). Add or remove periods and edit their times in Settings → Custom → Class times. When class info changes before the academic system catches up, use \u201cEdit course\u201d in the course details (this occurrence or all occurrences); Settings can restore them or clear and re-sync."
+    override val aboutTip = "If syncing fails while the website works, the school pages may have changed. Share the runtime log from Developer tools."
+    override val aboutPeriods = "Customize the number and times of class periods in Settings → Custom → Class times. Use Edit course in course details to make local corrections; restore them or clear and sync again in Settings."
 
     override val updateCheck = "Check for updates"
     override fun updateCurrent(name: String) = "Current version: $name"
@@ -2278,7 +2291,7 @@ object EnStrings : AppStrings {
     override val secPeriodTimesSub = "Customize the start/end time of every period (14 periods by default)"
     override val btnEditPeriodTimes = "Customize class times"
     override val periodTimesTitle = "Class times"
-    override val periodTimesHint = "Add or remove periods (1–24); enter times as 24-hour HH:mm (also 800 / 0800 / 8.00). Day/week views, widgets and the persistent notification update immediately."
+    override val periodTimesHint = "Add or remove periods (1–24); enter times as 24-hour HH:mm (also 800 / 0800 / 8.00)."
     override val periodTimesRestoreDefault = "Restore defaults"
     override val periodTimesRowFmt = "Period %d"
     override fun periodTimesCount(n: Int) = "$n period(s) now"
@@ -2294,20 +2307,26 @@ object EnStrings : AppStrings {
     override val secLockScreen = "Show on lock screen"
     override val secLockScreenSub = "When off, the persistent notification stays off the lock screen"
     override val btnOpenNotifSettings = "Open system notification settings"
-    override val lockScreenHint = "Notification missing on the lock screen? Some systems (MIUI/HyperOS, EMUI) hide silent notifications by default — enable “Lock screen notifications” for this app in the system settings."
+    override val lockScreenHint = "Notification missing on the lock screen?"
 
     override val secUiStyle = "Appearance"
-    override val secUiStyleSub = "Choose the overall visual style (default keeps the current look)"
-    override val uiStyleDefault = "Default (Minimal)"
-    override val uiStyleDefaultSub = "The current opaque card style"
+    override val secUiStyleSub = "Choose the overall visual style"
+    override val uiStyleDefault = "Minimal"
+    override val uiStyleDefaultSub = "Opaque cards and a simple layout"
     override val uiStyleGlass = "Liquid Glass"
-    override val uiStyleGlassSub = "Gradient background + translucent frosted cards with softer corners"
+    override val glassColorDepth = "Color depth"
+    override val glassDepthHint = "Adjust background intensity and glass tint. Soft colors are the default."
+    override val glassDepthLight = "Soft"
+    override val glassDepthRich = "Rich"
+    override val glassDepthReset = "Reset to soft"
+    override val glassBackgroundMotion = "Background color motion"
+    override val glassBackgroundMotionHint = "Let the background colors drift slowly. Off by default."
+    override val uiStyleGlassSub = "Default style: a gradient background and translucent frosted cards"
 
     override val secDocs = "Document import"
     override val secDocsSub = "Read Word / Excel / PPT / PDF / text and detect timetables, events and plans"
     override val docTitle = "Document import"
-    override val docIntro = "Pick a document; the text is extracted on this device and timetables, events and plans are detected automatically (nothing is uploaded)."
-    override val docOpenHint = "Opening a file with \"Open with K日程\" from another app leads here as well."
+    override val docIntro = "Choose a document; text is extracted on this device and timetables, events and plans are detected automatically."
     override val docPick = "Choose document"
     override val docReading = "Reading document…"
     override fun docReadFail(msg: String) = "Read failed: $msg"
@@ -2321,9 +2340,10 @@ object EnStrings : AppStrings {
     override fun docAnchorLabel(date: String) = "Monday of teaching week 1: $date"
     override val docAnchorHint = "Course weeks are calculated from this date; adjust by weeks if needed"
     override fun docImportedList(n: Int) = "Imported courses ($n)"
+    override val docNoImportedCourses = "No imported courses yet"
     override val docClearImported = "Clear imported courses"
     override val docExport = "Export as document"
-    override val docExportHint = "Export the current timetable and events as CSV / Markdown to a location you choose"
+    override val docExportHint = "Export the current timetable and events as CSV / Markdown files"
     override val docExportCsv = "Export CSV"
     override val docExportMd = "Export Markdown"
     override val docExported = "Exported to the selected location"
@@ -2332,22 +2352,20 @@ object EnStrings : AppStrings {
     override val msgImportedCoursesCleared = "Imported courses cleared"
     override val msgImportNoCourses = "No course detected — make sure the document contains weekday and period info"
     override val msgImportNoEvents = "No event or plan detected"
-    override val docLocalOnly = "Everything happens on this device; nothing is sent online"
+    override val docLocalOnly = "Processed on this device"
 
-    override val aiOfflineParse = "Offline detect"
-    override fun aiOfflineDone(n: Int) = "Detected $n item(s) offline (no AI used)"
+    override val aiOfflineParse = "Quick rules"
+    override fun aiOfflineDone(n: Int) = "Rules found $n item(s); no AI model used. Confirm to save."
 
     // ---------------- Course edits ----------------
     override val tagEdited = "Edited"
     override val btnEditCourse = "Edit course"
     override val courseEditTitle = "Edit course"
     override val courseEditIntro =
-        "Use this when the class info already changed but the academic system hasn't caught up. Edits stay on this device and never touch the academic system."
+        "Changes are saved locally."
     override val editScopeLabel = "Apply to"
     override val editScopeOne = "Only this occurrence"
-    override val editScopeOneHint = "Change just this block (weekday and periods can be adjusted too)"
     override val editScopeAll = "All occurrences of this course"
-    override val editScopeAllHint = "Every weekday/period block of this course gets the same change"
     override val fieldCourseName = "Course name"
     override val editWeeksHint = "e.g. 2-17; leave empty for every week"
     override val editPeriodStart = "From period"
@@ -2363,15 +2381,13 @@ object EnStrings : AppStrings {
     override fun msgEditConflicts(n: Int) = "$n course(s) differ from the academic system — please review"
 
     override val secCourseEdits = "Course edits"
-    override val secCourseEditsSub = "Local fixes while the academic system lags behind"
+    override val secCourseEditsSub = "Local corrections"
     override fun courseEditsCount(n: Int) = "$n edited"
     override val courseEditsNone = "No course edits yet"
     override val courseEditsIntro =
-        "Tap a course card in the timetable to edit its info. Once the academic system matches your edit, the \u201cEdited\u201d mark disappears automatically."
+        "Tap a course card in the timetable to edit its details."
     override val btnRestoreCourseEdits = "Restore course edits only"
     override val btnSyncClearCourseEdits = "Sync with the academic system and clear all course edits"
-    override val courseEditsHint =
-        "\u201cRestore only\u201d puts the timetable back to the academic version (offline). \u201cSync and clear\u201d removes every edit and fetches the timetable again."
     override val askRestoreEditsTitle = "Restore all course edits?"
     override val askRestoreEditsBody =
         "Every course returns to the version saved by the academic system and the \u201cEdited\u201d marks disappear."
@@ -2395,21 +2411,21 @@ object EnStrings : AppStrings {
     override val editActionDelete = "Delete course"
     override val editActionMove = "Reschedule"
     override val editDeleteIntro =
-        "The course is hidden in the selected weeks (local only; the academic system is untouched)."
+        "This course will be hidden in the selected weeks."
     override val editDeleteWeeksHint = "Select all = hide the whole course"
     override fun editMoveIntro(n: Int) =
         "Move this day's courses (all or one) to another date (local only). This day has $n course(s)."
-    override val editMoveWholeDay = "Whole day together"
+    override val editMoveWholeDay = "Move this day’s courses"
     override fun editMoveWholeDayHint(n: Int) = "All $n course(s) of this day move to the target date"
     override val editMoveSingle = "Several courses"
-    override val editMoveSingleHint = "Tick the courses to move (multi-select); the others stay"
+    override val editMoveSingleHint = "Select the courses to move; the others stay"
     override val editMoveTarget = "Target date"
     override val editMovePickDate = "Pick a date"
     override val weeksAll = "All"
     override val weeksNone = "Clear"
     override val courseAddTitle = "Add course"
     override val courseAddIntro =
-        "Add a course missing from the academic system (local only; nothing is uploaded)."
+        "Add a course locally."
     override val btnAddCourse = "Add course"
     override val btnCopyCourse = "Copy course"
     override val aboutOfficialSite = "Official site / downloads"
@@ -2431,17 +2447,17 @@ object EnStrings : AppStrings {
     override val msgFeedbackFailed = "Send failed; check your network and retry"
     override val feedbackEmpty = "Please write something first"
     override val feedbackIncludeNote =
-        "Attached automatically: app version, Android version, current school (no student ID, password or timetable content)"
+        "Submissions include the app version, Android version and current school name."
     override val btnRescheduleDate = "Move to..."
     override val longPressHint = "Long-press a date to move its courses"
     override val rescheduleTitle = "Move to..."
     override fun rescheduleIntro(month: Int, day: Int, n: Int) =
         "$month/$day has $n course(s). Choose what to move and the target date."
-    override val rescheduleSingleHint = "Move a single course (pick below)"
-    override val msgCourseDeleted = "Deleted (local only)"
-    override val msgCourseAdded = "Course added (local only)"
+    override val rescheduleSingleHint = "Multiple selection allowed"
+    override val msgCourseDeleted = "Deleted"
+    override val msgCourseAdded = "Course added"
     override fun msgCourseMoved(n: Int, month: Int, day: Int) = "Moved $n course(s) to $month/$day"
-    override val msgMoveSameDay = "Target date is the same as the source"
+    override val msgMoveSameDay = "The target date is the same as the original date"
     override val msgMoveNoWeek = "Cannot determine the teaching week; sync the timetable first"
 
     override val secHolidayCourses = "Holiday timetable"
@@ -2451,11 +2467,8 @@ object EnStrings : AppStrings {
         "When on, classes on public holidays are shown and reminders fire as usual (handy for rescheduling)."
 
     override val secBackup = "Backup & restore"
-    override val secBackupSub = "Export before switching devices or reinstalling"
     override val backupIntro =
-        "Export a single backup file (timetable cache, agenda and plans, course edits, all settings) and import it after reinstalling or switching devices."
-    override val backupIncludes =
-        "The backup contains your student ID, timetable, agenda and settings. It excludes the password and API key (they cannot be decrypted on another device)."
+        "Export a backup file (timetable cache, events and plans, course edits and all settings). Passwords and API keys are excluded."
     override val btnBackupExport = "Export backup"
     override val btnBackupImport = "Import backup"
     override val backupAskImportTitle = "Import backup?"
@@ -2528,9 +2541,9 @@ object FrStrings : AppStrings {
     override val sampleCourse = "Mathématiques"
     override val sampleLocation = "Bâtiment A201"
 
-    override val globalReminder = "Rappels globaux"
+    override val globalReminder = "Réglages globaux des rappels"
     override val followGlobal = "Utiliser les réglages globaux"
-    override val applyGlobal = "Appliquer les réglages globaux à tous"
+    override val applyGlobal = "Utiliser les réglages globaux pour tous les rappels"
     override val notifyEvent = "Notification"
     override val alarmEvent = "Alarme"
     override val alarmHint = "Sonne au volume des alarmes. Arrêt depuis la notification ou après deux minutes."
@@ -2560,7 +2573,7 @@ object FrStrings : AppStrings {
     override val widgetWeekCourses = "Cours de la semaine"
     override val widgetEmpty = "Aucun événement"
     override val widgetMore = "Touchez pour tout voir"
-    override val aiContextNote = "La reconnaissance IA transmet les titres, dates, horaires, lieux, étiquettes et règles de répétition pour améliorer les modifications."
+    override val aiContextNote = "Le mode local traite le texte sur le téléphone. Le cloud envoie le texte et les champs utiles. Vérifiez avant de confirmer."
     override val reminderNeedsTime = "Une heure de début précise est requise"
 
     override val appTitle = "K Agenda"
@@ -2575,6 +2588,14 @@ object FrStrings : AppStrings {
 
     override val syncSyncedAt = "Synchronisé · "
     override val syncNotLoggedIn = "Non connecté"
+    override val syncFailed = "Échec de synchronisation"
+    override val helpTitle = "Aide"
+    override val helpSubtitle = "Questions fréquentes et conseils d’utilisation"
+    override val helpSearch = "Rechercher une question ou un mot-clé"
+    override val helpClearSearch = "Effacer la recherche"
+    override val helpNoResults = "Aucune question trouvée. Essayez d’autres mots-clés."
+    override val helpQuestions = HelpContent.fr
+    override val ujsLoginContinue = "③ Si la page affiche « 点此直接登录 » (connexion directe) ou « CAS 统一身份认证登录 » (connexion CAS), touchez ce lien ; sinon, attendez l’emploi du temps."
     override val syncRunning = "Synchronisation…"
     override val syncHintNeedLogin = "Pas encore connecté. Saisissez votre identifiant et mot de passe dans Réglages, puis synchronisez."
     override val syncHintRunning = "Récupération de l'emploi du temps…"
@@ -2733,7 +2754,7 @@ object FrStrings : AppStrings {
 
     override val pasteLabel = "Collez une annonce — heure / lieu / type détectés automatiquement"
     override val pastePlaceholder = "ex. 18 sept. 15h50 conférence au C1-2003"
-    override val pasteBtn = "Analyser et remplir"
+    override val pasteBtn = "Remplir par règles"
     override val parseOk = "Reconnu — veuillez vérifier"
     override val parsePartial = "Partiellement reconnu — complétez les champs manquants"
     override val parseFail = "Non reconnu — saisissez manuellement"
@@ -2758,7 +2779,7 @@ object FrStrings : AppStrings {
     override val labelStudentId = "Identifiant étudiant"
     override val secProfile = "Profil d'identité"
     override val secProfileSub =
-        "Renseignez votre université/filière/année/classe : si une annonce liste plusieurs classes ou créneaux, l'IA n'ajoute que celui qui vous correspond"
+        "Renseignez votre faculté, filière, année et classe pour aider l’assistant IA à ajouter plus précisément les événements des avis."
     override val labelCollege = "Université"
     override val labelMajor = "Filière"
     override val labelGrade = "Année"
@@ -2786,7 +2807,7 @@ object FrStrings : AppStrings {
             "« Se déconnecter » efface aussi la session web. En cas de captcha, réessayez plus tard."
     override val labelViaWebVpn = "Via WebVPN"
     override val labelViaWebVpnSub =
-        "Coché : accéder au système académique via WebVPN. Décoché : itinéraire par défaut. Les deux itinéraires sont implémentés séparément et n'affectent pas l'autre."
+        "Accéder au système pédagogique via le WebVPN de l’établissement hors du campus"
     override val askClearCredTitle = "Supprimer les identifiants ?"
     override val askClearCredBody = "L'identifiant et le mot de passe locaux seront supprimés ; la session web et le cache sont conservés."
 
@@ -2836,8 +2857,8 @@ object FrStrings : AppStrings {
     // AI 助手（悬浮入口）
     override val qaTitle = "Assistant IA"
     override val qaHint = "Saisissez ou collez : ajouter des événements/plans, ou demander à l'IA de modifier/supprimer (ex. « déplacer la visite à demain après-midi »)"
-    override val qaParse = "Analyse IA"
-    override val qaConfirm = "Tout exécuter"
+    override val qaParse = "Analyse intelligente"
+    override val qaConfirm = "Confirmer les modifications"
     override val qaNothing = "Rien à exécuter"
     override val qaStaleResult = "Texte modifié — résultat ignoré. Veuillez relancer l'analyse."
     override val qaReparseTitle = "Relancer l'analyse ?"
@@ -2885,32 +2906,29 @@ object FrStrings : AppStrings {
     override val qaReParse = "Texte modifié — relancez l'analyse IA"
 
     // IA (DeepSeek)
-    override val secAi = "Reconnaissance IA (DeepSeek)"
-    override val secAiSub = "Avec une clé API, ajoutez, modifiez ou supprimez en langage naturel"
+    override val secAi = "Reconnaissance IA"
+    override val secAiSub = "Modèle local à télécharger, ou analyse dans le cloud"
     override val aiKeyLabel = "Clé API DeepSeek"
     override val aiKeyKeepHint = "Enregistrée (laisser vide pour garder)"
     override val aiUseDevKey = "Utiliser la clé API du développeur"
-    override val aiDevKeyInUse = "Clé API intégrée activée — l'IA est prête à l'emploi"
-    override val aiDevModelFixed = "Fixé sur deepseek-flash avec la clé du développeur"
     override val aiModelLabel = "Modèle"
     override val aiSave = "Enregistrer"
     override val aiClear = "Effacer la clé"
     override val aiSavedToast = "Réglages IA enregistrés (clé chiffrée)"
     override val aiClearedToast = "Clé IA effacée"
-    override val aiBtn = "IA"
-    override val aiRunning = "Appel de l'IA…"
+    override val aiBtn = "Analyser avec le modèle"
+    override val aiRunning = "Analyse…"
     override val aiOk = "Analyse IA terminée"
     override val aiNeedKey = "Configurez la clé API DeepSeek dans Réglages → IA"
 
     // Notification permanente
     override val secStatus = "Notification permanente"
-    override val secStatusSub = "Toujours affichée (écran verrouillé inclus)"
+    override val secStatusSub = "Affichage permanent sur l’écran verrouillé et dans le volet de notifications (silencieux)"
     override val statusEnable = "Activer"
     override val statusSrcCourse = "Cours suivant/en cours"
     override val statusSrcPlan = "Plan en cours / suivant"
     override val statusSrcAgenda = "Prochain événement"
-    override val statusSrcAi = "Entrée rapide IA"
-    override val statusHint = "Multi-sélection ; silencieuse"
+    override val statusSrcAi = "Accès à l’assistant IA"
     override val statusChannelName = "Statut"
     override val statusChannelDesc = "Statut permanent des cours et événements"
     override fun statusInClassFmt(name: String, end: String) = "En cours : $name · jusqu'à $end"
@@ -2928,7 +2946,7 @@ object FrStrings : AppStrings {
     override val secDataSub = "L'emploi du temps est mis en cache localement après synchro"
     override val autoRefresh = "Synchronisation automatique"
     override val autoCheckUpdate = "Vérification auto des mises à jour"
-    override val fieldRepeatUntil = "Répéter jusqu'au"
+    override val fieldRepeatUntil = "Date de fin de répétition (facultative)"
     override val repeatUntilNone = "Sans fin"
     override val tabSchool = "École"
     override val comingSoon = "À venir"
@@ -2945,14 +2963,12 @@ object FrStrings : AppStrings {
         "Autorisations, rappels, IA, bulle, notification permanente, widgets"
     override val settingsTabCustomSub = "Plage de la frise et fréquence des widgets"
     override val secPermissions = "Autorisations"
-    override val secPermissionsSub =
-        "À accorder à la demande ; la fonction associée reste indisponible sinon"
     override val permGranted = "Accordé"
     override val permNotGranted = "Non accordé"
     override val permRequest = "Demander"
     override val permNetworkName = "Accès réseau"
     override val permNetworkWhy =
-        "Synchroniser l'emploi du temps depuis le système scolaire (accordé à l'installation)"
+        "Synchroniser les cours depuis le système pédagogique"
     override val permNotifName = "Notifications"
     override val permNotifWhy = "Rappels de cours, notification permanente, notification de test"
     override val permOverlayName = "Superposition (par-dessus les autres applis)"
@@ -2971,7 +2987,7 @@ object FrStrings : AppStrings {
     override val imgDirNote = "Les images sont enregistrées dans Pictures/K日程."
 
     override val secLang = "Langue / Language"
-    override val secLangSub = "简体中文 / English / Français (langue du système par défaut)"
+    override val secLangSub = "简体中文 / English / Français"
     override val langSystem = "Langue du système"
 
     override val secDev = "Outils développeur"
@@ -2979,7 +2995,7 @@ object FrStrings : AppStrings {
     override val openDevTools = "Ouvrir les outils développeur"
     override val secDevBrowser = "Navigateur intégré"
     override val secDevBrowserSub =
-        "Navigateur simple (sans injection de script ni navigation automatique) avec historique, pour observer les pages manuellement"
+        "Navigateur classique (sans injection de scripts ni redirections automatiques, avec historique)"
     override val btnOpenDevBrowser = "Ouvrir le navigateur intégré"
     override val devBrowserTitle = "Navigateur intégré"
     override val devBrowserAddress = "Adresse"
@@ -2994,7 +3010,7 @@ object FrStrings : AppStrings {
     override val secNotifTestSub = "Vérifier le circuit notifications / rappels"
     override val sendTestNotifBtn = "Envoyer une notification de test"
     override val sendTestReminderBtn = "Rappel de test dans ~15 s"
-    override val testNotifSent = "Notification de test envoyée (visible si les notifications sont activées)"
+    override val testNotifSent = "Notification de test envoyée"
     override val testReminderScheduled = "Rappel de test prévu dans ~15 s (peut être retardé sans alarmes exactes)"
     override val secReminderTools = "Outils de planification des rappels"
     override fun reminderCountLabel(n: Int) = "Rappels planifiés : $n"
@@ -3010,8 +3026,8 @@ object FrStrings : AppStrings {
     override val resetClearCache = "Vider cache et journaux"
     override val resetClearCacheDesc = "Supprime le cache de l'emploi du temps et les journaux."
     override val resetLogoutDesc = "Efface l'identifiant et le mot de passe enregistrés, la session web et l'état du navigateur intégré ; le cache et les événements sont conservés."
-    override val resetAll = "Réinitialiser l'application"
-    override val resetAllDesc = "Efface compte, session web, cache et stockage local du navigateur intégré, cache du planning, événements et plans, rappels, journaux et réglages de langue — équivaut à une installation neuve."
+    override val resetAll = "Réinitialiser l’application"
+    override val resetAllDesc = "Efface le compte, la session web, le cache et le stockage local du navigateur intégré, le cache des cours, les événements et plans, les rappels et alarmes, les journaux et les réglages, dont la langue."
     override val askResetTitle = "Réinitialiser l'application ?"
     override val askResetBody = "Toutes les données et tous les réglages seront effacés."
     override val askClearDataTitle = "Effacer tous les événements et plans ?"
@@ -3025,10 +3041,10 @@ object FrStrings : AppStrings {
     override val aboutBody =
         "Application locale d'abord : l'emploi du temps est récupéré depuis le système académique de l'école et mis en cache sur l'appareil. " +
             "Vues jour/semaine/mois (balayage pour changer), événements et plans locaux, rappels de cours, widgets, " +
-            "notification permanente et ajout rapide par IA DeepSeek (bouton ou bulle flottante au-dessus des autres applis). " +
+            "notification permanente et ajout rapide par IA avec modèles locaux optionnels ou cloud (bouton ou bulle flottante au-dessus des autres applis). " +
             "Aucune donnée personnelle n'est envoyée, hormis vers l'API IA que vous configurez."
-    override val aboutTip = "Remarque : si la synchro échoue alors que le site fonctionne, les pages de l'école ont peut-être changé. Les utilisateurs BUAA peuvent partager le journal via Outils développeur ; pour les autres écoles, mettez à jour le code d'adaptation dans Réglages → École → Ajouter une école."
-    override val aboutPeriods = "Le nombre de périodes et leurs horaires sont entièrement personnalisables : 14 par défaut (4 le matin + 5 l'après-midi + 5 le soir). Ajoutez/supprimez des périodes dans Réglages → Personnalisation → Horaires des cours. Si les informations changent avant le système scolaire, utilisez « Modifier le cours » dans le détail du cours (cette occurrence ou toutes) ; les réglages permettent de restaurer ou d'effacer puis resynchroniser."
+    override val aboutTip = "Si la synchronisation échoue alors que le site fonctionne, les pages de l’établissement ont peut-être changé. Partagez le journal depuis Outils développeur."
+    override val aboutPeriods = "Personnalisez le nombre de périodes et leurs horaires dans Réglages → Personnalisation → Horaires des cours. Utilisez Modifier le cours dans le détail d’un cours pour le corriger localement ; restaurez ou effacez les modifications puis resynchronisez dans les réglages."
 
     override val updateCheck = "Vérifier les mises à jour"
     override fun updateCurrent(name: String) = "Version actuelle : $name"
@@ -3108,7 +3124,7 @@ object FrStrings : AppStrings {
     override val secPeriodTimesSub = "Personnalisez le début/la fin de chaque période (14 par défaut)"
     override val btnEditPeriodTimes = "Personnaliser les horaires"
     override val periodTimesTitle = "Horaires des cours"
-    override val periodTimesHint = "Ajoutez ou supprimez des périodes (1–24) ; saisissez les heures au format 24 h HH:mm (aussi 800 / 0800 / 8.00). Les vues jour/semaine, le widget et la notification permanente sont mis à jour immédiatement."
+    override val periodTimesHint = "Ajoutez ou supprimez des périodes (1–24) ; saisissez les heures au format 24 h HH:mm (aussi 800 / 0800 / 8.00)."
     override val periodTimesRestoreDefault = "Rétablir par défaut"
     override val periodTimesRowFmt = "Période %d"
     override fun periodTimesCount(n: Int) = "$n période(s)"
@@ -3124,20 +3140,26 @@ object FrStrings : AppStrings {
     override val secLockScreen = "Afficher sur l'écran verrouillé"
     override val secLockScreenSub = "Désactivé, la notification permanente n'apparaît pas sur l'écran verrouillé"
     override val btnOpenNotifSettings = "Ouvrir les réglages de notifications"
-    override val lockScreenHint = "Notification absente de l'écran verrouillé ? Certains systèmes (MIUI/HyperOS, EMUI) masquent les notifications silencieuses — activez « Notifications sur écran verrouillé » pour cette application."
+    override val lockScreenHint = "Notification absente de l’écran verrouillé ?"
 
     override val secUiStyle = "Apparence"
-    override val secUiStyleSub = "Choisissez le style visuel global (par défaut : style actuel conservé)"
-    override val uiStyleDefault = "Par défaut (minimal)"
-    override val uiStyleDefaultSub = "Le style actuel à cartes opaques"
+    override val secUiStyleSub = "Choisissez le style visuel global"
+    override val uiStyleDefault = "Minimal"
+    override val uiStyleDefaultSub = "Cartes opaques et mise en page simple"
     override val uiStyleGlass = "Verre liquide"
-    override val uiStyleGlassSub = "Fond dégradé + cartes translucides dépoli, coins plus doux"
+    override val glassColorDepth = "Intensité des couleurs"
+    override val glassDepthHint = "Réglez l’intensité du fond et du verre. Couleurs douces par défaut."
+    override val glassDepthLight = "Douce"
+    override val glassDepthRich = "Intense"
+    override val glassDepthReset = "Rétablir les couleurs douces"
+    override val glassBackgroundMotion = "Animation des couleurs du fond"
+    override val glassBackgroundMotionHint = "Fait évoluer lentement les couleurs. Désactivée par défaut."
+    override val uiStyleGlassSub = "Style par défaut : fond dégradé et cartes en verre dépoli translucide"
 
     override val secDocs = "Import de documents"
     override val secDocsSub = "Lire Word / Excel / PPT / PDF / texte et détecter emplois du temps, événements et plans"
     override val docTitle = "Import de documents"
-    override val docIntro = "Choisissez un document : le texte est extrait sur cet appareil et les emplois du temps, événements et plans sont détectés automatiquement (rien n'est envoyé)."
-    override val docOpenHint = "Ouvrir un fichier avec « Ouvrir avec K日程 » depuis une autre application mène aussi ici."
+    override val docIntro = "Choisissez un document : le texte est extrait sur cet appareil et les emplois du temps, événements et plans sont détectés automatiquement."
     override val docPick = "Choisir un document"
     override val docReading = "Lecture du document…"
     override fun docReadFail(msg: String) = "Échec de lecture : $msg"
@@ -3151,9 +3173,10 @@ object FrStrings : AppStrings {
     override fun docAnchorLabel(date: String) = "Lundi de la semaine 1 : $date"
     override val docAnchorHint = "Les semaines des cours sont calculées depuis cette date ; ajustez si besoin"
     override fun docImportedList(n: Int) = "Cours importés ($n)"
+    override val docNoImportedCourses = "Aucun cours importé pour le moment"
     override val docClearImported = "Vider les cours importés"
     override val docExport = "Exporter en document"
-    override val docExportHint = "Exporter l'emploi du temps et les événements en CSV / Markdown vers l'emplacement choisi"
+    override val docExportHint = "Exporter l’emploi du temps et les événements en fichiers CSV / Markdown"
     override val docExportCsv = "Exporter CSV"
     override val docExportMd = "Exporter Markdown"
     override val docExported = "Exporté vers l'emplacement choisi"
@@ -3162,22 +3185,20 @@ object FrStrings : AppStrings {
     override val msgImportedCoursesCleared = "Cours importés vidés"
     override val msgImportNoCourses = "Aucun cours détecté — vérifiez que le document contient le jour et la période"
     override val msgImportNoEvents = "Aucun événement ou plan détecté"
-    override val docLocalOnly = "Tout se passe sur cet appareil ; rien n'est envoyé en ligne"
+    override val docLocalOnly = "Traitement sur cet appareil"
 
-    override val aiOfflineParse = "Détection locale"
-    override fun aiOfflineDone(n: Int) = "$n élément(s) détecté(s) localement (sans IA)"
+    override val aiOfflineParse = "Règles rapides"
+    override fun aiOfflineDone(n: Int) = "$n élément(s) par règles, sans modèle IA. Confirmez pour enregistrer."
 
     // ---------------- Modifications de cours ----------------
     override val tagEdited = "Modifié"
     override val btnEditCourse = "Modifier le cours"
     override val courseEditTitle = "Modifier le cours"
     override val courseEditIntro =
-        "À utiliser quand les informations du cours ont changé mais que le système scolaire ne les a pas encore mises à jour. Les modifications restent sur cet appareil et ne touchent pas le système scolaire."
+        "Les modifications sont enregistrées localement."
     override val editScopeLabel = "Appliquer à"
     override val editScopeOne = "Seulement cette occurrence"
-    override val editScopeOneHint = "Modifier uniquement ce bloc (jour et périodes modifiables aussi)"
     override val editScopeAll = "Toutes les occurrences de ce cours"
-    override val editScopeAllHint = "Chaque bloc de ce cours recevra la même modification"
     override val fieldCourseName = "Nom du cours"
     override val editWeeksHint = "ex. 2-17 ; vide = chaque semaine"
     override val editPeriodStart = "Période de début"
@@ -3193,15 +3214,13 @@ object FrStrings : AppStrings {
     override fun msgEditConflicts(n: Int) = "$n cours diffèrent du système scolaire — à vérifier"
 
     override val secCourseEdits = "Modifications de cours"
-    override val secCourseEditsSub = "Corrections locales quand le système scolaire est en retard"
+    override val secCourseEditsSub = "Corrections locales"
     override fun courseEditsCount(n: Int) = "$n modifié(s)"
     override val courseEditsNone = "Aucune modification de cours pour l'instant"
     override val courseEditsIntro =
-        "Touchez une carte de cours dans l'emploi du temps pour modifier ses informations. Quand le système scolaire correspondra à votre modification, la marque « Modifié » disparaît automatiquement."
+        "Touchez un cours dans l’emploi du temps pour modifier ses informations."
     override val btnRestoreCourseEdits = "Restaurer uniquement les modifications"
     override val btnSyncClearCourseEdits = "Synchroniser et effacer toutes les modifications"
-    override val courseEditsHint =
-        "« Restaurer » remet l'emploi du temps à la version du système scolaire (hors ligne). « Synchroniser et effacer » supprime toutes les modifications puis récupère l'emploi du temps."
     override val askRestoreEditsTitle = "Restaurer toutes les modifications ?"
     override val askRestoreEditsBody =
         "Chaque cours revient à la version enregistrée par le système scolaire et les marques « Modifié » disparaissent."
@@ -3225,21 +3244,21 @@ object FrStrings : AppStrings {
     override val editActionDelete = "Supprimer le cours"
     override val editActionMove = "Déplacer"
     override val editDeleteIntro =
-        "Le cours sera masqué pour les semaines sélectionnées (local uniquement, le système scolaire n'est pas modifié)."
+        "Ce cours sera masqué pendant les semaines sélectionnées."
     override val editDeleteWeeksHint = "Tout sélectionner = masquer tout le cours"
     override fun editMoveIntro(n: Int) =
         "Déplacer les cours de ce jour (tous ou un seul) vers une autre date (local uniquement). Ce jour compte $n cours."
-    override val editMoveWholeDay = "Toute la journée"
+    override val editMoveWholeDay = "Déplacer les cours de cette journée"
     override fun editMoveWholeDayHint(n: Int) = "Les $n cours de ce jour seront déplacés vers la date cible"
     override val editMoveSingle = "Plusieurs cours"
-    override val editMoveSingleHint = "Cochez les cours à déplacer (multi-sélection) ; les autres restent"
+    override val editMoveSingleHint = "Sélectionnez les cours à déplacer ; les autres restent"
     override val editMoveTarget = "Date cible"
     override val editMovePickDate = "Choisir une date"
     override val weeksAll = "Toutes"
     override val weeksNone = "Effacer"
     override val courseAddTitle = "Ajouter un cours"
     override val courseAddIntro =
-        "Ajoutez un cours absent du système scolaire (local uniquement, rien n'est envoyé)."
+        "Ajouter un cours localement."
     override val btnAddCourse = "Ajouter un cours"
     override val btnCopyCourse = "Copier le cours"
     override val aboutOfficialSite = "Site officiel / téléchargement"
@@ -3261,17 +3280,17 @@ object FrStrings : AppStrings {
     override val msgFeedbackFailed = "Échec de l'envoi ; vérifiez le réseau"
     override val feedbackEmpty = "Écrivez d'abord votre message"
     override val feedbackIncludeNote =
-        "Joint automatiquement : version, version d'Android, école (sans identifiant, mot de passe ni contenu de cours)"
+        "L’envoi inclut la version de l’application, la version d’Android et le nom de l’établissement actuel."
     override val btnRescheduleDate = "Déplacer vers..."
     override val longPressHint = "Appui long sur une date pour déplacer les cours"
     override val rescheduleTitle = "Déplacer vers..."
     override fun rescheduleIntro(month: Int, day: Int, n: Int) =
         "Le $month/$day compte $n cours. Choisissez les cours à déplacer et la date cible."
-    override val rescheduleSingleHint = "Déplacer un seul cours (choisir ci-dessous)"
-    override val msgCourseDeleted = "Supprimé (local uniquement)"
-    override val msgCourseAdded = "Cours ajouté (local uniquement)"
+    override val rescheduleSingleHint = "Sélection multiple possible"
+    override val msgCourseDeleted = "Supprimé"
+    override val msgCourseAdded = "Cours ajouté"
     override fun msgCourseMoved(n: Int, month: Int, day: Int) = "$n cours déplacés au $month/$day"
-    override val msgMoveSameDay = "La date cible est identique à la source"
+    override val msgMoveSameDay = "La date cible est identique à la date d’origine"
     override val msgMoveNoWeek = "Semaine introuvable ; synchronisez d'abord l'emploi du temps"
 
     override val secHolidayCourses = "Cours les jours fériés"
@@ -3281,11 +3300,8 @@ object FrStrings : AppStrings {
         "Activé, les cours des jours fériés s'affichent et les rappels fonctionnent (utile pour les déplacer)."
 
     override val secBackup = "Sauvegarde et restauration"
-    override val secBackupSub = "Exportez avant de changer d'appareil ou de réinstaller"
     override val backupIntro =
-        "Exportez un fichier de sauvegarde (cache d'emploi du temps, agenda et plans, modifications de cours, réglages) à restaurer après réinstallation."
-    override val backupIncludes =
-        "La sauvegarde contient l'identifiant étudiant, l'emploi du temps, l'agenda et les réglages ; pas le mot de passe ni la clé API (indéchiffrables sur un autre appareil)."
+        "Exporter une sauvegarde (cache des cours, événements et plans, corrections de cours et tous les réglages). Les mots de passe et les clés API sont exclus."
     override val btnBackupExport = "Exporter"
     override val btnBackupImport = "Importer"
     override val backupAskImportTitle = "Importer la sauvegarde ?"

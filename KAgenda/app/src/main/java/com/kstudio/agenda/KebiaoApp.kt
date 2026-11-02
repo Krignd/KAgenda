@@ -38,6 +38,7 @@ class KebiaoApp : Application() {
             Schools.setCurrent(bootSettings.schoolId)
             // 法定节假日是否照常显示课表（默认停课）
             HolidayTable.setShowCoursesOnHoliday(bootSettings.showHolidayCourses)
+            HolidayTable.replaceOverrides(com.kstudio.agenda.model.HolidayOverrides.decode(bootSettings.holidayOverridesRaw))
             // 课程时间：用户自定义过就用自定义；否则套用当前学校的作息预设
             // （如江苏大学 11 节；无预设的学校回落内置默认）。提醒排程会用到，必须在此之前设置好。
             val custom = PeriodTimes.decode(bootSettings.periodTimesRaw)
@@ -50,6 +51,19 @@ class KebiaoApp : Application() {
         }
         // 加载本地缓存的课表 + 恢复提醒
         ScheduleRepository.get(this).bootstrap()
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        java.util.concurrent.Executors.newSingleThreadExecutor().let { worker ->
+            worker.execute {
+                try {
+                    runCatching { com.kstudio.agenda.widget.NextClassWidgetUpdater.updateAll(this) }
+                        .onFailure { AppLog.e("Widget", "Theme refresh failed", it) }
+                }
+                finally { worker.shutdown() }
+            }
+        }
     }
 
     private fun installCrashLogger() {

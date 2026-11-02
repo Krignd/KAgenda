@@ -24,6 +24,7 @@ import androidx.lifecycle.lifecycleScope
 import com.kstudio.agenda.data.*
 import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.i18n.AcademicText
 import com.kstudio.agenda.model.*
 import com.kstudio.agenda.ui.theme.KAgendaTheme
 import kotlinx.coroutines.*
@@ -93,7 +94,7 @@ class WarehouseImportActivity : ComponentActivity() {
                 return super.onJsAlert(view, url, message, result)
             }
         }
-        loadUrl(adapters[adapterIndex].url)
+        AcademicPortalParser.portalUrl(adapters[adapterIndex].url)?.let { loadUrl(it) }
     }.also { web = it }
 
     private fun runScript() {
@@ -104,13 +105,34 @@ class WarehouseImportActivity : ComponentActivity() {
         courses = ""; times = ""; config = ""; blockedMessage = ""
         batch = null; dialog = null; busy = true; status = t.warehouseBusy
         runCatching {
-            val bridge = assets.open("shiguang/bridge.js").bufferedReader().use { it.readText() }.replace("__TOKEN__", JSONObject.quote(token))
-            val script = assets.open("shiguang/scripts/" + adapter.path).bufferedReader().use { it.readText() }
-            val runner = assets.open("shiguang/runner.js").bufferedReader().use { it.readText() }
-            web?.evaluateJavascript(WarehouseScriptRunner.wrap(bridge, script, runner), null)
+            require(AcademicPortalParser.portalUrl(web?.url.orEmpty()) != null)
+            val source = if (adapter.parser.isNotBlank()) {
+                assets.open("academic/collect.js").bufferedReader().use { it.readText() }
+                    .replace("__TOKEN__", JSONObject.quote(token)).replace("__PARSER__", JSONObject.quote(adapter.parser))
+            } else {
+                var bridge = assets.open("shiguang/bridge.js").bufferedReader().use { it.readText() }.replace("__TOKEN__", JSONObject.quote(token))
+                if (adapter.path.startsWith("EXT/")) {
+                    bridge += "\n" + assets.open("academic/school-common.js").bufferedReader().use { it.readText() }
+                        .replace("__ADAPTER_ID__", JSONObject.quote(adapter.id))
+                }
+                val script = assets.open("shiguang/scripts/" + adapter.path).bufferedReader().use { it.readText() }
+                val runner = assets.open("shiguang/runner.js").bufferedReader().use { it.readText() }
+                WarehouseScriptRunner.wrap(bridge, script, runner)
+            }
+            web?.evaluateJavascript(source, null)
         }.onFailure { fail(t.warehouseFailed) }
         timeout?.cancel()
         timeout = lifecycleScope.launch { delay(120_000); if (busy) fail(t.warehouseFailed) }
+    }
+
+    private fun openPortal(raw: String) {
+        val url = AcademicPortalParser.portalUrl(raw)
+        if (url == null) { status = AcademicText.current.invalidAddress; return }
+        val uri = java.net.URI(url)
+        if (uri.scheme.equals("http", true) && !android.security.NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted(uri.host)) {
+            status = AcademicText.httpBlocked; return
+        }
+        batch = null; status = ""; web?.loadUrl(url)
     }
 
     inner class Bridge {
@@ -124,6 +146,22 @@ class WarehouseImportActivity : ComponentActivity() {
                 val action = request.optString("action")
                 val data = request.optJSONObject("payload") ?: JSONObject()
                 when (action) {
+                    "academic" -> {
+                        if (adapters[adapterIndex].parser.isBlank()) return@runOnUiThread
+                        val currentToken = token
+                        val type = adapters[adapterIndex].parser
+                        val list = data.optJSONArray("sources") ?: return@runOnUiThread fail(AcademicText.current.failed)
+                        if (list.length() !in 1..16) return@runOnUiThread fail(AcademicText.current.failed)
+                        val sources = (0 until list.length()).map { list.optString(it) }
+                        lifecycleScope.launch {
+                            val parsed = withContext(Dispatchers.Default) { runCatching { AcademicPortalParser.parse(type, sources) } }
+                            if (!busy || token != currentToken) return@launch
+                            parsed.onSuccess {
+                                batch = it; busy = false; token = ""; timeout?.cancel(); status = t.warehouseReady
+                            }.onFailure { fail(AcademicText.current.failed) }
+                        }
+                    }
+                    "academicError" -> fail(AcademicText.current.failed)
                     "alert", "prompt", "selection" -> {
                         if (dialog != null) reply(id, false, t.warehouseBusy) else dialog = Request(id, action, data, token)
                     }
@@ -149,6 +187,7 @@ class WarehouseImportActivity : ComponentActivity() {
     private fun answer(request: Request, value: Any?) {
         if (request.token != token || dialog !== request) return
         dialog = null; reply(request.id, true, value)
+        if (value == null || value == false) fail("")
     }
     private fun fail(text: String) {
         busy = false; token = ""; dialog = null; batch = null; timeout?.cancel(); status = text
@@ -186,6 +225,9 @@ class WarehouseImportActivity : ComponentActivity() {
 
     @Composable private fun Content() {
         val text = LocalStrings.current
+        val academic = AcademicText.current
+        val selected = adapters[adapterIndex]
+        var address by remember { mutableStateOf(adapters.first().url) }
         var choose by remember { mutableStateOf(false) }
         var license by remember { mutableStateOf(false) }
         Scaffold(topBar = { TopAppBar(title = { Text(school.name, maxLines = 1) }, navigationIcon = { IconButton(onClick = { finish() }) { Icon(Icons.AutoMirrored.Filled.ArrowBack, text.cancel) } }) }) { padding ->
@@ -195,7 +237,17 @@ class WarehouseImportActivity : ComponentActivity() {
                     TextButton(onClick = { choose = true }, enabled = !busy) { Text(text.chooseAdapter) }
                     TextButton(onClick = { license = true }) { Text(text.warehouseSource) }
                 }
-                Text(adapters[adapterIndex].name + " · " + adapters[adapterIndex].maintainer, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.labelSmall)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    OutlinedTextField(address, { address = it }, label = { Text(academic.address) }, singleLine = true,
+                        enabled = !busy, modifier = Modifier.weight(1f))
+                    TextButton(enabled = !busy, onClick = {
+                        openPortal(address)
+                    }) { Text(academic.open) }
+                }
+                Text(AcademicText.adapterName(selected) + " · " + selected.maintainer, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.labelSmall)
+                if (selected.category.startsWith("GENERAL") || selected.category == "HISTORICAL") {
+                    Text(academic.unverified, Modifier.padding(horizontal = 16.dp), style = MaterialTheme.typography.bodySmall)
+                }
                 Text(page, Modifier.padding(horizontal = 16.dp), maxLines = 2, style = MaterialTheme.typography.labelSmall)
                 AndroidView(factory = { browser() }, modifier = Modifier.weight(1f).fillMaxWidth())
                 if (status.isNotBlank()) Text(status, Modifier.padding(8.dp), style = MaterialTheme.typography.bodySmall)
@@ -208,12 +260,20 @@ class WarehouseImportActivity : ComponentActivity() {
         }
         if (choose) AlertDialog(onDismissRequest = { choose = false }, title = { Text(text.chooseAdapter) }, text = {
             Column(Modifier.verticalScroll(rememberScrollState())) { adapters.forEachIndexed { i, adapter ->
-                TextButton(onClick = { adapterIndex = i; choose = false; batch = null; status = ""; web?.loadUrl(adapter.url) }) { Text(adapter.name + " · " + adapter.category) }
+                TextButton(onClick = {
+                    adapterIndex = i; choose = false; batch = null; status = ""
+                    // Keep the current signed-in page when changing parser type.
+                    if (AcademicPortalParser.portalUrl(web?.url.orEmpty()) == null) {
+                        address = adapter.url
+                        AcademicPortalParser.portalUrl(adapter.url)?.let { web?.loadUrl(it) }
+                    }
+                }) { Text(AcademicText.adapterName(adapter) + " · " + adapter.license +
+                    if (adapter.updated.isNotBlank()) " · " + adapter.updated.take(10) else "") }
             } }
         }, confirmButton = { TextButton(onClick = { choose = false }) { Text(text.cancel) } })
         dialog?.let { request -> BridgeDialog(request) }
         batch?.let { result -> Preview(result) }
-        if (license) WarehouseLicenseDialog { license = false }
+        if (license) WarehouseLicenseDialog(selected) { license = false }
     }
 
     @Composable private fun Preview(result: WarehousePayload.Batch) {
@@ -292,16 +352,31 @@ class WarehouseImportActivity : ComponentActivity() {
 }
 
 @Composable
-internal fun WarehouseLicenseDialog(onDismiss: () -> Unit) {
+internal fun WarehouseLicenseDialog(adapter: SchoolCatalog.Adapter? = null, onDismiss: () -> Unit) {
     val t = LocalStrings.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val uri = androidx.compose.ui.platform.LocalUriHandler.current
-    val license = remember { listOf("shiguang-warehouse-MIT.txt", "school-badges-Apache-2.0.txt", "pypinyin-MIT.txt").joinToString("\n\n") { name -> context.assets.open("licenses/$name").bufferedReader().use { it.readText() } } }
+    val license = remember(adapter?.licenseAsset) {
+        val additional = if (adapter == null) context.assets.list("licenses").orEmpty().filter { it.startsWith("single-school-") && !it.contains("bundle") }
+            else listOfNotNull(adapter.licenseAsset.takeIf { it.isNotBlank() })
+        (listOf("shiguang-warehouse-MIT.txt", "wakeup-Apache-2.0.txt", "wakeup-NOTICE.txt", "jsoup-MIT.txt", "gson-Apache-2.0.txt", "school-badges-Apache-2.0.txt", "pypinyin-MIT.txt") + additional).distinct()
+            .joinToString("\n\n") { name -> context.assets.open("licenses/$name").bufferedReader().use { it.readText() } }
+    }
     AlertDialog(onDismissRequest = onDismiss, title = { Text(t.warehouseSource) }, text = {
         Column(Modifier.heightIn(max = 500.dp).verticalScroll(rememberScrollState())) {
             Text(t.licenseAttribution)
+            adapter?.let { a ->
+                Text(a.name + " · " + a.maintainer)
+                Text(a.license + " · " + a.revision, style = MaterialTheme.typography.bodySmall)
+                if (a.updated.isNotBlank()) Text(AcademicText.current.updated + ": " + a.updated.take(10))
+                if (a.description.isNotBlank()) Text(a.description)
+                if (a.parser.isNotBlank()) Text(AcademicText.current.legacy)
+                TextButton(onClick = { uri.openUri(a.sourceUrl.ifBlank { a.repository }) }) { Text(AcademicText.current.source) }
+                if (a.directoryUrl.isNotBlank()) TextButton(onClick = { uri.openUri(a.directoryUrl) }) { Text(AcademicText.current.historical) }
+            }
             Text(SchoolCatalog.COMMIT, style = MaterialTheme.typography.labelSmall)
             TextButton(onClick = { uri.openUri(SchoolCatalog.REPOSITORY) }) { Text("GitHub · ShiGuangSchedule") }
+            TextButton(onClick = { uri.openUri(AcademicPortalParser.REPOSITORY) }) { Text("GitHub · WakeUp 3.612 / YZune / Matey-ace · Apache-2.0") }
             TextButton(onClick = { uri.openUri("https://github.com/lovefc/china_school_badge") }) { Text("GitHub · lovefc") }
             Text(license, style = MaterialTheme.typography.bodySmall)
         }

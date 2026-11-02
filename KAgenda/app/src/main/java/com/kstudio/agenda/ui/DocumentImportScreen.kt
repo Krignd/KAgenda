@@ -1,33 +1,33 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package com.kstudio.agenda.ui
+
+import com.kstudio.agenda.ui.theme.glassFrost
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
+import com.kstudio.agenda.ui.components.AppButton as Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.kstudio.agenda.ui.components.AppOutlinedButton as OutlinedButton
+import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -39,321 +39,258 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.kstudio.agenda.data.AiSkills
 import com.kstudio.agenda.data.DocumentTextExtractor
 import com.kstudio.agenda.data.LocalSmartParser
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.i18n.ImportText
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.Course
-import com.kstudio.agenda.ui.components.SectionCard
+import com.kstudio.agenda.ui.components.pageEntrance
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.UUID
 
-/**
- * 「文档导入」页：本机读取 Word / Excel / PPT / PDF / 文本文件，
- * 自动识别课程表、日程与计划，并可直接导入到应用中。
- *
- * 全部处理在本机完成（不联网、不上传）。其他应用通过「用 K日程 打开」传入的文件
- * 也会进入本页（见 MainActivity 的 ACTION_VIEW / ACTION_SEND 处理）。
- */
+/** Unified import/review page. Local extraction never uploads; AI honors the selected provider. */
 @Composable
-fun DocumentImportScreen(
-    vm: AppViewModel,
-    initialUri: Uri? = null,
-    onClose: () -> Unit,
-) {
+fun DocumentImportScreen(vm: AppViewModel, initialUri: Uri? = null, initialText: String? = null, embedded: Boolean = false, onClose: () -> Unit) {
     val t = LocalStrings.current
     val context = LocalContext.current
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     val settings by vm.settings.collectAsState()
     val imported by vm.importedCourses.collectAsState()
     val semester by vm.semester.collectAsState()
     val agendaAll by vm.agenda.collectAsState()
-
-    var docName by remember { mutableStateOf("") }
-    var text by remember { mutableStateOf("") }
+    var text by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    var needsAi by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var docName by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var msg by remember { mutableStateOf("") }
-
-    // 第 1 教学周周一：默认沿用当前学期的锚点，未同步时取本周周一
-    var anchor by remember {
-        mutableStateOf(
-            vm.importedAnchor.value
-                ?: settings.anchorEpochDay?.let { LocalDate.ofEpochDay(it) }
-                ?: LocalDate.now().with(java.time.DayOfWeek.MONDAY)
-        )
+    var work by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    val fixedAnchor = semester?.anchorEpochDay ?: vm.importedAnchor.value?.toEpochDay() ?: settings.anchorEpochDay
+    var anchorText by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(fixedAnchor?.let { LocalDate.ofEpochDay(it).toString() }.orEmpty()) }
+    var fillWeeks by remember { mutableStateOf(false) }
+    var weeksText by remember { mutableStateOf("") }
+    val anchor = runCatching { LocalDate.parse(anchorText) }.getOrNull()
+    val anchorValid = anchor?.dayOfWeek == java.time.DayOfWeek.MONDAY &&
+        (fixedAnchor == null || anchor?.toEpochDay() == fixedAnchor)
+    val suppliedWeeks = remember(weeksText) {
+        weeksText.takeIf { it.matches(Regex("[0-9]{1,2}(?:-[0-9]{1,2})?(?:[,，、][0-9]{1,2}(?:-[0-9]{1,2})?)*")) }
+            ?.let { raw ->
+                val parts = raw.split(',', '，', '、')
+                if (parts.all { part -> Course.parseWeeks(part).isNotEmpty() }) Course.parseWeeks(raw).flatMap { it.toList() }.toSet() else emptySet()
+            }.orEmpty()
+    }
+    val review by androidx.compose.runtime.produceState(CourseImportReview(), text, needsAi) {
+        kotlinx.coroutines.delay(200)
+        value = withContext(Dispatchers.Default) { CourseImportReview.read(text, needsAi) }
+    }
+    // Do not allow a stale preview from an earlier edit to be imported during debounce.
+    val currentReview = review.source == text
+    val courseHits = review.courses
+    val missingWeeks = courseHits.any { it.weeksRaw.isBlank() }
+    val readyCourses = courseHits.map { if (it.weeksRaw.isBlank() && fillWeeks && suppliedWeeks.isNotEmpty())
+        it.copy(weeksRaw = Course.encodeWeeks(suppliedWeeks)) else it }
+    val conflicts = com.kstudio.agenda.data.CourseImportCodec.hasConflicts(imported + readyCourses)
+    val canImport = !busy && currentReview && (!needsAi || text.trimStart().startsWith("{")) && courseHits.isNotEmpty() && review.valid && anchorValid && !conflicts &&
+        (!missingWeeks || (fillWeeks && suppliedWeeks.isNotEmpty()))
+    LaunchedEffect(review.firstMonday) {
+        review.firstMonday?.let { anchorText = it.toString() }
+    }
+    LaunchedEffect(fixedAnchor) {
+        if (anchorText.isBlank()) fixedAnchor?.let { anchorText = LocalDate.ofEpochDay(it).toString() }
     }
 
-    fun load(u: Uri) {
+    fun convert(source: String) {
+        work?.cancel()
         busy = true
-        msg = t.docReading
-        docName = DocumentTextExtractor.displayName(context, u)
-        scope.launch {
-            val result = withContext(Dispatchers.IO) { DocumentTextExtractor.extract(context, u) }
-            result.onSuccess {
-                text = it
+        msg = ImportText.parsing
+        work = scope.launch {
+            try {
+                val result = com.kstudio.agenda.data.CourseAiParser.convert(context, source)
+                text = result
+                needsAi = false
                 msg = ""
-                if (it.isBlank()) msg = t.docNoText
-            }.onFailure { e ->
-                val m = e.message.orEmpty()
-                DocumentTextExtractor.logFailure(docName, e)
-                msg = when {
-                    m.startsWith("UNSUPPORTED:") -> t.docUnsupportedExt(m.substringAfter(':').trim())
-                    m.isBlank() -> t.docReadFail(t.docNoText)
-                    else -> t.docReadFail(m)
-                }
-            }
-            busy = false
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { msg = if (e is org.json.JSONException || e.message in setOf("invalid_format", "invalid_count", "invalid_slot", "invalid_monday")) ImportText.incomplete else e.message?.takeIf { it.length < 240 } ?: ImportText.failed }
+            finally { busy = false }
         }
     }
-
-    LaunchedEffect(initialUri) {
-        initialUri?.let { load(it) }
+    fun load(uri: Uri) {
+        work?.cancel()
+        text = ""
+        needsAi = false
+        fillWeeks = false
+        busy = true
+        msg = ImportText.parsing
+        work = scope.launch {
+            try {
+                val result = withContext(Dispatchers.IO) {
+                    val name = DocumentTextExtractor.displayName(context, uri)
+                    val image = context.contentResolver.getType(uri).orEmpty().startsWith("image/") ||
+                        DocumentTextExtractor.extensionOf(name) in setOf("png", "jpg", "jpeg", "webp", "bmp", "heic")
+                    Triple(name, image, if (image) com.kstudio.agenda.data.ScreenshotTextExtractor.extract(context, uri)
+                        else DocumentTextExtractor.extract(context, uri).getOrThrow())
+                }
+                require(result.third.length <= com.kstudio.agenda.data.CourseImportCodec.MAX_TEXT) { ImportText.tooLong }
+                docName = result.first
+                needsAi = result.second
+                text = result.third
+                msg = if (text.isBlank()) ImportText.noText else ""
+            } catch (e: kotlinx.coroutines.CancellationException) { throw e }
+            catch (e: Exception) { msg = if (e is org.json.JSONException || e.message in setOf("invalid_format", "invalid_count", "invalid_slot", "invalid_monday")) ImportText.incomplete else e.message?.takeIf { it.length < 240 } ?: ImportText.failed }
+            finally { busy = false }
+        }
     }
-
-    // 识别结果（随文本变化重新计算）：日程/计划候选 与 课程候选
-    val eventOps = remember(text) {
-        if (text.isBlank()) emptyList() else LocalSmartParser.parseEvents(text, LocalDate.now())
+    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(::load) }
+    val imagePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { it?.let(::load) }
+    val browser = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            result.data?.getStringExtra(DevBrowserActivity.EXTRA_PAGE)?.let { page ->
+                text = page; needsAi = true; docName = ImportText.browser; convert(page)
+            }
+        }
     }
-    val courseHits = remember(text) {
-        if (text.isBlank()) emptyList() else LocalSmartParser.parseCourses(text)
+    LaunchedEffect(initialUri, initialText) {
+        if (initialUri != null) load(initialUri)
+        else if (initialText != null) {
+            if (initialText.length <= com.kstudio.agenda.data.CourseImportCodec.MAX_TEXT) { text = initialText; needsAi = false }
+            else { text = ""; msg = ImportText.tooLong }
+        }
     }
-
-    val filePicker = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri -> uri?.let { load(it) } }
-
-    // 导出（把当前课表/日程写成文档）
     var exportAsMd by remember { mutableStateOf(false) }
-    val createDoc = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("text/plain")
-    ) { uri ->
-        val payload = if (exportAsMd) buildMarkdownExport(semester, imported, agendaAll)
-        else buildCsvExport(semester, imported)
-        if (uri == null) return@rememberLauncherForActivityResult
-        val ok = runCatching {
-            context.contentResolver.openOutputStream(uri)?.use {
-                it.write(payload.toByteArray(Charsets.UTF_8))
-            } ?: error("no stream")
-        }.isSuccess
-        vm.message(if (ok) t.docExported else t.docExportFailed)
-    }
-
-    Column(Modifier.fillMaxSize()) {
-        // 顶栏：返回 + 标题
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            IconButton(onClick = onClose) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null)
-            }
-            Text(
-                text = t.docTitle,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.weight(1f),
-            )
-            IconButton(onClick = onClose) {
-                Icon(Icons.Filled.Close, contentDescription = null)
-            }
+    val createDoc = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+        if (uri != null) scope.launch(Dispatchers.IO) {
+            val payload = if (exportAsMd) buildMarkdownExport(semester, imported, agendaAll) else buildCsvExport(semester, imported)
+            val ok = runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(payload.toByteArray(Charsets.UTF_8)) } ?: error("no stream") }.isSuccess
+            withContext(Dispatchers.Main) { vm.message(if (ok) t.docExported else t.docExportFailed) }
         }
-
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            item {
-                SectionCard(t.docTitle, t.docLocalOnly) {
-                    Text(
-                        text = t.docIntro,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Spacer(Modifier.height(10.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        Button(onClick = { filePicker.launch(arrayOf("*/*")) }) { Text(t.docPick) }
-                        if (busy) {
-                            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+    }
+    val content: @Composable (PaddingValues) -> Unit = { padding ->
+            LazyColumn(Modifier.fillMaxSize().padding(padding).imePadding().pageEntrance(Unit),
+                contentPadding = PaddingValues(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                item { ImportSection(ImportText.title, ImportText.subtitle) {
+                    Text(if (settings.aiProvider == "cloud") ImportText.cloudHint else ImportText.localHint, style = MaterialTheme.typography.bodySmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(enabled = !busy, onClick = { vm.syncNow(); onClose() }) { Text(ImportText.portal) }
+                        OutlinedButton(enabled = !busy, onClick = {
+                            browser.launch(android.content.Intent(context, DevBrowserActivity::class.java).putExtra(DevBrowserActivity.EXTRA_IMPORT, true))
+                        }) { Text(ImportText.browser) }
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(enabled = !busy, onClick = { imagePicker.launch(arrayOf("image/*")) }) { Text(ImportText.screenshot) }
+                        OutlinedButton(enabled = !busy, onClick = { filePicker.launch(arrayOf("*/*")) }) { Text(t.docPick) }
+                    }
+                    if (docName.isNotBlank()) Text(docName, style = MaterialTheme.typography.labelSmall)
+                    if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    if (msg.isNotBlank()) Text(msg, color = MaterialTheme.colorScheme.error)
+                } }
+                item { ImportSection(ImportText.text, null) {
+                    Row {
+                        TextButton(enabled = !busy, onClick = {
+                            val pasted = clipboard.getText()?.text.orEmpty()
+                            if (pasted.length <= com.kstudio.agenda.data.CourseImportCodec.MAX_TEXT) { text = pasted; needsAi = false; fillWeeks = false; msg = "" }
+                            else msg = ImportText.tooLong
+                        }) { Text(ImportText.paste) }
+                        TextButton(enabled = text.isNotBlank(), onClick = { clipboard.setText(androidx.compose.ui.text.AnnotatedString(text)) }) { Text(ImportText.copy) }
+                    }
+                    OutlinedTextField(value = text, enabled = !busy, onValueChange = {
+                        if (it.length <= com.kstudio.agenda.data.CourseImportCodec.MAX_TEXT) { text = it; msg = "" } else msg = ImportText.tooLong
+                    }, minLines = 3, maxLines = 8, modifier = Modifier.fillMaxWidth())
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(enabled = !busy && text.isNotBlank(), onClick = { convert(text) }) { Text(ImportText.ai) }
+                        TextButton(enabled = !busy && currentReview && review.valid && courseHits.isNotEmpty(), onClick = {
+                            text = com.kstudio.agenda.data.CourseImportCodec.encode(readyCourses, anchor?.takeIf { anchorValid })
+                            needsAi = false
+                        }) { Text(ImportText.standard) }
+                    }
+                    Text(ImportText.missing, style = MaterialTheme.typography.bodySmall)
+                } }
+                if (text.isNotBlank()) item { ImportSection(t.docDetected(review.events.size, courseHits.size), null) {
+                    if (!review.valid) Text(ImportText.incomplete, color = MaterialTheme.colorScheme.error)
+                    if (courseHits.isEmpty()) Text(ImportText.empty, style = MaterialTheme.typography.bodySmall)
+                    if (conflicts) Text(ImportText.conflicts, color = MaterialTheme.colorScheme.error)
+                    OutlinedTextField(anchorText, { anchorText = it }, label = { Text(ImportText.monday) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    if (!anchorValid) Text(ImportText.invalidMonday, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    if (missingWeeks) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            androidx.compose.material3.Checkbox(fillWeeks, { fillWeeks = it })
+                            Text(ImportText.unknownWeeks, Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
                         }
+                        OutlinedTextField(weeksText, { weeksText = it }, label = { Text(ImportText.weeks) }, modifier = Modifier.fillMaxWidth())
                     }
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = t.docOpenHint,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    if (docName.isNotBlank()) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = docName,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
+                    readyCourses.take(500).forEach { c ->
+                        Text("${c.title} · ${t.weekdayShort(c.dayOfWeek)} · ${c.periodLabel} · ${c.timeRange}\n" +
+                            "${t.weeksValue(c.weeksRaw)} · ${c.room} · ${c.teacher}",
+                            style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(vertical = 4.dp))
                     }
-                    if (msg.isNotBlank()) {
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = msg,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.error,
-                        )
+                    Button(enabled = canImport, onClick = {
+                        busy = true
+                        vm.importCourses(readyCourses, anchor) { result ->
+                            busy = false
+                            msg = result.fold({ t.msgImportedCourses(it) }, { ImportText.failed })
+                        }
+                    }) { Text(ImportText.confirm) }
+                    if (review.events.isNotEmpty()) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(enabled = !busy && currentReview, onClick = { vm.importAgendaEvents(review.events.map { toAgendaEvent(it, false) }); onClose() }) { Text(t.docImportAgenda) }
+                        OutlinedButton(enabled = !busy && currentReview, onClick = { vm.importAgendaEvents(review.events.map { toAgendaEvent(it, true) }); onClose() }) { Text(t.docImportPlan) }
                     }
-                }
+                } }
+                item { ImportSection(t.docImportedList(imported.size), null) {
+                    imported.forEach { c -> Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("${c.title} · ${t.weekdayShort(c.dayOfWeek)} · ${c.periodLabel} · ${t.weeksValue(c.weeksRaw)}", Modifier.weight(1f), style = MaterialTheme.typography.bodySmall)
+                        IconButton(onClick = { vm.deleteImportedCourse(c.id) }) { Icon(Icons.Filled.Close, contentDescription = t.cancel) }
+                    } }
+                    if (imported.isNotEmpty()) OutlinedButton(onClick = { vm.clearImportedCourses() }) { Text(t.docClearImported) }
+                } }
+                item { ImportSection(t.docExport, t.docExportHint) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { exportAsMd = false; createDoc.launch("kagenda_export.csv") }) { Text(t.docExportCsv) }
+                        OutlinedButton(onClick = { exportAsMd = true; createDoc.launch("kagenda_export.md") }) { Text(t.docExportMd) }
+                    }
+                } }
             }
+    }
+    if (embedded) {
+        content(PaddingValues(0.dp))
+    } else {
+        Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
+            Scaffold(modifier = Modifier.fillMaxSize().glassFrost(popup = true),
+                containerColor = com.kstudio.agenda.ui.theme.overlayBackgroundColor(),
+                topBar = { SettingsSubHeader(ImportText.title, onBack = onClose) }) { padding -> content(padding) }
+        }
+    }
+}
 
-            if (text.isNotBlank()) {
-                item {
-                    SectionCard(t.docTextLabel, null) {
-                        OutlinedTextField(
-                            value = text,
-                            onValueChange = { text = it },
-                            minLines = 3,
-                            maxLines = 8,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
+@Composable
+private fun ImportSection(title: String, subtitle: String? = null, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
+    var expanded by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(true) }
+    com.kstudio.agenda.ui.components.CollapsibleSectionCard(title, subtitle,
+        expanded = expanded, onToggle = { expanded = !expanded }, content = content)
+}
 
-                item {
-                    SectionCard(
-                        t.docDetected(eventOps.size, courseHits.size),
-                        null,
-                    ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            OutlinedButton(
-                                onClick = {
-                                    vm.importAgendaEvents(eventOps.map { toAgendaEvent(it, false) })
-                                    onClose()
-                                },
-                                enabled = eventOps.isNotEmpty(),
-                            ) { Text(t.docImportAgenda) }
-                            OutlinedButton(
-                                onClick = {
-                                    vm.importAgendaEvents(eventOps.map { toAgendaEvent(it, true) })
-                                    onClose()
-                                },
-                                enabled = eventOps.isNotEmpty(),
-                            ) { Text(t.docImportPlan) }
-                        }
-                        if (courseHits.isNotEmpty()) {
-                            Spacer(Modifier.height(10.dp))
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = t.docAnchorLabel(
-                                        anchor.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-                                    ),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                TextButton(onClick = { anchor = anchor.minusWeeks(1) }) { Text("－") }
-                                TextButton(onClick = { anchor = anchor.plusWeeks(1) }) { Text("＋") }
-                            }
-                            Text(
-                                text = t.docAnchorHint,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            courseHits.take(10).forEach { c ->
-                                Text(
-                                    text = "${c.title} · ${t.weekdayShort(c.dayOfWeek)} · " +
-                                        "${c.periodLabel} · ${c.timeRange}" +
-                                        (if (c.room.isNotBlank()) " · ${c.room}" else ""),
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            if (courseHits.size > 10) {
-                                Text(
-                                    text = "…共 ${courseHits.size} 门",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                            }
-                            Spacer(Modifier.height(8.dp))
-                            Button(onClick = {
-                                vm.importCourses(courseHits, anchor)
-                            }) { Text(t.docImportCourses) }
-                        }
-                    }
-                }
-            }
-
-            // 已导入课程（可逐条删除 / 清空）
-            item {
-                SectionCard(t.docImportedList(imported.size), null) {
-                    if (imported.isEmpty()) {
-                        Text(
-                            text = t.emptyPlansHint,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    } else {
-                        Box {
-                            Column {
-                                imported.forEach { c ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        verticalAlignment = Alignment.CenterVertically,
-                                    ) {
-                                        Text(
-                                            text = "${c.title} · ${t.weekdayShort(c.dayOfWeek)} · ${c.periodLabel}" +
-                                                if (c.weeksRaw.isNotBlank()) " · ${t.weeksValue(c.weeksRaw)}" else "",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            modifier = Modifier.weight(1f),
-                                        )
-                                        IconButton(
-                                            onClick = { vm.deleteImportedCourse(c.id) },
-                                            modifier = Modifier.size(30.dp),
-                                        ) {
-                                            Icon(
-                                                Icons.Filled.Close,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(16.dp),
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        OutlinedButton(onClick = { vm.clearImportedCourses() }) {
-                            Text(t.docClearImported)
-                        }
-                    }
-                }
-            }
-
-            // 导出为文档
-            item {
-                SectionCard(t.docExport, t.docExportHint) {
-                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        OutlinedButton(onClick = {
-                            exportAsMd = false
-                            createDoc.launch("kagenda_export.csv")
-                        }) { Text(t.docExportCsv) }
-                        OutlinedButton(onClick = {
-                            exportAsMd = true
-                            createDoc.launch("kagenda_export.md")
-                        }) { Text(t.docExportMd) }
-                    }
-                }
-            }
+internal data class CourseImportReview(
+    val source: String = "", val courses: List<Course> = emptyList(),
+    val events: List<AiSkills.AiOp.Add> = emptyList(), val firstMonday: LocalDate? = null, val valid: Boolean = true,
+) {
+    companion object {
+        fun read(text: String, needsAi: Boolean): CourseImportReview {
+            if (text.isBlank()) return CourseImportReview(source = text)
+            val json = text.trimStart().startsWith("{") || text.trimStart().startsWith("[") || text.trimStart().startsWith("```")
+            if (json) return runCatching {
+                val decoded = com.kstudio.agenda.data.CourseImportCodec.decode(text)
+                CourseImportReview(text, decoded.courses, firstMonday = decoded.firstMonday, valid = decoded.issues.isEmpty())
+            }.getOrElse { CourseImportReview(source = text, valid = false) }
+            if (needsAi) return CourseImportReview(source = text)
+            val courses = LocalSmartParser.parseCourses(text)
+            return CourseImportReview(text, courses, if (courses.isEmpty()) LocalSmartParser.parseEvents(text, LocalDate.now()) else emptyList(),
+                valid = courses.size <= 500 && LocalSmartParser.invalidCourseRows(text) == 0)
         }
     }
 }
@@ -376,7 +313,7 @@ private fun toAgendaEvent(op: AiSkills.AiOp.Add, isPlan: Boolean): AgendaEvent {
 }
 
 /** 导出 CSV：课程表（含导入课程） */
-private fun buildCsvExport(
+internal fun buildCsvExport(
     semester: com.kstudio.agenda.model.SemesterSchedule?,
     imported: List<Course>,
 ): String {
@@ -386,7 +323,7 @@ private fun buildCsvExport(
     val sb = StringBuilder()
     sb.append("课程名,星期,节次,时间,周次,教室,教师,课程号\n")
     for (c in courses.values.sortedWith(compareBy({ it.dayOfWeek }, { it.startPeriod }))) {
-        sb.append(csvCell(markedTitle(c))).append(',')
+        sb.append(csvCell(c.title)).append(',')
             .append(c.dayOfWeek).append(',')
             .append(csvCell(c.periodLabel)).append(',')
             .append(csvCell(c.timeRange)).append(',')
@@ -399,7 +336,7 @@ private fun buildCsvExport(
 }
 
 /** 导出 Markdown：课程表 + 日程 + 计划 */
-private fun buildMarkdownExport(
+internal fun buildMarkdownExport(
     semester: com.kstudio.agenda.model.SemesterSchedule?,
     imported: List<Course>,
     agenda: List<AgendaEvent>,
@@ -417,7 +354,7 @@ private fun buildMarkdownExport(
         sb.append("| 课程 | 星期 | 节次 | 时间 | 周次 | 教室 | 教师 |\n")
         sb.append("| --- | --- | --- | --- | --- | --- | --- |\n")
         for (c in courses.values.sortedWith(compareBy({ it.dayOfWeek }, { it.startPeriod }))) {
-            sb.append("| ").append(mdCell(markedTitle(c)))
+            sb.append("| ").append(mdCell(c.title))
                 .append(" | ").append(c.dayOfWeek)
                 .append(" | ").append(mdCell(c.periodLabel))
                 .append(" | ").append(mdCell(c.timeRange))

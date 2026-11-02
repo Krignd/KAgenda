@@ -29,9 +29,9 @@
     <string name="widget_next_agenda">Next event</string>
     <string name="widget_ongoing">Ongoing</string>
     <string name="widget_today">Today</string>
-    <string name="feature_global_reminder">Global reminders</string>
+    <string name="feature_global_reminder">Global reminder settings</string>
     <string name="feature_follow_global">Use global settings</string>
-    <string name="feature_apply_global">Apply global settings to all</string>
+    <string name="feature_apply_global">Use global settings for all reminders</string>
     <string name="feature_notify_event">Notification</string>
     <string name="feature_alarm_event">Alarm</string>
     <string name="feature_alarm_hint">Rings at alarm volume. Stop from the notification; ringing ends after two minutes.</string>
@@ -61,7 +61,7 @@
     <string name="feature_widget_week_courses">Weekly classes</string>
     <string name="feature_widget_empty">No events</string>
     <string name="feature_widget_more">Tap to view all</string>
-    <string name="feature_ai_context_note">AI recognition sends existing event titles, dates, times, locations, tags and recurrence rules to improve edits.</string>
+    <string name="feature_ai_context_note">The AI assistant sends existing event titles, dates, times, locations, tags and recurrence rules to improve edits.</string>
     <string name="feature_reminder_needs_time">A precise start time is required for reminders</string>
     <string name="feature_workday_mark">Work</string>
     <string name="feature_stop_alarm">Stop alarm</string>

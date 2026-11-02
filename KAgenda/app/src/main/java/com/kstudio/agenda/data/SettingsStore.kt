@@ -20,6 +20,10 @@ const val UI_STYLE_DEFAULT = "default"
 /** 界面风格：液态玻璃 */
 const val UI_STYLE_GLASS = "glass"
 
+/** Missing preferences use glass; an explicitly selected minimal style remains minimal. */
+internal fun resolvedUiStyle(value: String?): String =
+    if (value == UI_STYLE_DEFAULT) UI_STYLE_DEFAULT else UI_STYLE_GLASS
+
 /** 应用设置（对外暴露的只读快照） */
 data class AppSettings(
     val studentId: String = "",
@@ -44,11 +48,15 @@ data class AppSettings(
     val appLanguage: String = "",
     /** 所选学校 id（见 Schools.ALL） */
     val schoolId: String = "buaa",
+    val hideUndeterminedSchools: Boolean = false,
     /** AI（DeepSeek）：是否已保存 Key；模型名 */
     val aiKeySet: Boolean = false,
     val aiModel: String = "deepseek-flash",
     /** 默认勾选：使用开发者内置的 API Key；取消后使用自行填写的 Key */
     val useDevAiKey: Boolean = true,
+    /** Local mode never falls back to uploading text. No model is downloaded automatically. */
+    val aiProvider: String = "local",
+    val localAiModel: String = LocalAiModels.defaultId,
     /** 常驻通知：开关 + 内容源（course/plan/agenda 逗号分隔） */
     val statusNotifEnabled: Boolean = false,
     val statusNotifSources: String = "course,plan,agenda",
@@ -68,8 +76,14 @@ data class AppSettings(
     val periodTimesRaw: String = "",
     /** 常驻通知是否允许在锁屏上显示（关闭时通知不出现在锁屏） */
     val statusOnLockScreen: Boolean = true,
-    /** 界面风格："default"=默认；"glass"=液态玻璃 */
-    val uiStyle: String = UI_STYLE_DEFAULT,
+    /** 界面风格："default"=简约（保留旧标识）；"glass"=液态玻璃（默认） */
+    val uiStyle: String = UI_STYLE_GLASS,
+    /** 0=柔和浅色（默认），100=浓郁，200=高浓度；仅作用于液态玻璃主题。 */
+    val glassColorDepth: Int = 0,
+    /** 背景颜色缓慢流动；默认静止。 */
+    val glassBackgroundMotion: Boolean = false,
+    val motionSpeedPercent: Int = 100,
+    val holidayOverridesRaw: String = "",
     /**
      * 江苏大学专用：是否「通过 WebVPN」访问教务系统（默认勾选）。
      *
@@ -157,9 +171,12 @@ object SettingsStore {
     private val KEY_WEEK_DAYS = intPreferencesKey("week_days")
     private val KEY_APP_LANGUAGE = stringPreferencesKey("app_language")
     private val KEY_SCHOOL = stringPreferencesKey("school_id")
+    private val KEY_HIDE_UNDETERMINED_SCHOOLS = booleanPreferencesKey("hide_undetermined_schools")
     private val KEY_AI_KEY_ENC = stringPreferencesKey("ai_key_enc")
     private val KEY_AI_MODEL = stringPreferencesKey("ai_model")
     private val KEY_USE_DEV_AI_KEY = booleanPreferencesKey("use_dev_ai_key")
+    private val KEY_AI_PROVIDER = stringPreferencesKey("ai_provider")
+    private val KEY_LOCAL_AI_MODEL = stringPreferencesKey("local_ai_model")
     private val KEY_STATUS_ENABLED = booleanPreferencesKey("status_notif_enabled")
     private val KEY_STATUS_SOURCES = stringPreferencesKey("status_notif_sources")
     private val KEY_STATUS_AI_ENTRY = booleanPreferencesKey("status_ai_entry")
@@ -173,6 +190,10 @@ object SettingsStore {
     private val KEY_PERIOD_TIMES = stringPreferencesKey("period_times")
     private val KEY_STATUS_LOCK_SCREEN = booleanPreferencesKey("status_on_lock_screen")
     private val KEY_UI_STYLE = stringPreferencesKey("ui_style")
+    private val KEY_MOTION_SPEED = intPreferencesKey("motion_speed_percent")
+    private val KEY_HOLIDAY_OVERRIDES = stringPreferencesKey("holiday_overrides")
+    private val KEY_GLASS_COLOR_DEPTH = intPreferencesKey("glass_color_depth")
+    private val KEY_GLASS_BACKGROUND_MOTION = booleanPreferencesKey("glass_background_motion")
     private val KEY_UJS_WEB_VPN = booleanPreferencesKey("ujs_webvpn")
     private val KEY_SHOW_HOLIDAY_COURSES = booleanPreferencesKey("show_holiday_courses")
     private val KEY_PROFILE_COLLEGE = stringPreferencesKey("profile_college")
@@ -197,9 +218,12 @@ object SettingsStore {
             weekDays = if ((p[KEY_WEEK_DAYS] ?: 5) == 7) 7 else 5,
             appLanguage = p[KEY_APP_LANGUAGE] ?: "",
             schoolId = p[KEY_SCHOOL] ?: "buaa",
+            hideUndeterminedSchools = p[KEY_HIDE_UNDETERMINED_SCHOOLS] ?: false,
             aiKeySet = !p[KEY_AI_KEY_ENC].isNullOrEmpty(),
             aiModel = p[KEY_AI_MODEL] ?: "deepseek-flash",
             useDevAiKey = p[KEY_USE_DEV_AI_KEY] ?: true,
+            aiProvider = if (p[KEY_AI_PROVIDER] == "cloud") "cloud" else "local",
+            localAiModel = p[KEY_LOCAL_AI_MODEL]?.takeIf { LocalAiModels.find(it) != null } ?: LocalAiModels.defaultId,
             statusNotifEnabled = p[KEY_STATUS_ENABLED] ?: false,
             statusNotifSources = p[KEY_STATUS_SOURCES] ?: "course,plan,agenda",
             statusAiEntry = p[KEY_STATUS_AI_ENTRY] ?: true,
@@ -215,7 +239,11 @@ object SettingsStore {
                 .coerceIn(1, 720),
             periodTimesRaw = p[KEY_PERIOD_TIMES] ?: "",
             statusOnLockScreen = p[KEY_STATUS_LOCK_SCREEN] ?: true,
-            uiStyle = p[KEY_UI_STYLE] ?: UI_STYLE_DEFAULT,
+            uiStyle = resolvedUiStyle(p[KEY_UI_STYLE]),
+            glassColorDepth = (p[KEY_GLASS_COLOR_DEPTH] ?: 0).coerceIn(0, 200),
+            glassBackgroundMotion = p[KEY_GLASS_BACKGROUND_MOTION] ?: false,
+            motionSpeedPercent = (p[KEY_MOTION_SPEED] ?: 100).coerceIn(25, 400),
+            holidayOverridesRaw = p[KEY_HOLIDAY_OVERRIDES] ?: "",
             ujsWebVpn = p[KEY_UJS_WEB_VPN] ?: true,
             showHolidayCourses = p[KEY_SHOW_HOLIDAY_COURSES] ?: false,
             profileCollege = p[KEY_PROFILE_COLLEGE] ?: "",
@@ -324,11 +352,38 @@ object SettingsStore {
 
     /** 界面风格（default / glass） */
     suspend fun setUiStyle(context: Context, style: String) {
-        context.settingsDataStore.edit { it[KEY_UI_STYLE] = style }
+        context.settingsDataStore.edit { it[KEY_UI_STYLE] = resolvedUiStyle(style) }
+    }
+
+    suspend fun setMotionSpeed(context: Context, percent: Int) {
+        context.settingsDataStore.edit { it[KEY_MOTION_SPEED] = percent.coerceIn(25, 400) }
+    }
+
+    suspend fun setHolidayOverride(context: Context, date: java.time.LocalDate, value: com.kstudio.agenda.model.HolidayOverride?) {
+        context.settingsDataStore.edit { p ->
+            val all = com.kstudio.agenda.model.HolidayOverrides.decode(p[KEY_HOLIDAY_OVERRIDES] ?: "").toMutableMap()
+            if (value == null) all.remove(date.toEpochDay()) else {
+                require(value.date == date)
+                all[date.toEpochDay()] = value
+            }
+            p[KEY_HOLIDAY_OVERRIDES] = com.kstudio.agenda.model.HolidayOverrides.encode(all.values)
+        }
+    }
+
+    suspend fun setGlassColorDepth(context: Context, depth: Int) {
+        context.settingsDataStore.edit { it[KEY_GLASS_COLOR_DEPTH] = depth.coerceIn(0, 200) }
+    }
+
+    suspend fun setGlassBackgroundMotion(context: Context, enabled: Boolean) {
+        context.settingsDataStore.edit { it[KEY_GLASS_BACKGROUND_MOTION] = enabled }
     }
 
     suspend fun setAppLanguage(context: Context, tag: String) {
         context.settingsDataStore.edit { it[KEY_APP_LANGUAGE] = tag }
+    }
+
+    suspend fun setHideUndeterminedSchools(context: Context, hidden: Boolean) {
+        context.settingsDataStore.edit { it[KEY_HIDE_UNDETERMINED_SCHOOLS] = hidden }
     }
 
     suspend fun setLastSync(context: Context, millis: Long) {
@@ -402,6 +457,16 @@ object SettingsStore {
     /** 切换「使用开发者的 API key」（默认勾选） */
     suspend fun setUseDevAiKey(context: Context, enabled: Boolean) {
         context.settingsDataStore.edit { it[KEY_USE_DEV_AI_KEY] = enabled }
+    }
+
+    suspend fun setAiProvider(context: Context, provider: String) {
+        require(provider in setOf("local", "cloud"))
+        context.settingsDataStore.edit { it[KEY_AI_PROVIDER] = provider }
+    }
+
+    suspend fun setLocalAiModel(context: Context, id: String) {
+        require(LocalAiModels.find(id) != null)
+        context.settingsDataStore.edit { it[KEY_LOCAL_AI_MODEL] = id }
     }
 
     /** 实际用于 AI 请求的 Key：默认使用开发者内置 Key；关闭后使用用户自己保存的 Key */
@@ -515,10 +580,13 @@ object SettingsStore {
         put(KEY_WEEK_DAYS, "week_days")
         put(KEY_APP_LANGUAGE, "app_language")
         put(KEY_SCHOOL, "school_id")
+        out["hide_undetermined_schools"] = p[KEY_HIDE_UNDETERMINED_SCHOOLS] ?: false
         put(KEY_SCHOOL_PROFILES, "school_profiles")
         put(KEY_AI_KEY_ENC, "ai_key_enc")
         put(KEY_AI_MODEL, "ai_model")
         put(KEY_USE_DEV_AI_KEY, "use_dev_ai_key")
+        put(KEY_AI_PROVIDER, "ai_provider")
+        put(KEY_LOCAL_AI_MODEL, "local_ai_model")
         put(KEY_STATUS_ENABLED, "status_notif_enabled")
         put(KEY_STATUS_SOURCES, "status_notif_sources")
         put(KEY_STATUS_AI_ENTRY, "status_ai_entry")
@@ -531,7 +599,13 @@ object SettingsStore {
         put(KEY_WIDGET_REFRESH_FAR, "widget_refresh_far_minutes")
         put(KEY_PERIOD_TIMES, "period_times")
         put(KEY_STATUS_LOCK_SCREEN, "status_on_lock_screen")
-        put(KEY_UI_STYLE, "ui_style")
+        // Include implicit appearance defaults so a backup restores the same appearance
+        // even onto a device that has already chosen a different style.
+        out["ui_style"] = resolvedUiStyle(p[KEY_UI_STYLE])
+        out["glass_color_depth"] = (p[KEY_GLASS_COLOR_DEPTH] ?: 0).coerceIn(0, 200)
+        out["glass_background_motion"] = p[KEY_GLASS_BACKGROUND_MOTION] ?: false
+        out["motion_speed_percent"] = (p[KEY_MOTION_SPEED] ?: 100).coerceIn(25, 400)
+        out["holiday_overrides"] = p[KEY_HOLIDAY_OVERRIDES] ?: ""
         put(KEY_UJS_WEB_VPN, "ujs_webvpn")
         put(KEY_SHOW_HOLIDAY_COURSES, "show_holiday_courses")
         put(KEY_PROFILE_COLLEGE, "profile_college")

@@ -76,14 +76,23 @@ object ExtraCoursesStore {
             val map = LinkedHashMap<String, Course>()
             _courses.value.forEach { map[it.id] = it }
             var added = 0
-            list.forEach {
-                if (map.put(it.id, it) == null) added++
+            require(!CourseImportCodec.hasConflicts(_courses.value + list)) { "conflicting_courses" }
+            list.forEach { course ->
+                val old = map[course.id]
+                map[course.id] = if (old == null) course else CourseImportCodec.merge(listOf(old, course)).single()
+                if (old == null) added++
             }
+            val previousCourses = _courses.value
+            val previousAnchor = _anchorEpochDay.value
             _courses.value = map.values.toList()
             if (_anchorEpochDay.value == null && anchor != null) {
                 _anchorEpochDay.value = anchor.toEpochDay()
             }
-            persist(context)
+            try { persist(context) } catch (e: Exception) {
+                _courses.value = previousCourses
+                _anchorEpochDay.value = previousAnchor
+                throw e
+            }
             return added
         }
     }
@@ -198,7 +207,7 @@ object ExtraCoursesStore {
                 )
             }
             SchoolFileScope.save(context.filesDir, FILE_NAME, com.kstudio.agenda.model.Schools.currentId, o)
-        }.onFailure { AppLog.e("ExtraCourses", "导入课程写盘失败", it) }
+        }.onFailure { AppLog.e("ExtraCourses", "导入课程写盘失败", it) }.getOrThrow()
     }
 
     private fun parseCourses(arr: JSONArray?): List<Course> {

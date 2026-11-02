@@ -25,7 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -34,9 +34,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.kstudio.agenda.ui.components.CalendarMotion
+import com.kstudio.agenda.ui.components.CalendarFrame
+import com.kstudio.agenda.ui.components.CalendarLabel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -50,6 +56,12 @@ import com.kstudio.agenda.model.HolidayTable
 import com.kstudio.agenda.model.SemesterSchedule
 import com.kstudio.agenda.ui.components.rememberFlashPulse
 import com.kstudio.agenda.ui.components.swipeStep
+import com.kstudio.agenda.ui.components.cardBaseColor
+import com.kstudio.agenda.ui.components.cardGlassBorder
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+import com.kstudio.agenda.ui.theme.glassFrost
+import com.kstudio.agenda.ui.theme.glassSheen
+import com.kstudio.agenda.ui.theme.glassAccentColor
 import java.time.LocalDate
 
 /**
@@ -89,21 +101,6 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
         }
     }
 
-    val courseMap = remember(semester, monthStart, calendarRevision) { buildCourseMap(semester, monthStart) }
-    val agendaMap = remember(agendaAll, monthStart, settings.timetableMode) {
-        val monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth())
-        val out = HashMap<Long, MutableList<AgendaEvent>>()
-        var d = monthStart
-        while (!d.isAfter(monthEnd)) {
-            // 「计划」归计划页，月视图只展示日程；
-            // 用 occursOn 而不是按 dateEpochDay 归档 —— 否则重复日程、跨天长日程都只在开始日显示
-            // （2026-10-08 修「取消课程表模式后月视图看不到日程」）
-            val list = agendaAll.filter { !settings.timetableMode && !it.isPlan && it.occursOn(d) }
-            if (list.isNotEmpty()) out[d.toEpochDay()] = list.toMutableList()
-            d = d.plusDays(1)
-        }
-        out
-    }
 
     Column(
         Modifier
@@ -118,7 +115,7 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
             IconButton(onClick = { shiftMonth(-1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = t.prevMonth)
             }
-            Text(
+            CalendarLabel(
                 text = t.monthTitle(monthStart.year, monthStart.monthValue),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -148,46 +145,65 @@ fun MonthScreen(vm: AppViewModel, onOpenDay: (LocalDate) -> Unit, flash: FocusRe
         }
         Spacer(Modifier.height(4.dp))
 
-        // ---------- 月历网格 ----------
-        val leading = monthStart.dayOfWeek.value - 1        // 周一为第一列
-        val daysInMonth = monthStart.lengthOfMonth()
-        val rows = (leading + daysInMonth + 6) / 7
-        Column(
-            modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 6.dp).verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            for (r in 0 until rows) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    for (c in 0 until 7) {
-                        val dayNum = r * 7 + c - leading + 1
-                        val date = if (dayNum in 1..daysInMonth) monthStart.withDayOfMonth(dayNum) else null
-                        MonthCell(
-                            date = date,
-                            courses = date?.let { courseMap[it.toEpochDay()] }.orEmpty(),
-                            events = date?.let { agendaMap[it.toEpochDay()] }.orEmpty(),
-                            isToday = date == today,
-                            isSelected = date == selected,
-                            flash = date != null && date == flashDate,
-                            onClick = { date?.let(onOpenDay) },
-                            onLongPress = {
-                                if (date != null) {
-                                    if (vm.coursesRawOnDate(date).isEmpty()) {
-                                        vm.message(t.noCoursesToday)
-                                    } else {
-                                        rescheduleSource = date
+        CalendarMotion(CalendarFrame(monthStart, Unit), Modifier.weight(1f).fillMaxWidth()) { frame ->
+            val monthStart = frame.date
+            val courseMap = remember(semester, monthStart, calendarRevision) { buildCourseMap(semester, monthStart) }
+            val agendaMap = remember(agendaAll, monthStart, settings.timetableMode) {
+                val monthEnd = monthStart.withDayOfMonth(monthStart.lengthOfMonth())
+                val out = HashMap<Long, MutableList<AgendaEvent>>()
+                var d = monthStart
+                while (!d.isAfter(monthEnd)) {
+                    // 「计划」归计划页，月视图只展示日程；
+                    // 用 occursOn 而不是按 dateEpochDay 归档 —— 否则重复日程、跨天长日程都只在开始日显示
+                    // （2026-10-08 修「取消课程表模式后月视图看不到日程」）
+                    val list = agendaAll.filter { !settings.timetableMode && !it.isPlan && it.occursOn(d) }
+                    if (list.isNotEmpty()) out[d.toEpochDay()] = list.toMutableList()
+                    d = d.plusDays(1)
+                }
+                out
+            }
+            // ---------- 月历网格 ----------
+            val leading = monthStart.dayOfWeek.value - 1        // 周一为第一列
+            val daysInMonth = monthStart.lengthOfMonth()
+            val rows = (leading + daysInMonth + 6) / 7
+            Column(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                for (r in 0 until rows) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        for (c in 0 until 7) {
+                            val dayNum = r * 7 + c - leading + 1
+                            val date = if (dayNum in 1..daysInMonth) monthStart.withDayOfMonth(dayNum) else null
+                            MonthCell(
+                                date = date,
+                                courses = date?.let { courseMap[it.toEpochDay()] }.orEmpty(),
+                                events = date?.let { agendaMap[it.toEpochDay()] }.orEmpty(),
+                                isToday = date == today,
+                                isSelected = date == selected,
+                                flash = date != null && date == flashDate,
+                                onClick = { date?.let(onOpenDay) },
+                                onLongPress = {
+                                    if (date != null) {
+                                        if (vm.coursesRawOnDate(date).isEmpty()) {
+                                            vm.message(t.noCoursesToday)
+                                        } else {
+                                            rescheduleSource = date
+                                        }
                                     }
-                                }
-                            },
-                            modifier = Modifier.weight(1f),
-                        )
+                                },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
                     }
                 }
             }
         }
     }
+
     // 长按日期 → 调整至…（整天/单节调休）
     rescheduleSource?.let { src ->
         val dayCourses = remember(src, semester) { vm.coursesRawOnDate(src) }
@@ -221,6 +237,9 @@ internal fun MonthCell(
         date == null -> Color.Transparent
         isSelected -> MaterialTheme.colorScheme.primaryContainer
         isToday -> MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.45f)
+        LocalGlassEnabled.current -> if (date.dayOfWeek.value >= 6) {
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.035f).compositeOver(cardBaseColor())
+        } else cardBaseColor()
         // 周末底色轻微加深
         date.dayOfWeek.value >= 6 -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
         else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
@@ -230,7 +249,10 @@ internal fun MonthCell(
         modifier = modifier
             .height(104.dp)
             .clip(RoundedCornerShape(10.dp))
+            .then(if (date != null) Modifier.glassFrost(RoundedCornerShape(10.dp)) else Modifier)
             .background(bg)
+            .then(if (date != null) Modifier.glassSheen().cardGlassBorder(RoundedCornerShape(10.dp))
+                .semantics { this.selected = isSelected } else Modifier)
             // 定位闪烁：底色深浅变化提醒（三下）
             .then(
                 if (flash) Modifier.background(
@@ -298,7 +320,7 @@ internal fun MonthCell(
                     Text(
                         text = title,
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, lineHeight = 11.sp),
-                        color = color,
+                        color = glassAccentColor(color, color.copy(alpha = 0.22f).compositeOver(bg)),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

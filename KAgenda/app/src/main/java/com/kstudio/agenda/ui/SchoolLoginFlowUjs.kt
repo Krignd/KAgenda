@@ -5,6 +5,7 @@ import android.os.SystemClock
 import com.kstudio.agenda.data.SettingsStore
 import com.kstudio.agenda.data.UjsDefaultFlow
 import com.kstudio.agenda.data.UjsWebVpnFlow
+import com.kstudio.agenda.i18n.AppText
 import com.kstudio.agenda.model.School
 import com.kstudio.agenda.util.AppLog
 import kotlinx.coroutines.delay
@@ -32,7 +33,7 @@ import kotlinx.coroutines.delay
  * 【教务系统未登录怎么办】
  * 课表页在教务会话缺失时会渲染它自己的登录表单（并提示一卡通用户不要在此登录）。
  * 检测到这种表单（非统一身份认证页）时，自动带用户去教务系统登录入口，
- * 让他在那里点「登录」完成一卡通登录，再回到课表页点「完成」。
+ * 让他在那里点「点此直接登录」或「CAS 统一身份认证登录」，再回到课表页点「完成」。
  * ===========================================================================
  */
 
@@ -45,10 +46,10 @@ private const val UJS_STAGE_PORTAL = 1
 /** ② 在统一身份认证页输入一卡通账号密码 + 滑块 + 短信验证 */
 private const val UJS_STAGE_SSO = 2
 
-/** ② 教务系统未登录，需要在入口页点击「CAS 统一身份认证登录」 */
+/** ③ 教务系统未登录，需要点击入口页上的直接登录链接 */
 private const val UJS_STAGE_LOGIN_ENTRY = 3
 
-/** ③ 凭据已提交，等待系统处理 */
+/** ③ 凭据已提交，等待跳转；也可能仍需点击「点此直接登录」 */
 private const val UJS_STAGE_PROCESSING = 4
 
 /** ④ 课表页就绪，点「完成」 */
@@ -66,15 +67,14 @@ private const val UJS_STAGE_BLOCKED = 7
  * 用户在界面上看到的是四步：
  *   ① 点击「CAS 统一身份认证登录」
  *   ② 输入一卡通账号与密码，并通过滑块验证与短信验证（若开启二次验证）
- *   ③ 等待系统处理，即将完成登录…
+ *   ③ 如出现「点此直接登录」或「CAS 统一身份认证登录」，请点击；否则等待跳转
  *   ④ 已进入课表页，请点击「完成」
- * 第 3 个常量（LOGIN_ENTRY）仍属第②步的另一种屏幕，避免用户看到的编号来回变。
+ * LOGIN_ENTRY 与 PROCESSING 共用第③步引导，即使阶段单向推进，也不会漏掉入口点击说明。
  */
 private fun ujsStageHint(stage: Int): String = when (stage) {
     UJS_STAGE_PORTAL -> "① 点击「CAS 统一身份认证登录」"
     UJS_STAGE_SSO -> "② 输入一卡通账号与密码，并通过滑块验证与短信验证（若开启二次验证）"
-    UJS_STAGE_LOGIN_ENTRY -> "② 请点击页面上的「CAS 统一身份认证登录」进入教务系统"
-    UJS_STAGE_PROCESSING -> "③ 等待系统处理，即将完成登录…"
+    UJS_STAGE_LOGIN_ENTRY, UJS_STAGE_PROCESSING -> AppText.current.ujsLoginContinue
     UJS_STAGE_READY -> "④ 已进入课表页，请点击右上角「完成」结束登录"
     UJS_STAGE_FALLBACK -> "页面 404，正在尝试备用入口…"
     UJS_STAGE_BLOCKED -> "门户无法访问上一目标，正在切换登录入口…"

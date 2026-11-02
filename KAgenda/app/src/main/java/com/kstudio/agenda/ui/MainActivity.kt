@@ -31,8 +31,11 @@ data class LaunchRequest(
     val focusEpochDay: Long?,
     val focusTitle: String,
     val fromWidget: Boolean = false,
+    /** Bounds of the floating launcher, in screen pixels, captured before opening the dialog. */
+    val aiOrigin: androidx.compose.ui.geometry.Rect? = null,
     /** 由其他应用「用 K日程 打开 / 分享到」传入的文档（进入文档导入页） */
     val docUri: android.net.Uri? = null,
+    val docText: String? = null,
     val id: Long = System.nanoTime(),
 )
 
@@ -51,15 +54,9 @@ class MainActivity : ComponentActivity() {
             val settings by vm.settings.collectAsState()
             val glass = settings.glassUi
             CompositionLocalProvider(LocalStrings provides AppText.stringsFor(lang)) {
-                KAgendaTheme(glass = glass) {
-                    // 液态玻璃：先铺渐变背景（含两团柔光），内容叠在其上形成毛玻璃观感
-                    if (glass) GlassBackdrop {
-                        MainScreen(
-                            vm = vm,
-                            launch = launchRequest.value,
-                            onLaunchHandled = { launchRequest.value = null },
-                        )
-                    } else {
+                KAgendaTheme(glass = glass, colorDepth = settings.glassColorDepth, motionSpeedPercent = settings.motionSpeedPercent) {
+                    // 液态玻璃：先铺渐变背景（含三团柔光），内容叠在其上形成玻璃材质观感
+                    GlassBackdrop(enabled = glass, animateBackground = settings.glassBackgroundMotion) {
                         MainScreen(
                             vm = vm,
                             launch = launchRequest.value,
@@ -107,25 +104,39 @@ class MainActivity : ComponentActivity() {
         // 字符串字面量与 Notifier.EXTRA_OPEN_AI_RESULT 保持一致
         val openAiResult = intent.getBooleanExtra("kagenda_open_ai_result", false)
         val quickAdd = intent.getBooleanExtra(EXTRA_QUICK_ADD, false) || openAiResult
+        val aiOrigin = intent.getFloatArrayExtra(EXTRA_AI_ORIGIN_BOUNDS)
+            ?.takeIf { it.size == 4 && it.all { value -> value.isFinite() && value in 0f..32768f } && it[2] > it[0] && it[3] > it[1] }
+            ?.let { androidx.compose.ui.geometry.Rect(it[0], it[1], it[2], it[3]) }
         val focusDay = if (intent.hasExtra(EXTRA_FOCUS_EPOCH_DAY)) {
             intent.getLongExtra(EXTRA_FOCUS_EPOCH_DAY, -1L).takeIf { it >= 0 }
         } else null
         // 其他应用「用 K日程 打开」/「分享到 K日程」带进来的文档
         val docUri = docUriFrom(intent)
-        if (!quickAdd && focusDay == null && docUri == null) return
+        val docText = if (intent.action == Intent.ACTION_SEND) intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.takeIf { it.isNotBlank() } else null
+        if (!quickAdd && focusDay == null && docUri == null && docText == null) return
         launchRequest.value = LaunchRequest(
             quickAdd = quickAdd,
             focusEpochDay = focusDay,
             focusTitle = intent.getStringExtra(EXTRA_FOCUS_TITLE).orEmpty(),
             fromWidget = intent.getBooleanExtra(EXTRA_FOCUS_FROM_WIDGET, false),
+            aiOrigin = aiOrigin,
             docUri = docUri,
+            docText = docText,
         )
         // 消费后清除 extras：避免旋转/恢复时重复触发快速添加或闪烁
         intent.removeExtra(EXTRA_QUICK_ADD)
+        intent.removeExtra(EXTRA_AI_ORIGIN_BOUNDS)
         intent.removeExtra("kagenda_open_ai_result")
         intent.removeExtra(EXTRA_FOCUS_EPOCH_DAY)
         intent.removeExtra(EXTRA_FOCUS_TITLE)
         intent.removeExtra(EXTRA_FOCUS_FROM_WIDGET)
+        if (docUri != null || docText != null) {
+            intent.removeExtra(Intent.EXTRA_TEXT)
+            intent.removeExtra(Intent.EXTRA_STREAM)
+            intent.clipData = null
+            intent.data = null
+            intent.action = null
+        }
     }
 
     /**
@@ -156,6 +167,7 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         const val EXTRA_QUICK_ADD = "com.kstudio.agenda.extra.QUICK_ADD"
+        const val EXTRA_AI_ORIGIN_BOUNDS = "com.kstudio.agenda.extra.AI_ORIGIN_BOUNDS"
         const val EXTRA_FOCUS_EPOCH_DAY = "com.kstudio.agenda.extra.FOCUS_EPOCH_DAY"
         const val EXTRA_FOCUS_TITLE = "com.kstudio.agenda.extra.FOCUS_TITLE"
         const val EXTRA_FOCUS_FROM_WIDGET = "com.kstudio.agenda.extra.FOCUS_FROM_WIDGET"

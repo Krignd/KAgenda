@@ -19,7 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
@@ -29,11 +29,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
+import com.kstudio.agenda.ui.components.AppOutlinedButton as OutlinedButton
+import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.CourseEditConflict
 import com.kstudio.agenda.i18n.AppStrings
+import com.kstudio.agenda.ui.theme.glassFrost
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.CoursePalette
@@ -87,10 +88,24 @@ fun CourseDetailSheet(
 ) {
     val t = LocalStrings.current
     val color = Color(CoursePalette.colorFor(course))
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    val glass = com.kstudio.agenda.ui.theme.LocalGlassEnabled.current
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        containerColor = if (glass) Color.Transparent else androidx.compose.material3.BottomSheetDefaults.ContainerColor,
+        dragHandle = {
+            Box(
+                Modifier.fillMaxWidth()
+                    .glassFrost(androidx.compose.material3.BottomSheetDefaults.ExpandedShape, popup = true)
+                    .background(if (glass) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent),
+                contentAlignment = Alignment.Center,
+            ) { androidx.compose.material3.BottomSheetDefaults.DragHandle() }
+        },
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
+                .glassFrost(popup = true)
+                .background(if (glass) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent)
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 36.dp),
         ) {
@@ -125,7 +140,7 @@ fun CourseDetailSheet(
             // 教务页面里的额外信息（开设班级 / 开课学期 / 学分 / 课程性质 / 选课备注…）
             if (course.extraInfo.isNotBlank()) {
                 Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                HorizontalDivider(color = com.kstudio.agenda.ui.components.subtleDividerColor(0.3f))
                 Spacer(Modifier.height(10.dp))
                 course.extraInfo.split('\n').forEach { line ->
                     if (line.isNotBlank()) {
@@ -334,7 +349,7 @@ fun CourseEditDialog(
                         maxWeek = maxWeek,
                     )
                     Spacer(Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    HorizontalDivider(color = com.kstudio.agenda.ui.components.subtleDividerColor(0.4f))
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = t.editScopeLabel,
@@ -343,13 +358,11 @@ fun CourseEditDialog(
                     )
                     ScopeOption(
                         label = t.editScopeOne,
-                        hint = t.editScopeOneHint,
                         selected = !applyAll,
                         onSelect = { applyAll = false },
                     )
                     ScopeOption(
                         label = t.editScopeAll,
-                        hint = t.editScopeAllHint,
                         selected = applyAll,
                         onSelect = { applyAll = true },
                     )
@@ -367,7 +380,7 @@ fun CourseEditDialog(
                         hint = t.editDeleteWeeksHint,
                     )
                     Spacer(Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    HorizontalDivider(color = com.kstudio.agenda.ui.components.subtleDividerColor(0.4f))
                     Spacer(Modifier.height(12.dp))
                     Text(
                         text = t.editScopeLabel,
@@ -376,13 +389,11 @@ fun CourseEditDialog(
                     )
                     ScopeOption(
                         label = t.editScopeOne,
-                        hint = t.editScopeOneHint,
                         selected = !applyAll,
                         onSelect = { applyAll = false },
                     )
                     ScopeOption(
                         label = t.editScopeAll,
-                        hint = t.editScopeAllHint,
                         selected = applyAll,
                         onSelect = { applyAll = true },
                     )
@@ -419,7 +430,7 @@ fun CourseEditDialog(
                         }
                     }
                     Spacer(Modifier.height(12.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                    HorizontalDivider(color = com.kstudio.agenda.ui.components.subtleDividerColor(0.4f))
                     Spacer(Modifier.height(12.dp))
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
@@ -493,6 +504,7 @@ fun CourseEditDialog(
                 .toEpochDay() * 86_400_000L,
         )
         DatePickerDialog(
+            modifier = Modifier.glassFrost(RoundedCornerShape(28.dp), popup = true),
             onDismissRequest = { showTargetPicker = false },
             confirmButton = {
                 TextButton(onClick = {
@@ -585,6 +597,7 @@ fun CourseAddDialog(
     onSave: (Course) -> Unit,
     onInvalid: () -> Unit,
     initial: Course? = null,
+    origin: androidx.compose.ui.geometry.Rect? = null,
 ) {
     val t = LocalStrings.current
     var title by remember { mutableStateOf(initial?.title.orEmpty()) }
@@ -600,6 +613,8 @@ fun CourseAddDialog(
     val maxWeek = remember { maxOf(20, defaultWeek, initial?.weeksSet()?.maxOrNull() ?: 20) }
 
     AlertDialog(
+        origin = origin,
+        scrollText = false,
         onDismissRequest = onDismiss,
         title = { Text(t.courseAddTitle) },
         text = {
@@ -800,7 +815,7 @@ fun RescheduleDialog(
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+                HorizontalDivider(color = com.kstudio.agenda.ui.components.subtleDividerColor(0.4f))
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -835,6 +850,7 @@ fun RescheduleDialog(
             initialSelectedDateMillis = (target ?: sourceDate).toEpochDay() * 86_400_000L,
         )
         DatePickerDialog(
+            modifier = Modifier.glassFrost(RoundedCornerShape(28.dp), popup = true),
             onDismissRequest = { showPicker = false },
             confirmButton = {
                 TextButton(onClick = {
@@ -857,7 +873,7 @@ fun RescheduleDialog(
 @Composable
 private fun ScopeOption(
     label: String,
-    hint: String,
+    hint: String? = null,
     selected: Boolean,
     onSelect: () -> Unit,
 ) {
@@ -871,11 +887,13 @@ private fun ScopeOption(
         RadioButton(selected = selected, onClick = onSelect)
         Column(Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = hint,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (!hint.isNullOrBlank()) {
+                Text(
+                    text = hint,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

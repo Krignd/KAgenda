@@ -3,11 +3,6 @@
     android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="10dp" android:background="@drawable/widget_bg">
     <TextView android:id="@+id/overview_title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/feature_widget_week_courses" android:textSize="16sp" android:textStyle="bold" android:textColor="#0F172A" />
     <TextView android:id="@+id/overview_date" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="10/12–10/18" android:textSize="11sp" android:textColor="#64748B" android:paddingBottom="6dp" />
-    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
-        <LinearLayout android:id="@+id/overview_rows" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
-            <include layout="@layout/widget_day_column" /><include layout="@layout/widget_day_column" /><include layout="@layout/widget_day_column" />
-            <include layout="@layout/widget_day_column" /><include layout="@layout/widget_day_column" /><include layout="@layout/widget_day_column" /><include layout="@layout/widget_day_column" />
-        </LinearLayout>
-    </ScrollView>
+    <ListView android:id="@+id/overview_rows" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:divider="@null" android:scrollbars="vertical" />
     <TextView android:id="@+id/overview_more" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/feature_widget_more" android:textSize="10sp" android:textColor="#64748B" />
 </LinearLayout>

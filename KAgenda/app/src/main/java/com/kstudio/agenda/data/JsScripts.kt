@@ -301,6 +301,16 @@ $loginJs
 })();
 """.trimIndent()
 
+    /** Language hints only; does not change page language, storage, requests or course data. */
+    val LANGUAGE_PROBE = """
+(function(){
+  function tag(v){return String(v || '').replace(/[^A-Za-z0-9,;=._* -]/g,'').slice(0,80);}
+  var portalLocale='';
+  try { portalLocale=localStorage.getItem('umi_locale') || ''; } catch(e){}
+  return JSON.stringify({pageLang:tag(document.documentElement.lang),browserLang:tag(navigator.language),portalLocale:tag(portalLocale)});
+})();
+""".trimIndent()
+
     /**
      * 从“我的课表”周网格中提取数据，返回 JSON：
      * { ok, meta: {semester, weekNo, weekRange, today, url, fetchedAt}, courses: [...] }
@@ -370,8 +380,8 @@ $loginJs
         for (var j = 0; j < infoEls.length; j++) { infos.push(textOf(infoEls[j])); }
         var allText = textOf(item);
         var weeks = '';
-        var wm = allText.match(/\[?([0-9]{1,2}(?:-[0-9]{1,2})?(?:,[0-9]{1,2}(?:-[0-9]{1,2})?)*)周\]?/);
-        if (wm) { weeks = wm[1]; }
+        var wm = allText.match(/\[?([0-9]{1,2}(?:-[0-9]{1,2})?(?:周?[,，][0-9]{1,2}(?:-[0-9]{1,2})?)*)周\]?/);
+        if (wm) { weeks = wm[1].replace(/周/g, ''); }
         var periodStart = 0;
         var periodEnd = 0;
         var pm = allText.match(/([0-9]{1,2})\s*-\s*([0-9]{1,2})\s*节/);
@@ -432,6 +442,20 @@ $loginJs
     var debug = { source: '', termCodeUsed: '', campusCodeUsed: '', weeklyCounts: [], errors: [] };
     try {
       function enc(s){ return encodeURIComponent(String(s === undefined || s === null ? '' : s)); }
+      // BUAA's public homeapp request layer explicitly sends its Umi locale.
+      // Protocol reference: umi.688994e5.js (SMuA -> 9kvl.f -> Fghh.O), inspected 2026-10-22.
+      // Independently written; preserve the portal's choice without changing storage or course names.
+      var requestLanguage = 'zh-CN';
+      try {
+        var savedLanguage = localStorage.getItem('umi_locale');
+        if (savedLanguage === 'zh-CN' || savedLanguage === 'en-US') requestLanguage = savedLanguage;
+      } catch(e){}
+      debug.requestLanguage = requestLanguage;
+      function requestHeaders(form){
+        var headers = { 'Fetch-Api': 'true', 'Accept-Language': requestLanguage };
+        if (form) headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
+        return headers;
+      }
       var API = '../../../sys/homeapp/api/home/student/getMyScheduleDetail.do';
       var tc = String(termCode || '');
       var cc = String(campusCode || '');
@@ -452,7 +476,7 @@ $loginJs
       if (!tc) {
         try {
           var resp0 = await fetch('../../../sys/homeapp/api/home/kb/xnxq.do', {
-            method: 'GET', credentials: 'include', headers: { 'Fetch-Api': 'true' }
+            method: 'GET', credentials: 'include', headers: requestHeaders(false)
           });
           var t0 = await resp0.text();
           var d0 = null;
@@ -476,7 +500,7 @@ $loginJs
         try {
           var resp1 = await fetch('../../../sys/homeapp/api/home/kb/xnxq.do', {
             method: 'POST', credentials: 'include',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Fetch-Api': 'true' },
+            headers: requestHeaders(true),
             body: ''
           });
           var t1 = await resp1.text();
@@ -511,7 +535,7 @@ $loginJs
           return fetch(API, {
             method: 'POST',
             credentials: 'include',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'Fetch-Api': 'true' },
+            headers: requestHeaders(true),
             body: body
           }).then(function(resp){ return resp.text(); }).then(function(text){
             var data = null;
@@ -717,6 +741,19 @@ $loginJs
           body = m ? m[1] : null;
         }
         if (!body) return '';
+        var parity = t.match(/周\s*[（(]\s*([单双])/);
+        if (parity) {
+          var numbers = [], parts = body.split(/[,，、]/);
+          parts.forEach(function(part){
+            var ns = part.match(/[0-9]+/g);
+            if (!ns) return;
+            var a = Number(ns[0]), b = Number(ns[1] || ns[0]);
+            for (var w = a; w <= b && w <= 40; w++) {
+              if (w % 2 === (parity[1] === '单' ? 1 : 0)) numbers.push(w);
+            }
+          });
+          return numbers.join(',');
+        }
         return norm(body)
           .replace(/[~\u2014\uff0d]/g, '-')
           .replace(/[\uff0c\u3001]/g, ',')

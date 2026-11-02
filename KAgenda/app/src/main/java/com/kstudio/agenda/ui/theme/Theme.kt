@@ -5,6 +5,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
@@ -22,7 +23,7 @@ private val LightColors = lightColorScheme(
     onSurface = Color(0xFF0F172A),
     surfaceVariant = Color(0xFFEFF3F8),
     onSurfaceVariant = Color(0xFF475569),
-    outline = Color(0xFFCBD5E1),
+    outline = Color(0xFF8190A6),
     error = Color(0xFFDC2626),
 )
 
@@ -40,16 +41,19 @@ private val DarkColors = darkColorScheme(
     onSurface = Color(0xFFE2E8F0),
     surfaceVariant = Color(0xFF1E293B),
     onSurfaceVariant = Color(0xFF94A3B8),
-    outline = Color(0xFF475569),
+    outline = Color(0xFF8A9AB3),
     error = Color(0xFFF87171),
 )
 
 @Composable
-fun KAgendaTheme(glass: Boolean = false, content: @Composable () -> Unit) {
+fun KAgendaTheme(glass: Boolean = true, colorDepth: Int = 0, motionSpeedPercent: Int = 100, content: @Composable () -> Unit) {
+    PreferHighRefreshRate()
     val dark = isSystemInDarkTheme()
-    val scheme = if (glass) glassScheme(dark) else if (dark) DarkColors else LightColors
+    val depth = glassDepthFraction(colorDepth)
+    val scheme = if (glass) glassScheme(dark, depth) else if (dark) DarkColors else LightColors
     MaterialTheme(
         colorScheme = scheme,
-        content = content,
-    )
+    ) {
+        CompositionLocalProvider(LocalGlassEnabled provides glass, LocalGlassColorDepth provides depth, LocalMotionSettings provides MotionSettings(motionSpeedPercent), content = content)
+    }
 }

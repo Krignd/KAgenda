@@ -1,0 +1,1183 @@
+[
+  {
+    "id": "EX_NJU_UG",
+    "name": "南京大学",
+    "adapters": [
+      {
+        "id": "ext_nju_ug",
+        "name": "南京大学本科教务列表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://ehallapp.nju.edu.cn/jwapp/sys/wdkb/*default/index.do#/xskcb",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "请打开本科个人我的课表的标准列表，并完整展开为一页。按明确表头、完整学年学期、分页总数和无筛选状态核对；未排课、未知筛选、缺页或交互期间变化整批中止。总周数按校历填写；已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-01-17T07:18:22Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/njubksjw2.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      },
+      {
+        "id": "ext_nju_xk",
+        "name": "南京大学本科已选课程",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://xk.nju.edu.cn/xsxkapp/sys/xsxkapp/*default/grablessons.do",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "请先打开已选课程窗口。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-01-17T07:18:22Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/njubksxk.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      },
+      {
+        "id": "ext_nju_grad",
+        "name": "南京大学研究生教务",
+        "category": "POSTGRADUATE",
+        "url": "https://ehallapp.nju.edu.cn/gsapp/sys/wdkbapp/*default/index.do#/xskcb",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2025-09-28T12:57:33Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/njuyjsjw.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_RUC_GRAD",
+    "name": "中国人民大学",
+    "adapters": [
+      {
+        "id": "ext_ruc_grad",
+        "name": "中国人民大学研究生课表",
+        "category": "POSTGRADUATE",
+        "url": "https://yjs2.ruc.edu.cn/gsapp/sys/wdkbapp/*default/index.do",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-01-17T07:18:22Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/rucyjsjw.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SEU",
+    "name": "东南大学",
+    "adapters": [
+      {
+        "id": "ext_seu",
+        "name": "东南大学本研教务课表",
+        "category": "BACHELOR_AND_POSTGRADUATE",
+        "url": "https://ehall.seu.edu.cn/jwapp/sys/bykb/*default/index.do",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-08-28T11:51:32Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/seubksjw.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      },
+      {
+        "id": "ext_seu_wdkb",
+        "name": "东南大学我的课表（已排课）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://ehall.seu.edu.cn/jwapp/sys/wdkb/*default/index.do?EMAP_LANG=zh&THEME=",
+        "path": "EXT/seu.js",
+        "maintainer": "Haa1024 contributors / KAgenda",
+        "description": "请选择教务提供的学期，读取完整已排课记录、真实开始日期与总周数；不包含未排课课程，作息请在预览核对。来源已做样本验证，仍待本校账号验证；原本研入口保留。",
+        "combo": false,
+        "updated": "2026-09-24T16:50:32+08:00",
+        "sourceUrl": "https://github.com/Haa1024/SEU-Timetable/blob/d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b/app/src/main/java/com/seu/timetable/data/EhallClient.kt",
+        "repository": "https://github.com/Haa1024/SEU-Timetable",
+        "revision": "d69ae1dfa24b56f3a28dd2098fda94c1cf9cde4b",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SJTU_GRAD",
+    "name": "上海交通大学",
+    "adapters": [
+      {
+        "id": "ext_sjtu_grad",
+        "name": "上海交通大学研究生选课",
+        "category": "POSTGRADUATE",
+        "url": "https://yjsxk.sjtu.edu.cn/yjsxkapp/sys/xsxkapp/xsxkCourse/loadStdCourseInfo.do",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-01-17T07:18:22Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/sjtuyjsxk.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      },
+      {
+        "id": "ext_sjtu_ug",
+        "name": "上海交通大学本科个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://i.sjtu.edu.cn/jaccountlogin",
+        "path": "EXT/sjtu-undergraduate.js",
+        "maintainer": "dujiajun / CourseBlock contributors / KAgenda",
+        "description": "通过jAccount登录本科教务后打开个人课表，选择网页实际学年学期。按校历填写总周数；日期、作息请在原生预览核对。完整重读学期、身份与课程；缺项、分页、额外实践列表或交互期间变化整批中止。已做合成验证，仍待本校账号验证；厂商未确定，本科与研究生路线分开。",
+        "combo": false,
+        "updated": "2026-09-14T17:42:55+08:00",
+        "sourceUrl": "https://github.com/dujiajun/CourseBlock/blob/20feb37e37b2cd5779a7d3e24ef49983df7bbd5e/app/src/main/java/com/dujiajun/courseblock/downloader/UndergraduateDownloader.kt",
+        "repository": "https://github.com/dujiajun/CourseBlock",
+        "revision": "20feb37e37b2cd5779a7d3e24ef49983df7bbd5e",
+        "license": "MIT",
+        "licenseAsset": "shanghai-sjtu-undergraduate-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_UCAS_GRAD",
+    "name": "中国科学院大学",
+    "adapters": [
+      {
+        "id": "ext_ucas_grad",
+        "name": "国科大在线研究生课表",
+        "category": "POSTGRADUATE",
+        "url": "https://kb.mooc.ucas.edu.cn/res/pc/curriculum/schedule.html",
+        "path": "EXT/nju.js",
+        "maintainer": "WheretoSleepinNJU contributors / KAgenda",
+        "description": "请进入国科大在线的个人课表；所有教学周完整获取后才显示预览。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-09-06T03:40:50Z",
+        "sourceUrl": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter/blob/25125ef6c7092c47f9341adcfaa7e1dc1974b44d/api/tools/ucasyjsxk.js",
+        "repository": "https://github.com/WheretoSleepinNJU/NJU-Class-Shedule-Flutter",
+        "revision": "25125ef6c7092c47f9341adcfaa7e1dc1974b44d",
+        "license": "Apache-2.0",
+        "licenseAsset": "nju-personal-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_DNUI",
+    "name": "大连东软信息学院",
+    "adapters": [
+      {
+        "id": "ext_dnui",
+        "name": "大连东软我的课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://xk.neusoft.edu.cn/xsxk/web/curriculum",
+        "path": "EXT/dnui.js",
+        "maintainer": "LuBanQAQ contributors / KAgenda",
+        "description": "请打开我的课表页面并等待加载完成。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-01-04T10:29:10Z",
+        "sourceUrl": "https://github.com/LuBanQAQ/dnui-wakeup-export/blob/1035f4b4ceb7ba3a801325c57547b4def8a697b6/dnui-wakeup-export.user.js",
+        "repository": "https://github.com/LuBanQAQ/dnui-wakeup-export",
+        "revision": "1035f4b4ceb7ba3a801325c57547b4def8a697b6",
+        "license": "MIT",
+        "licenseAsset": "single-school-DNUI-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_FZU",
+    "name": "福州大学",
+    "adapters": [
+      {
+        "id": "ext_fzu",
+        "name": "福州大学本科我的选课（含调课）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwcjwxt2.fzu.edu.cn:81/student/xkjg/wdxk/xkjg_list.aspx",
+        "path": "EXT/fzu.js",
+        "maintainer": "west2-online contributors / KAgenda",
+        "description": "请选择学期并查询我的选课。未安排、缺少完整排课或整周活动时整次中止导入。来源代码已移植并做合成测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-09-20T06:34:45Z",
+        "sourceUrl": "https://github.com/west2-online/jwch/blob/81779d5a6307fa46f2017cba89d246691b5be73e/course.go",
+        "repository": "https://github.com/west2-online/jwch",
+        "revision": "81779d5a6307fa46f2017cba89d246691b5be73e",
+        "license": "Apache-2.0",
+        "licenseAsset": "single-school-FZU-Apache-2.0.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZJU",
+    "name": "浙江大学",
+    "adapters": [
+      {
+        "id": "ext_zju",
+        "name": "浙江大学本科个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N253508&layout=default",
+        "path": "EXT/zhengfang.js",
+        "maintainer": "Jnove contributors / KAgenda",
+        "description": "请在课表页选择学年学期；如需验证码，请先完成网页查询。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-10-08T02:02:11Z",
+        "sourceUrl": "https://github.com/Jnove/ZJUCoursetrace/blob/faed4d975958db8e6277727001081f91f673f048/lib/zju/api.ts",
+        "repository": "https://github.com/Jnove/ZJUCoursetrace",
+        "revision": "faed4d975958db8e6277727001081f91f673f048",
+        "license": "MIT",
+        "licenseAsset": "single-school-ZF-bundle-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_USST",
+    "name": "上海理工大学",
+    "adapters": [
+      {
+        "id": "ext_usst",
+        "name": "上海理工大学个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.usst.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhengfang.js",
+        "maintainer": "SLctfTeam contributors / KAgenda",
+        "description": "请打开个人课表页并选择学年学期。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2024-09-12T17:26:37Z",
+        "sourceUrl": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar/blob/bce264b562c198f4bb9863e516cecd92bf4aa306/src/utils/information.js",
+        "repository": "https://github.com/SLctfTeam/USST-Lecture-Table-Calendar",
+        "revision": "bce264b562c198f4bb9863e516cecd92bf4aa306",
+        "license": "MIT",
+        "licenseAsset": "single-school-ZF-bundle-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_XJTLU",
+    "name": "西交利物浦大学",
+    "adapters": [
+      {
+        "id": "ext_xjtlu",
+        "name": "西交利物浦完整学期课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://timetableplus.xjtlu.edu.cn/",
+        "path": "EXT/xjtlu.js",
+        "maintainer": "sceneeeee contributors / KAgenda",
+        "description": "请直接打开完整学期的 timetableplus 课表。开放周次范围需填写最后教学周；时间表将在预览中一起确认。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-05-28T15:03:48Z",
+        "sourceUrl": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet/blob/64951fce1204a3bce92a44885b85040c8996a5c7/src/lib/parseTimetable.ts",
+        "repository": "https://github.com/sceneeeee/xjtlu-timetable-bookmarklet",
+        "revision": "64951fce1204a3bce92a44885b85040c8996a5c7",
+        "license": "MIT",
+        "licenseAsset": "single-school-XJTLU-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SUSE",
+    "name": "四川轻化工大学",
+    "adapters": [
+      {
+        "id": "ext_suse",
+        "name": "四川轻化工大学个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.suse.edu.cn/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhengfang.js",
+        "maintainer": "suse-edu-cn contributors / KAgenda",
+        "description": "请在个人课表选择学年学期。整周实践课会单独提示，不转成普通节次。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-09-05T08:53:21Z",
+        "sourceUrl": "https://github.com/suse-edu-cn/SUSE-OAA-APP/blob/53d06ec130a106f4bf6669e1eb536088a841a9b0/shared/src/commonMain/kotlin/com/suseoaa/projectoaa/shared/data/remote/api/SchoolApiService.kt",
+        "repository": "https://github.com/suse-edu-cn/SUSE-OAA-APP",
+        "revision": "53d06ec130a106f4bf6669e1eb536088a841a9b0",
+        "license": "MIT",
+        "licenseAsset": "single-school-ZF-bundle-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SCUJCC",
+    "name": "成都锦城学院",
+    "adapters": [
+      {
+        "id": "ext_scujcc",
+        "name": "成都锦城学院 Table1 学期课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwweb.cdjcc.edu.cn/",
+        "path": "EXT/scujcc.js",
+        "maintainer": "XFY9326 contributors / KAgenda",
+        "description": "历史布局适配：请选择显示完整星期、周次和节次的 Table1 课表。Table6 布局请使用其他解析器。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-03-21T06:08:08Z",
+        "sourceUrl": "https://github.com/XFY9326/Schedule/blob/d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29/app/src/main/java/tool/xfy9326/schedule/content/adapters/parser/SCUJCCCourseParser.kt",
+        "repository": "https://github.com/XFY9326/Schedule",
+        "revision": "d631e15cb7d114eb1df9f53a40e3f76fc3a4ea29",
+        "license": "Apache-2.0",
+        "licenseAsset": "single-school-XFY-Apache-2.0.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZZULI",
+    "name": "郑州轻工业大学",
+    "adapters": [
+      {
+        "id": "ext_zzuli",
+        "name": "郑州轻工业大学当前学期列表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.zzuli.edu.cn/student/xkjg.wdkb.jsp?menucode=S20301",
+        "path": "EXT/zzuli.js",
+        "maintainer": "LingNc contributors / KAgenda",
+        "description": "请打开个人课表。读取学校当前学期的普通课程列表；整周实践环节不转为节次。来源代码已移植并做样本测试，仍待本校账号验证。学期与课程时间以导入预览为准。",
+        "combo": false,
+        "updated": "2026-03-09T14:36:42Z",
+        "sourceUrl": "https://github.com/LingNc/stnet_syllabus/blob/02e9ff9ff806dcf51f3c475769ed1e64d19b898f/internal/parser/list_parser.go",
+        "repository": "https://github.com/LingNc/stnet_syllabus",
+        "revision": "02e9ff9ff806dcf51f3c475769ed1e64d19b898f",
+        "license": "MIT",
+        "licenseAsset": "single-school-ZZULI-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_WZU_API",
+    "name": "温州大学",
+    "adapters": [
+      {
+        "id": "ext_wzu_api",
+        "name": "温州大学个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jwxt.wzu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N253508&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "wow-233 contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-09-25T13:15:26+08:00",
+        "sourceUrl": "https://github.com/wow-233/niwin-assistant/blob/6b6de141340523d6cd3776b8f11e035a860c54f2/lib/services/wzu_sync_script.dart",
+        "repository": "https://github.com/wow-233/niwin-assistant",
+        "revision": "6b6de141340523d6cd3776b8f11e035a860c54f2",
+        "license": "Apache-2.0",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZJGSU_WEB",
+    "name": "浙江工商大学",
+    "adapters": [
+      {
+        "id": "ext_zjgsu_web",
+        "name": "浙江工商大学网页版个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jwxt.zjgsu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "Yingye66 contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-10-19T10:43:21+08:00",
+        "sourceUrl": "https://github.com/Yingye66/zjgsu-campus-mcp-open-source/blob/37beae2862bfb05f4471adf446f1d2db5195db0a/src/adapters/campus/jwweb.py",
+        "repository": "https://github.com/Yingye66/zjgsu-campus-mcp-open-source",
+        "revision": "37beae2862bfb05f4471adf446f1d2db5195db0a",
+        "license": "MIT",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZJYC",
+    "name": "浙江农林大学暨阳学院",
+    "adapters": [
+      {
+        "id": "ext_zjyc",
+        "name": "暨阳学院个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.zjyc.edu.cn/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "drfccv contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-09-30T15:36:04+08:00",
+        "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/config/schools_config.json",
+        "repository": "https://github.com/drfccv/ZFJW-backend",
+        "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+        "license": "MIT",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZJUT_API",
+    "name": "浙江工业大学",
+    "adapters": [
+      {
+        "id": "ext_zjut_api",
+        "name": "浙江工业大学个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://www.gdjw.zjut.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "zhullyb contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2025-09-21T22:26:37+08:00",
+        "sourceUrl": "https://github.com/zhullyb/zf2ics/blob/d5168afd4742ebec4be6f243c27f915dec6117ba/zf2ics.user.js",
+        "repository": "https://github.com/zhullyb/zf2ics",
+        "revision": "d5168afd4742ebec4be6f243c27f915dec6117ba",
+        "license": "MIT",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZUFEDFC_HTML",
+    "name": "浙江财经大学东方学院",
+    "adapters": [
+      {
+        "id": "ext_zufedfc_html",
+        "name": "浙财东方个人课表网格",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jwglxt.zufedfc.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "my832 contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-10-13T16:35:30+08:00",
+        "sourceUrl": "https://github.com/my832/dongfang-timetable/blob/903fe9c313dd0f1c8aa65d55570d73e22ab4b526/app/assets/school-import.js",
+        "repository": "https://github.com/my832/dongfang-timetable",
+        "revision": "903fe9c313dd0f1c8aa65d55570d73e22ab4b526",
+        "license": "LicenseRef-Dongfang-Permissive",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_CJLU_API",
+    "name": "中国计量大学",
+    "adapters": [
+      {
+        "id": "ext_cjlu_api",
+        "name": "中国计量大学个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.cjlu.edu.cn/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "wirano contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2021-12-23T13:39:18+08:00",
+        "sourceUrl": "https://github.com/wirano/CJLU_ClassTable/blob/49154bfb9a7be62315046496103ef4f6f0624972/main.py",
+        "repository": "https://github.com/wirano/CJLU_ClassTable",
+        "revision": "49154bfb9a7be62315046496103ef4f6f0624972",
+        "license": "MIT",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SHUFEZJ_API",
+    "name": "上海财经大学浙江学院",
+    "adapters": [
+      {
+        "id": "ext_shufezj_api",
+        "name": "上财浙院个人课表 API（含 WebVPN）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.shufe-zj.edu.cn/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "Mioxiya contributors / KAgenda",
+        "description": "请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2025-02-26T15:26:07+08:00",
+        "sourceUrl": "https://github.com/Mioxiya/AISchedule-shufe-zj/blob/9cfae2a31a3c19ac98bf3e5e4b46517358460728/code/provider.js",
+        "repository": "https://github.com/Mioxiya/AISchedule-shufe-zj",
+        "revision": "9cfae2a31a3c19ac98bf3e5e4b46517358460728",
+        "license": "MIT",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ZWU_API",
+    "name": "浙江万里学院",
+    "adapters": [
+      {
+        "id": "ext_zwu_api",
+        "name": "浙江万里学院个人课表（手动核对作息）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jw.zwu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/zhejiang.js",
+        "maintainer": "ShiGuangSchedule contributors / KAgenda",
+        "description": "此入口只读取课程节次；学校存在夏令/冬令作息差异，请在原生预览中逐节核对时间后保存。请登录并在个人课表页选择学年学期、完成查询后导入。来源代码已移植并做样本测试，仍待本校账号验证。学期周一和作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-10-14T23:26:43+08:00",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/ZWU/zwu_01.js",
+        "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+        "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+        "license": "MIT",
+        "licenseAsset": "zhejiang-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_USTS_API",
+    "name": "苏州科技大学",
+    "adapters": [
+      {
+        "id": "ext_usts_api",
+        "name": "苏州科技大学个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.usts.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/jiangsu.js",
+        "maintainer": "mico-v contributors / KAgenda",
+        "description": "请在本校个人课表页选择学年学期并查询。来源代码已移植并做样本测试，仍待本校账号验证；学期周一和逐节作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-09-19T23:27:32+08:00",
+        "sourceUrl": "https://github.com/mico-v/usts-cli/blob/adbe1ee632b0f7ad9e6cce0269563e45e42c673a/src/infrastructure/jwgl/schedule.ts",
+        "repository": "https://github.com/mico-v/usts-cli",
+        "revision": "adbe1ee632b0f7ad9e6cce0269563e45e42c673a",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_CUMT_API",
+    "name": "中国矿业大学",
+    "adapters": [
+      {
+        "id": "ext_cumt_api",
+        "name": "中国矿业大学本科个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jwxt.cumt.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/jiangsu.js",
+        "maintainer": "Ye111ow contributors / KAgenda",
+        "description": "按来源提供校内 HTTP 入口，需要校园网；不包含校外中转。请在本校个人课表页选择学年学期并查询。来源代码已移植并做样本测试，仍待本校账号验证；学期周一和逐节作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-07-18T18:18:19+08:00",
+        "sourceUrl": "https://github.com/Ye111ow/cumt-schedule-desktop/blob/b0b22f9e06b3802755eb976ed07f5dd641f77364/src/zhengfang.js",
+        "repository": "https://github.com/Ye111ow/cumt-schedule-desktop",
+        "revision": "b0b22f9e06b3802755eb976ed07f5dd641f77364",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_NJUCM_DOM",
+    "name": "南京中医药大学",
+    "adapters": [
+      {
+        "id": "ext_njucm_dom",
+        "name": "南京中医药大学完整课表（逐周核对）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.njucm.edu.cn/student/for-std/course-table",
+        "path": "EXT/njucm.js",
+        "maintainer": "Miao-30 contributors / KAgenda",
+        "description": "请在个人课表选择全部周次、勾选包含实验后完成查询。导入会逐周核对，读取网页提供的起始日期及逐节作息；来源已做样本验证，仍待本校账号验证。存在未排课课程时整批中止。",
+        "combo": false,
+        "updated": "2026-09-06T20:32:46+08:00",
+        "sourceUrl": "https://github.com/Miao-30/NJUCM-weekdesk/blob/50f9c39cc910aff4ce3d0d55bbba4bae7018e777/src/extract.ts",
+        "repository": "https://github.com/Miao-30/NJUCM-weekdesk",
+        "revision": "50f9c39cc910aff4ce3d0d55bbba4bae7018e777",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_NJTECH_API",
+    "name": "南京工业大学",
+    "adapters": [
+      {
+        "id": "ext_njtech_api",
+        "name": "南京工业大学个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.njtech.edu.cn/",
+        "path": "EXT/jiangsu.js",
+        "maintainer": "GiuseppeLR contributors / KAgenda",
+        "description": "请在本校个人课表页选择学年学期并查询。来源代码已移植并做样本测试，仍待本校账号验证；学期周一和逐节作息请在预览中核对。",
+        "combo": false,
+        "updated": "2026-07-23T21:45:06+08:00",
+        "sourceUrl": "https://github.com/GiuseppeLR/njtech_timetable/blob/3c529518e2d79fa10e1b9c36b7853246d78d1e16/lib/features/import/pages/jw_webview_page.dart",
+        "repository": "https://github.com/GiuseppeLR/njtech_timetable",
+        "revision": "3c529518e2d79fa10e1b9c36b7853246d78d1e16",
+        "license": "Apache-2.0",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_CUMTXH_API",
+    "name": "中国矿业大学徐海学院",
+    "adapters": [
+      {
+        "id": "ext_cumtxh_api",
+        "name": "中国矿业大学徐海学院个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jwxt.cumtxh.cn/",
+        "path": "EXT/jiangsu.js",
+        "maintainer": "Albiehao contributors / KAgenda",
+        "description": "按来源提供校内 HTTP 入口，需要校园网；不包含校外中转。请在本校个人课表页选择学年学期并查询。来源代码已移植并做样本测试，仍待本校账号验证；学期周一和逐节作息请在预览中核对。",
+        "combo": false,
+        "updated": "2025-04-10T15:23:39+08:00",
+        "sourceUrl": "https://github.com/Albiehao/cumtxh-jwxt-api/blob/80b0580b226ea97759ceced499aa41315a03096b/src/school_api/client.py",
+        "repository": "https://github.com/Albiehao/cumtxh-jwxt-api",
+        "revision": "80b0580b226ea97759ceced499aa41315a03096b",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_NUIST_WEEKLY",
+    "name": "南京信息工程大学",
+    "adapters": [
+      {
+        "id": "ext_nuist_weekly",
+        "name": "南京信息工程大学已排课课表（逐周）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.nuist.edu.cn/jwapp/sys/wdkb/*default/index.do?EMAP_LANG=zh#/xskcb",
+        "path": "EXT/nuist.js",
+        "maintainer": "zyc-816 contributors / KAgenda",
+        "description": "请选择教务提供的当前学期，按校历填写总周数。逐周读取已排课课程和网页学期开始日期，不包含未排课课程；作息请在预览核对。来源已做样本验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-09-15T16:24:20+08:00",
+        "sourceUrl": "https://github.com/zyc-816/NUISTTable/blob/aeb29c718885f27e4e870b2ca45d7f3950385adc/app/src/main/java/com/example/nuisttable/web/request.kt",
+        "repository": "https://github.com/zyc-816/NUISTTable",
+        "revision": "aeb29c718885f27e4e870b2ca45d7f3950385adc",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_NUAA_EAMS",
+    "name": "南京航空航天大学",
+    "adapters": [
+      {
+        "id": "ext_nuaa_eams",
+        "name": "南京航空航天大学本科个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://aao-eas.nuaa.edu.cn/eams/courseTableForStd.action",
+        "path": "EXT/nuaa.js",
+        "maintainer": "shiywhh contributors / KAgenda",
+        "description": "请选择教务系统提供的学期，按校历填写总周数。逐条核对排课块与课程列表，缺项、歧义或查询期间变化会中止；日期和作息请在预览核对。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-09-22T21:53:51+08:00",
+        "sourceUrl": "https://github.com/shiywhh/i-niuaa/blob/2acccb997836be11c220bf3e91e25a249fdf0d08/lib/core/eams_client.dart",
+        "repository": "https://github.com/shiywhh/i-niuaa",
+        "revision": "2acccb997836be11c220bf3e91e25a249fdf0d08",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_NJUST_PERSONAL",
+    "name": "南京理工大学",
+    "adapters": [
+      {
+        "id": "ext_njust_personal",
+        "name": "南京理工大学本科个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://bkjw.njust.edu.cn/njlgdx/xskb/xskb_list.do",
+        "path": "EXT/njust.js",
+        "maintainer": "flyShaoyu contributors / KAgenda",
+        "description": "请登录本科个人课表并选择教务提供的学期，按校历填写总周数。网格与详情逐条核对，缺项、歧义、分页或查询期间变化会中止；日期和作息请在预览核对。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-09-30T01:07:30+08:00",
+        "sourceUrl": "https://github.com/flyShaoyu/NJUSTLocalClassSche/blob/50299ccab1f36f82c83a4c0c259e1513df702b83/src/html-parser.ts",
+        "repository": "https://github.com/flyShaoyu/NJUSTLocalClassSche",
+        "revision": "50299ccab1f36f82c83a4c0c259e1513df702b83",
+        "license": "Apache-2.0",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SUDA_PERSONAL",
+    "name": "苏州大学",
+    "adapters": [
+      {
+        "id": "ext_suda_personal",
+        "name": "苏州大学本科个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://xk.suda.edu.cn/",
+        "path": "EXT/suda-personal.js",
+        "maintainer": "hlfzsi contributors / KAgenda",
+        "description": "按来源提供HTTP入口，请自行登录并打开个人课表。选择教务学年学期、按校历填写总周数；同时读取已排课实践课程，缺项、未排课或查询变化会中止。日期和作息请在预览核对。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-06-10T09:20:14+08:00",
+        "sourceUrl": "https://github.com/hlfzsi/Aero_su/blob/bd6aa7f2e9596c50c58b0f9af027caec0a89acba/lib/method/course/timetable.dart",
+        "repository": "https://github.com/hlfzsi/Aero_su",
+        "revision": "bd6aa7f2e9596c50c58b0f9af027caec0a89acba",
+        "license": "Apache-2.0",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_JUST_PERSONAL",
+    "name": "江苏科技大学",
+    "adapters": [
+      {
+        "id": "ext_just_personal",
+        "name": "江苏科技大学个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://ids.v.just.edu.cn/",
+        "path": "EXT/just-personal.js",
+        "maintainer": "lawrencehaohan-coder / Suike contributors / KAgenda",
+        "description": "自行登录学校VPN并打开完整个人课表，核对教务学年学期，按校历填写总周数。逐条审计已选课程、周次、节次和教学班；缺项、未知筛选、未排课实践或查询变化整批中止。日期与作息请在预览核对。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-10-20T13:55:57+08:00",
+        "sourceUrl": "https://github.com/lawrencehaohan-coder/suike/blob/99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b/android/work/portal-import/teaching-collector.js",
+        "repository": "https://github.com/lawrencehaohan-coder/suike",
+        "revision": "99b7dc1f6db54fd9c36afb69ac4d30a724c9ef1b",
+        "license": "MIT",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_WXXY_API",
+    "name": "无锡学院",
+    "adapters": [
+      {
+        "id": "ext_wxxy_api",
+        "name": "无锡学院个人课表 API",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.cwxu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/wxxy.js",
+        "maintainer": "ikliml666 / Wxxy-CampusHub contributors / KAgenda",
+        "description": "自行登录无锡学院个人课表并选择教务学年学期，按校历填写总周数。按十进制周次位掩码读取，完整重读课程与身份快照；缺项、额外实践列表、未知筛选或查询变化整批中止。日期与作息请在预览核对。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-09-18T19:36:24+08:00",
+        "sourceUrl": "https://github.com/ikliml666/Wxxy-CampusHub/blob/684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062/crates/campus-schedule/src/zhengfang.rs",
+        "repository": "https://github.com/ikliml666/Wxxy-CampusHub",
+        "revision": "684c2002cfd9f0ed939f1f926c9ae0b9e7fe3062",
+        "license": "Apache-2.0",
+        "licenseAsset": "jiangsu-school-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_TONGJI_PERSONAL",
+    "name": "同济大学",
+    "adapters": [
+      {
+        "id": "ext_tongji_personal",
+        "name": "同济大学个人课表（完整校历核对）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://1.tongji.edu.cn/",
+        "path": "EXT/tongji-personal.js",
+        "maintainer": "gzy31007 / Linho1219 / ShiGuangSchedule contributors / KAgenda",
+        "description": "自行登录同济1系统，明确选择教务学期。读取真实周一与逐节作息；校历缺少总周数时须按校历填写。缺项、分页、会话失效或确认期间变化整批中止；存在未排课课程时整批中止。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-09-16T21:28:27+08:00",
+        "sourceUrl": "https://github.com/gzy31007/TJDesktopTimetable/blob/4d79f8c0cedc7c8e6058129e6468d6e3365bfc73/dotnet/TjtCore/Adapters/TongjiStudentAdapter.cs",
+        "repository": "https://github.com/gzy31007/TJDesktopTimetable",
+        "revision": "4d79f8c0cedc7c8e6058129e6468d6e3365bfc73",
+        "license": "MIT",
+        "licenseAsset": "shanghai-tongji-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_SHU_PERSONAL",
+    "name": "上海大学",
+    "adapters": [
+      {
+        "id": "ext_shu_personal",
+        "name": "上海大学正方个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.shu.edu.cn/sso/shulogin",
+        "path": "EXT/shu-personal.js",
+        "maintainer": "zmdld11 / SHU-Class-Schedule contributors / KAgenda",
+        "description": "从学校SSO登录后打开个人课表，明确选择实际学年与季节学期。读取教务真实编码（含32），不试探其他学期。按校历填写总周数；日期和逐节作息在预览核对。缺项、额外实践列表、冲突或交互期间变化整批中止。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-09-16T13:11:13+08:00",
+        "sourceUrl": "https://github.com/zmdld11/SHU-Class-Schedule/blob/0c7090795bc3119e6f4c83ff2569d458eada53b2/app/src/main/java/io/github/zmdld11/shuschedule/data/jwxk/JwxkSpec.kt",
+        "repository": "https://github.com/zmdld11/SHU-Class-Schedule",
+        "revision": "0c7090795bc3119e6f4c83ff2569d458eada53b2",
+        "license": "MIT",
+        "licenseAsset": "shanghai-shu-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_ECNU_DOM",
+    "name": "华东师范大学",
+    "adapters": [
+      {
+        "id": "ext_ecnu_dom",
+        "name": "华东师范大学本科完整网页课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://byyt.ecnu.edu.cn/student/for-std/course-table",
+        "path": "EXT/ecnu-personal.js",
+        "maintainer": "Taulee / ECNUCourseTableTool contributors / KAgenda",
+        "description": "登录本科教学服务平台，选择明确学期并打开完整课表正文。读取网页真实周一、逐节作息、教师、教室和校区，按校历填写总周数。未展开iframe、缺项、分页、未排课、未知筛选或确认期间变化整批中止。已做真实DOM合成验证，仍待本校账号验证；厂商未确定。",
+        "combo": false,
+        "updated": "2026-09-24T18:39:40+08:00",
+        "sourceUrl": "https://github.com/Taulee/ECNUCourseTableTool-2.0/blob/d3d60512b3c084df8f65154e6fc5b45fedccb1ea/ecnu_calendar.py",
+        "repository": "https://github.com/Taulee/ECNUCourseTableTool-2.0",
+        "revision": "d3d60512b3c084df8f65154e6fc5b45fedccb1ea",
+        "license": "MIT",
+        "licenseAsset": "shanghai-ecnu-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_HFUT_PERSONAL",
+    "name": "合肥工业大学",
+    "adapters": [
+      {
+        "id": "ext_hfut_personal",
+        "name": "合肥工业大学 EAMS 5.0个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jxglstu.hfut.edu.cn/eams5-student/for-std/course-table",
+        "path": "EXT/hfut-personal.js",
+        "maintainer": "Chiu-xaH / HFUTCampusNet Contributors / KAgenda",
+        "description": "登录本科教务，打开本人完整课表。读取页面真实学期与学校逐节作息；按校历明确填写第1教学周周一和总周数，以真实课次日期换算周次。缺课、未知分支、分页、无法精确匹配节次或确认期间变化整批中止。独立适配，待本校账号验证。",
+        "combo": false,
+        "updated": "2026-10-20T01:06:50+08:00",
+        "sourceUrl": "https://github.com/Chiu-xaH/HFUT-Schedule/blob/fb0b0de01bb853de24281e9d0a9727954eb718ab/network-api/src/main/java/com/hfut/schedule/network/api/inf/JxglstuService.kt",
+        "repository": "https://github.com/Chiu-xaH/HFUT-Schedule",
+        "revision": "fb0b0de01bb853de24281e9d0a9727954eb718ab",
+        "license": "Apache-2.0",
+        "licenseAsset": "anhui-hfut-bundle.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_WUHU_PERSONAL",
+    "name": "芜湖学院",
+    "adapters": [
+      {
+        "id": "ext_wuhu_personal",
+        "name": "芜湖学院 金智教务个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://ehall.uwh.edu.cn",
+        "path": "EXT/wuhu-personal.js",
+        "maintainer": "KAgenda（原创实现）；公开协议参考 skreon",
+        "description": "原安徽师范大学皖江学院。登录门户并进入教务管理的手机个人课表；逐周读取完整学期、全部教师及真实作息，明确核对第1教学周周一。漏周、分页、实践或未知课程分支、字段缺失、会话失效或确认期间数据变化整批中止。MIT仅适用于KAgenda原创实现；参考仓库无许可，未复制其代码。待本校账号验证。",
+        "combo": false,
+        "updated": "2024-02-24T02:35:43+08:00",
+        "sourceUrl": "https://github.com/skreon/wuhuAiSchedule/blob/06aee566f8f46bebff2d4dad531a28a018b50b17/provider.js",
+        "repository": "https://github.com/skreon/wuhuAiSchedule",
+        "revision": "06aee566f8f46bebff2d4dad531a28a018b50b17",
+        "license": "MIT",
+        "licenseAsset": "anhui-wuhu-original-MIT.txt",
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "unlicensed",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0
+      }
+    ]
+  },
+  {
+    "id": "EX_FJJX_PERSONAL",
+    "name": "福建江夏学院",
+    "adapters": [
+      {
+        "id": "ext_fjjxu_personal",
+        "name": "福建江夏学院新正方当前学期",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.fjjxu.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "path": "EXT/fjjxu-personal.js",
+        "maintainer": "GUY-ATM (GUY) / KAgenda",
+        "description": "请在本校新正方教务系统完成登录。读取当前学期个人课表，按校历填写教学周数；学期起始日不是周一时须另填第一周周一。离散节次和教师、地点分别保留；未排课、实践等未核清分支、缺项、缺页或前后变化整批中止。预览中须核对、修改作息，未使用来源的默认钟点。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "updated": "2026-08-23T07:41:09Z",
+        "sourceUrl": "https://github.com/GUY-ATM/KEBIAO/blob/1a5ba8507c6dd324cc9e91ff98d7584c1b8c654f/kebiao.html",
+        "repository": "https://github.com/GUY-ATM/KEBIAO",
+        "revision": "1a5ba8507c6dd324cc9e91ff98d7584c1b8c654f",
+        "license": "MIT",
+        "licenseAsset": "fjjxu-personal-bundle-MIT.txt"
+      }
+    ]
+  },
+  {
+    "id": "EX_QNU_PERSONAL",
+    "name": "泉州师范学院",
+    "adapters": [
+      {
+        "id": "ext_qnu_personal",
+        "name": "泉州师范学院个人课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jw.qztc.edu.cn/academic/student/currcourse/currcourse.jsdo?groupId=&moduleId=2000",
+        "path": "EXT/qnu-personal.js",
+        "maintainer": "QSSchedule contributors / KAgenda",
+        "combo": false,
+        "updated": "2026-10-22T15:35:49Z",
+        "sourceUrl": "https://github.com/huanmen/qsschedule/blob/4ac3d71f103dd649dcd3de02f441d12c1480020e/android/integration/qnu/src/main/kotlin/cn/qztc/timetable/integration/qnu/QnuTimetableParser.kt",
+        "repository": "https://github.com/huanmen/qsschedule",
+        "revision": "4ac3d71f103dd649dcd3de02f441d12c1480020e",
+        "license": "MIT",
+        "licenseAsset": "qnu-personal-bundle-MIT.txt",
+        "description": "请登录后打开本人课程安排页，选好年份和春/夏/秋学期，再点击导入。读取个人课表及停调补代课明细，使用网页实时节次与钟点；按校历填写第一周周一和总教学周数。缺项、未排课、缺页、变更不完整、前后不一致或午间预留格有课时整批中止。已做合成验证，仍待本校账号验证。"
+      }
+    ]
+  },
+  {
+    "id": "EX_HQU_PERSONAL",
+    "name": "华侨大学",
+    "adapters": [
+      {
+        "id": "ext_hqu_personal",
+        "name": "华侨大学个人学期课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwapp.hqu.edu.cn/jwapp/sys/wdkb/*default/index.do?EMAP_LANG=zh",
+        "path": "EXT/hqu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 Lee70020、Xuan-Xuann",
+        "description": "登录本校个人课表后，从教务返回的学期中明确选择；按校历填写第一周周一和总教学周数，作息请在预览中核对。无法核对完整条数、特殊类别安排、缺项、缺页或前后变化时整批中止。代码为KAgenda独立实现，所列未授权仓库仅作协议参考。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "repository": "https://github.com/Lee70020/HuaYuanTimetable",
+        "revision": "be54e11ffe445b91f6d8414b08b7822e724e0b34",
+        "updated": "2026-09-18T09:04:58Z",
+        "sourceUrl": "https://github.com/Lee70020/HuaYuanTimetable/blob/be54e11ffe445b91f6d8414b08b7822e724e0b34/app/src/main/java/cn/hqu/timetable/local/WdkbClient.java",
+        "license": "MIT",
+        "licenseAsset": "hqu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "unlicensed"
+      },
+      {
+        "id": "ext_hqu_atrust_personal",
+        "name": "华侨大学个人学期课表 · aTrust",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwapp-hqu-edu-cn-s.atrust.hqu.edu.cn:9443/jwapp/sys/wdkb/*default/index.do?EMAP_LANG=zh",
+        "path": "EXT/hqu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 Lee70020、Xuan-Xuann",
+        "description": "登录本校个人课表后，从教务返回的学期中明确选择；按校历填写第一周周一和总教学周数，作息请在预览中核对。无法核对完整条数、特殊类别安排、缺项、缺页或前后变化时整批中止。代码为KAgenda独立实现，所列未授权仓库仅作协议参考。已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "repository": "https://github.com/Lee70020/HuaYuanTimetable",
+        "revision": "be54e11ffe445b91f6d8414b08b7822e724e0b34",
+        "updated": "2026-09-18T09:04:58Z",
+        "sourceUrl": "https://github.com/Lee70020/HuaYuanTimetable/blob/be54e11ffe445b91f6d8414b08b7822e724e0b34/app/src/main/java/cn/hqu/timetable/local/WdkbClient.java",
+        "license": "MIT",
+        "licenseAsset": "hqu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "unlicensed"
+      }
+    ]
+  },
+  {
+    "id": "EX_XMU_PERSONAL",
+    "name": "厦门大学",
+    "adapters": [
+      {
+        "id": "ext_xmu_personal",
+        "name": "厦门大学个人学期课表",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jw.xmu.edu.cn/gsapp/sys/wdkbapp/*default/index.do?EMAP_LANG=zh",
+        "path": "EXT/xmu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 human-ego、厦门大学官方公开前端",
+        "description": "在本校学生个人课表完成登录，明确选择教务返回的学期。教学周数与逐节作息来自教务，第一周周一请按校历填写；保留完整教师、教室和教学班标识。遇调停补、按日期排课、未生成课、不同作息方案或任何未完整核验数据时整批中止。代码为KAgenda原创，所列无许可仓库只作协议参考；已做合成验证，仍待本校账号验证。",
+        "combo": false,
+        "repository": "https://github.com/human-ego/XMU-Campus-Hub",
+        "revision": "5ddd950bdbba96ef83472e7a6df48ea740540907",
+        "updated": "2026-09-27T19:36:14Z",
+        "sourceUrl": "https://github.com/human-ego/XMU-Campus-Hub/blob/5ddd950bdbba96ef83472e7a6df48ea740540907/android/app/src/main/java/com/xmu/campushub/auth/XmuScheduleClient.java",
+        "license": "MIT",
+        "licenseAsset": "xmu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "unlicensed"
+      }
+    ]
+  },
+  {
+    "id": "EX_FJNU_PERSONAL",
+    "name": "福建师范大学",
+    "adapters": [
+      {
+        "id": "ext_fjnu_personal",
+        "name": "福建师范大学本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwglxt.fjnu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/fjnu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 haohao-u",
+        "description": "在本校本科教务系统登录，明确填写学年并选择第一或第二学期；按校历填写第一周周一和总教学周数，作息请在预览中核对。保留完整教师、离散节次、单双周及课程明细；缺项、缺页、附加安排未核验或确认期间数据变化时整批中止。所列无明确许可仓库仅作协议事实参考，代码由KAgenda独立实现；仍待本校账号验证。",
+        "combo": false,
+        "repository": "https://github.com/haohao-u/the-assitant-of-study",
+        "revision": "4f4550398349a77e47e5698c9187bca5e4d4bdad",
+        "updated": "2026-10-22T06:13:08Z",
+        "sourceUrl": "https://github.com/haohao-u/the-assitant-of-study/blob/4f4550398349a77e47e5698c9187bca5e4d4bdad/recommendation/services/jwglxt_portal.py",
+        "license": "MIT",
+        "licenseAsset": "fjnu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "unlicensed"
+      }
+    ]
+  },
+  {
+    "id": "EX_FZFU_PERSONAL",
+    "name": "福州外语外贸学院",
+    "adapters": [
+      {
+        "id": "ext_fzfu_personal",
+        "name": "福州外语外贸学院本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://portal.fzfu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/selected-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 kqakqakqa",
+        "description": "登录本校学生个人课表，在网页选定要导入的学年学期，再点击导入并明确核对。按校历填写第一周周一和总教学周数，作息请在预览中核对。保留完整教师、离散节次、单双周及课程明细；任何缺项、未核验的非空附加安排、缺页、会话失败或确认期间变化均整批中止。代码由KAgenda独立实现，所列来源仅作协议事实参考；仍待本校账号验证。",
+        "combo": false,
+        "repository": "https://github.com/kqakqakqa/xiaoai-schedule-parser",
+        "revision": "3a4bbfced68fcda9c4bc0ead5b5996e772164e58",
+        "updated": "2025-03-27T09:16:01Z",
+        "sourceUrl": "https://github.com/kqakqakqa/xiaoai-schedule-parser/blob/3a4bbfced68fcda9c4bc0ead5b5996e772164e58/新正方V9.0_request/provider.js",
+        "license": "MIT",
+        "licenseAsset": "selected-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only"
+      }
+    ]
+  },
+  {
+    "id": "EX_SMU_PERSONAL",
+    "name": "三明学院",
+    "adapters": [
+      {
+        "id": "ext_smu_personal",
+        "name": "三明学院本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jwxxt.fjsmu.edu.cn/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151&layout=default",
+        "path": "EXT/selected-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 Haooz、zaochih",
+        "description": "登录本校学生个人课表，在网页选定要导入的学年学期，再点击导入并明确核对。按校历填写第一周周一和总教学周数，作息请在预览中核对。保留完整教师、离散节次、单双周及课程明细；任何缺项、未核验的非空附加安排、缺页、会话失败或确认期间变化均整批中止。代码由KAgenda独立实现，所列来源仅作协议事实参考；仍待本校账号验证。",
+        "combo": false,
+        "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+        "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+        "updated": "2026-08-31T13:13:03Z",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SMXY/smxy.js",
+        "license": "MIT",
+        "licenseAsset": "selected-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only",
+        "preferred": true
+      }
+    ]
+  },
+  {
+    "id": "EX_FIT_PERSONAL",
+    "name": "福州理工学院",
+    "adapters": [
+      {
+        "id": "ext_fit_personal",
+        "name": "福州理工学院本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://oaa.fitedu.net/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151",
+        "path": "EXT/selected-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 Haooz",
+        "description": "登录本校学生个人课表，先在网页选择要导入的学年学期，再点击导入并核对。按校历填写第一周周一和总教学周数，作息在原生预览中核对。保留多教师、校区、教学班和离散节次；任何坏行、附加非空未核验安排、分页、登录失效或确认期间变化均整批中止。保留原有社区入口。仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+        "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+        "updated": "2026-08-31T12:42:16Z",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FIT/fit.js",
+        "license": "MIT",
+        "licenseAsset": "selected-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only"
+      }
+    ]
+  },
+  {
+    "id": "EX_LMU_PERSONAL",
+    "name": "黎明职业大学",
+    "adapters": [
+      {
+        "id": "ext_lmu_personal",
+        "name": "黎明职业大学超星本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jw.lmu.cn/admin/pkgl/xskb/queryKbForXsd",
+        "path": "EXT/lmu-personal.js",
+        "maintainer": "KAgenda；MIT来源 MoeShin；DSH辅助草稿",
+        "description": "进入本人学生个人课表，在网页选好学期后导入并确认。按校历填写第一周周一和总教学周数，作息在原生预览核对。保留原始课名、多教师、校区、课程类别和教学班；未知非空结构、坏行、分页信封、会话失败及确认期间任何变化均整批中止。改编自明确列出本校的共享超星MIT来源，非学校官方实现；当前后台及账号仍待实校验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/moeshin/ai-schedule-chaoxing",
+        "revision": "4650f59887d119b9c9828fb19447f736b549654e",
+        "updated": "2022-09-25T19:56:56Z",
+        "sourceUrl": "https://github.com/moeshin/ai-schedule-chaoxing/blob/4650f59887d119b9c9828fb19447f736b549654e/scheduleHtmlProvider.js",
+        "license": "MIT",
+        "licenseAsset": "lmu-personal-MIT.txt",
+        "modifiedFromMitSource": true,
+        "implementationOriginal": false
+      }
+    ]
+  },
+  {
+    "id": "EX_MKU_PERSONAL",
+    "name": "闽南科技学院",
+    "adapters": [
+      {
+        "id": "ext_mku_personal",
+        "name": "闽南科技学院强智本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.mku.edu.cn/jsxsd/xskb/xskb_list.do",
+        "path": "EXT/mku-personal.js",
+        "maintainer": "KAgenda；MIT来源 Mutx163；DSH辅助草稿",
+        "description": "进入本人学生个人课表，先在网页选好学期，再导入并明确确认。两次读取均提交网页实际选定学期，不默用默认学期。按本年级校历填写第一周周一和总教学周数，作息在原生预览核对。保留原始课名、多教师、校区、教学班和离散节次；任何坏行、未知非空安排、异常网格或确认期间的页面/课程变化均整批中止。保留原社区入口；仍待学校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/ShiGuangSchedule/shiguang_warehouse",
+        "revision": "c4a35feb061a3f6db2d6c122927083c067c61309",
+        "updated": "2026-09-08T06:49:13Z",
+        "sourceUrl": "https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/MKU/mku.js",
+        "license": "MIT",
+        "licenseAsset": "mku-personal-MIT.txt",
+        "implementationOriginal": false,
+        "modifiedFromMitSource": true
+      }
+    ]
+  },
+  {
+    "id": "EX_NDNU_PERSONAL",
+    "name": "宁德师范学院",
+    "adapters": [
+      {
+        "id": "ext_ndnu_personal",
+        "name": "宁德师范学院正方本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.ndnu.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "path": "EXT/ndnu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 flame-ray",
+        "description": "在本校正方教务系统完成登录，明确填写学年并选择第一或第二学期；按本年级校历填写第一周周一和教学周数，作息在原生预览核对。保留原始课名、多教师、校区、教学班、单双周与离散节次。分页未全、附加安排未知、坏行、字段冲突或两次读取变化时整批中止。近期本校专属来源仅作公开协议事实参考，不复制无明确许可代码；仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/flame-ray/kezhi",
+        "revision": "b527a12796a30c01636e0d2a4f5ba779550a2539",
+        "updated": "2026-10-13T05:51:01Z",
+        "sourceUrl": "https://github.com/flame-ray/kezhi/blob/b527a12796a30c01636e0d2a4f5ba779550a2539/src-tauri/src/lib.rs",
+        "license": "MIT",
+        "licenseAsset": "ndnu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "NOASSERTION"
+      }
+    ]
+  }
+]

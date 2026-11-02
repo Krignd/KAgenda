@@ -168,6 +168,7 @@ object AiSkills {
         val alarm: Boolean? = null,
         val leadMinutes: Int? = null,
         val statusTag: String = "",
+        val originalText: String = "",
     )
 
     /** update 的“仅修改字段”（null=不变） */

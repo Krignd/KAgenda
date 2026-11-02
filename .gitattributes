@@ -2,3 +2,6 @@
 KAgenda/app/src/main/assets/shiguang/scripts/** -text -whitespace
 KAgenda/app/src/main/assets/licenses/** -text -whitespace
 KAgenda/app/src/main/assets/catalog/pinyin*.json -text
+KAgenda/app/src/main/assets/academic/*provenance.json -text
+KAgenda/app/src/main/assets/academic/wakeup-schools.json -text
+KAgenda/app/src/main/java/com/kstudio/agenda/data/academic/wakeup/** -text -whitespace

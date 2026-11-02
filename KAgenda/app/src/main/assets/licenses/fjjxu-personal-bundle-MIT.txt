@@ -1,0 +1,48 @@
+KAgenda original implementation, using publicly documented protocol facts.
+Protocol and field reference: GUY-ATM/KEBIAO, author GUY-ATM (copyright GUY).
+Pinned source: https://github.com/GUY-ATM/KEBIAO/blob/1a5ba8507c6dd324cc9e91ff98d7584c1b8c654f/kebiao.html
+Last source-file commit: 7c09c7d11473318034e2cd6175205e2111664c7b, 2026-08-23T07:41:09Z.
+Source MIT license is reproduced in full below.
+Local changes: same-origin visible login session, fresh current-semester reads, strict complete-batch validation,
+explicit teaching-week calendar input, disjoint sections and teacher/room/course identities retained,
+second-read consistency check and native preview. No password handling, remembered credentials,
+upstream cache, hardcoded semester date, fixed 20-week limit, default school clock or lossy merging.
+
+MIT License
+
+Copyright (c) 2026 GUY
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Supplemental protocol facts only (no code copied or license grant inferred):
+Author/account: suyi8767; repository: suyi8767/ysjx-local-dev-v2.
+Fixed file: https://github.com/suyi8767/ysjx-local-dev-v2/blob/1b8f38f7d08fce0059b6e12202ac00acf1929a18/zfn_api.py
+Path date: 2025-10-11T00:25:25Z; SHA-256: 89e5b81e98f15842284e7f2b8eaf84e683a27251d93be6a1401a4a4cea12c8f9.
+No applicable root/file license established. pjr/LICENSE belongs to its separate subproject.
+Only uppercase identity/term and class/campus/note field names informed an original KAgenda safety fix.
+
+Additional protocol facts only, author/account huanggua379 (KeBen/fjjxu-schedule).
+No applicable upstream source license established; no code copied, translated or relicensed.
+https://github.com/huanggua379/fjjxu-schedule/blob/1debf66947b556de65bbbbf200e12602b6fcf5dd/lib/data/remote/schedule_remote.dart
+2026-09-19T06:42:17Z; SHA-256 1a45b254af7da73ec391fd39a2b8b116626d10d32b187657594decac636ea594
+https://github.com/huanggua379/fjjxu-schedule/blob/1debf66947b556de65bbbbf200e12602b6fcf5dd/lib/features/settings/settings_page.dart
+2026-09-19T06:26:38Z; SHA-256 e44d85d9f1899781a2e33aae9cdbae1fd559fa50e3d0f63c0213c168e38b060e
+https://github.com/huanggua379/fjjxu-schedule/blob/1debf66947b556de65bbbbf200e12602b6fcf5dd/lib/core/constants/app_constants.dart
+2026-09-19T06:26:38Z; SHA-256 329d22adb9b1788f7a6dfbc1f0db5cb293306721990c6e41ee9c0c506f58dbf6
+Only explicit jc/numeric weekday and term16 facts used. No month-based term inference, default school clocks, calendar guessing, min/max section collapse or partial practice-course mapping adopted.

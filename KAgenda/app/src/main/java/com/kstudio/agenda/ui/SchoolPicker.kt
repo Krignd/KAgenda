@@ -2,12 +2,13 @@
 
 package com.kstudio.agenda.ui
 
-import android.graphics.Rect
-import android.view.ViewTreeObserver
+import com.kstudio.agenda.ui.theme.glassFrost
+import com.kstudio.agenda.ui.theme.LocalGlassEnabled
+
+import android.view.Gravity
 import android.view.WindowManager
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -41,6 +42,8 @@ import com.kstudio.agenda.model.School
 import com.kstudio.agenda.model.Schools
 import com.kstudio.agenda.model.SchoolDirectory
 import com.kstudio.agenda.data.SchoolCatalog
+import com.kstudio.agenda.data.SettingsStore
+import com.kstudio.agenda.i18n.AcademicText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -51,8 +54,9 @@ import kotlinx.coroutines.withContext
 internal fun SchoolSupport(school: School, modifier: Modifier = Modifier) {
     val t = LocalStrings.current
     Text(
-        if (school.warehouseId.isNotBlank()) t.warehouseSupport else if (school.supported) t.independentSupport else t.unsupportedSchool,
-        modifier, color = if (school.supported) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        com.kstudio.agenda.i18n.AcademicText.schoolSupportLabel(school, t),
+        modifier, color = if (school.supported || SchoolCatalog.knownSystemTypes(school).isNotEmpty())
+            MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.End,
     )
 }
@@ -64,6 +68,9 @@ internal fun SchoolPicker(selectedId: String, onSelect: (School) -> Unit, onDism
     var query by remember { mutableStateOf("") }
     var source by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val pickerSettings by remember(context) { SettingsStore.settingsFlow(context.applicationContext) }
+        .collectAsState(initial = null)
+    val hideUndetermined = pickerSettings?.hideUndeterminedSchools ?: false
     val keyboard = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -71,7 +78,9 @@ internal fun SchoolPicker(selectedId: String, onSelect: (School) -> Unit, onDism
     val entries by produceState<List<SchoolDirectory.Entry>?>(null, all) {
         value = withContext(Dispatchers.Default) { SchoolDirectory.sorted(all, SchoolCatalog.nameIndex(context.applicationContext)) }
     }
-    val listing = remember(query, entries) { SchoolDirectory.filter(entries.orEmpty(), query) }
+    val listing = remember(query, entries, hideUndetermined) {
+        SchoolDirectory.filter(entries.orEmpty().filterNot { hideUndetermined && AcademicText.isUndetermined(it.school) }, query)
+    }
     var jumpJob by remember { mutableStateOf<Job?>(null) }
     var flashLetter by remember { mutableStateOf("") }
     var jumpSequence by remember { mutableIntStateOf(0) }
@@ -82,7 +91,7 @@ internal fun SchoolPicker(selectedId: String, onSelect: (School) -> Unit, onDism
             else -> ""
         }
     } }
-    LaunchedEffect(query, entries) { listState.scrollToItem(0) }
+    LaunchedEffect(query, entries, hideUndetermined) { listState.scrollToItem(0) }
     LaunchedEffect(jumpSequence) { delay(650); flashLetter = "" }
     val jump: (String) -> Unit = { letter ->
         listing.positions[letter]?.let { position ->
@@ -92,34 +101,39 @@ internal fun SchoolPicker(selectedId: String, onSelect: (School) -> Unit, onDism
             jumpJob = scope.launch { listState.scrollToItem(position) }
         }
     }
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
+    // Compose 1.7 在 usePlatformDefaultWidth=false 时按整屏重新测量，忽略键盘缩小后的约束。
+    // 保留原生窗口测量，并在下方显式设为 MATCH_PARENT，兼顾全屏和输入法避让。
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = true, decorFitsSystemWindows = false)) {
         val view = LocalView.current
-        val density = LocalDensity.current
-        var visibleHeight by remember { mutableIntStateOf(0) }
         DisposableEffect(view) {
             val window = (view.parent as? DialogWindowProvider)?.window
             val previousInputMode = window?.attributes?.softInputMode
+            val previousGravity = window?.attributes?.gravity
             window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
-            // 部分系统仍按整屏测量 Dialog；使用实际可见区，键盘弹出时也重新适配。
-            val listener = ViewTreeObserver.OnGlobalLayoutListener {
-                val frame = Rect()
-                view.getWindowVisibleDisplayFrame(frame)
-                val imeBottom = ViewCompat.getRootWindowInsets(view)?.getInsets(WindowInsetsCompat.Type.ime())?.bottom ?: 0
-                val bottom = minOf(frame.bottom, view.resources.displayMetrics.heightPixels - imeBottom)
-                if (bottom > frame.top) visibleHeight = bottom - frame.top
-            }
-            view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+            window?.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+            window?.setGravity(Gravity.TOP or Gravity.START)
+            window?.setDimAmount(0f)
             onDispose {
-                view.viewTreeObserver.removeOnGlobalLayoutListener(listener)
                 previousInputMode?.let { window.setSoftInputMode(it) }
+                previousGravity?.let { window.setGravity(it) }
             }
         }
-        Surface(Modifier.fillMaxWidth().then(if (visibleHeight > 0) Modifier.height(with(density) { visibleHeight.toDp() }) else Modifier.fillMaxHeight())) {
-            Scaffold(topBar = {
+        Surface(
+            // 窗口始终铺满屏幕；键盘只通过 Insets 压缩内容，不能反过来固定窗口高度。
+            Modifier.fillMaxSize().glassFrost(popup = true),
+            color = com.kstudio.agenda.ui.theme.overlayBackgroundColor(),
+        ) {
+            Scaffold(modifier = Modifier.imePadding(), containerColor = if (LocalGlassEnabled.current) androidx.compose.ui.graphics.Color.Transparent else com.kstudio.agenda.ui.theme.overlayBackgroundColor(), topBar = {
                 TopAppBar(title = { Text(t.secSchool) }, navigationIcon = { IconButton(onClick = onDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t.cancel) } })
             }) { padding ->
                 Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp)) {
                     OutlinedTextField(query, { query = it }, label = { Text(t.schoolSearch) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    Row(Modifier.fillMaxWidth().toggleable(value = hideUndetermined, role = Role.Checkbox,
+                        onValueChange = { hidden -> scope.launch { SettingsStore.setHideUndeterminedSchools(context.applicationContext, hidden) } }),
+                        verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = hideUndetermined, onCheckedChange = null)
+                        Text(AcademicText.hideUndeterminedSchools, style = MaterialTheme.typography.bodyMedium)
+                    }
                     Text(t.schoolCatalogNote, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = 8.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         onAdd?.let { TextButton(onClick = it) { Text(t.schoolAdd) } }
@@ -156,7 +170,7 @@ internal fun SchoolPicker(selectedId: String, onSelect: (School) -> Unit, onDism
                             }
                         }
                     }
-                    SchoolAlphabetRail(listing.positions, activeLetter, jump, Modifier.fillMaxHeight())
+                    if (!listing.searching) SchoolAlphabetRail(listing.positions, activeLetter, jump, Modifier.fillMaxHeight())
                     }
                     if (flashLetter.isNotBlank()) Surface(Modifier.align(Alignment.Center).size(76.dp), shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.primaryContainer, shadowElevation = 6.dp) {
                         Box(contentAlignment = Alignment.Center) { Text(flashLetter, style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onPrimaryContainer) }

@@ -201,6 +201,7 @@ class WebScheduleEngine(private val appContext: Context) {
                 pageReadyCount++
                 AppLog.d(TAG, "加载完成: ${shortUrl(url)}")
                 v.evaluateJavascript(JsScripts.HOOKS, null)
+                WebViewLanguageDiagnostics.environment(v, TAG)
             }
 
             override fun onReceivedError(
@@ -208,6 +209,7 @@ class WebScheduleEngine(private val appContext: Context) {
                 request: WebResourceRequest,
                 error: WebResourceError,
             ) {
+                WebViewLanguageDiagnostics.resourceError(request, error.errorCode, false, TAG)
                 if (request.isForMainFrame) {
                     AppLog.w(
                         TAG,
@@ -216,11 +218,17 @@ class WebScheduleEngine(private val appContext: Context) {
                 }
             }
 
+            override fun onReceivedHttpError(v: WebView, request: WebResourceRequest, response: WebResourceResponse) {
+                WebViewLanguageDiagnostics.resourceError(request, response.statusCode, true, TAG)
+                super.onReceivedHttpError(v, request, response)
+            }
+
             override fun shouldInterceptRequest(
                 v: WebView,
                 request: WebResourceRequest,
             ): WebResourceResponse? {
                 val u = request.url?.toString().orEmpty()
+                WebViewLanguageDiagnostics.request(request, TAG)
                 // 跳过被墙/慢速的外部 CDN（会阻塞登录页渲染，页面自带本地 vant.css）
                 if (u.contains("cdn.jsdelivr.net")) {
                     return WebResourceResponse(
@@ -246,6 +254,7 @@ class WebScheduleEngine(private val appContext: Context) {
         view.webChromeClient = object : WebChromeClient() {
 
             override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
+                WebViewLanguageDiagnostics.console(consoleMessage, TAG)
                 AppLog.d(TAG, "JS控制台: ${consoleMessage.message()} @${consoleMessage.lineNumber()}")
                 return true
             }
@@ -730,6 +739,10 @@ class WebScheduleEngine(private val appContext: Context) {
         val currentWeek = withContext(Dispatchers.Default) {
             ScheduleParser.parseExtraction(extracted.orEmpty(), raws)
         }
+        WebViewLanguageDiagnostics.environment(view, TAG)
+        AppLog.i(TAG, "课名诊断[当前周]: " + withContext(Dispatchers.Default) {
+            ScheduleLanguageDiagnostics.current(extracted.orEmpty(), raws, currentWeek?.courses.orEmpty())
+        })
         val meta = withContext(Dispatchers.Default) {
             ScheduleParser.readPageMeta(extracted.orEmpty())
         }
@@ -836,6 +849,7 @@ class WebScheduleEngine(private val appContext: Context) {
         }
         AppLog.d(TAG, "整学期抓取原始结果: ${resultJson.take(500)}")
         val map = ScheduleParser.parseSemesterFetchResult(resultJson)
+        AppLog.i(TAG, "课名诊断[整学期]: " + ScheduleLanguageDiagnostics.semester(resultJson, map))
         if (map.isEmpty()) {
             AppLog.w(TAG, "整学期抓取失败：未取到任何周次（多为会话失效导致接口被重定向），本次仅保留当前周，保存时将自动合并缓存")
         }

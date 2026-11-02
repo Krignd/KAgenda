@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -32,19 +33,18 @@ import androidx.compose.material.icons.filled.EventAvailable
 import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.AlertDialog
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarDefaults
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import com.kstudio.agenda.ui.components.AppTextButton as TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -55,8 +55,12 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import com.kstudio.agenda.ui.components.LiquidNavigation
+import com.kstudio.agenda.ui.components.AnimatedPage
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import com.kstudio.agenda.ui.theme.dialogAnchor
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -76,6 +80,7 @@ import com.kstudio.agenda.data.SyncUi
 import com.kstudio.agenda.data.UpdateUi
 import com.kstudio.agenda.data.WebScheduleEngine
 import com.kstudio.agenda.i18n.LocalStrings
+import com.kstudio.agenda.ui.theme.glassChromeColor
 import java.time.LocalDate
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -104,9 +109,14 @@ fun MainScreen(
 ) {
     // 旋转屏幕/系统重建后保持当前页签与弹窗状态
     var tab by rememberSaveable { mutableStateOf(HomeTab.Schedule) }
+    val tabState = rememberSaveableStateHolder()
+    val aiAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
+    val inAppAiAnchor = com.kstudio.agenda.ui.theme.rememberDialogAnchor()
+    var quickAddOrigin by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     var showQuickAdd by rememberSaveable { mutableStateOf(false) }
     // 文档导入页（设置入口 / 其他应用传入文档时打开）
     var docImportOpen by rememberSaveable { mutableStateOf(false) }
+    var docImportText by remember { mutableStateOf<String?>(null) }
     var docImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
     // 内容区尺寸（用于把可拖拽悬浮按钮限制在屏幕内）
     var contentSize by remember { mutableStateOf(IntSize.Zero) }
@@ -206,9 +216,13 @@ fun MainScreen(
         // 打开 AI 助手（顶栏图标 / 常驻通知 / 悬浮球）不应改动当前页签，
         // 否则在计划/进行中/设置页点悬浮球会被强行跳回日程表
         if (l.focusEpochDay != null) tab = HomeTab.Schedule
-        if (l.quickAdd) showQuickAdd = true
+        if (l.quickAdd) {
+            quickAddOrigin = l.aiOrigin ?: aiAnchor.bounds
+            showQuickAdd = true
+        }
         // 其他应用传入文档：直接打开文档导入页
-        if (l.docUri != null) {
+        if (l.docUri != null || l.docText != null) {
+            docImportText = l.docText
             docImportUri = l.docUri
             docImportOpen = true
         }
@@ -242,7 +256,7 @@ fun MainScreen(
         topBar = {
             TopAppBar(
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = if (settings.glassUi) Color.Transparent
+                    containerColor = if (settings.glassUi) glassChromeColor()
                     else MaterialTheme.colorScheme.surface,
                 ),
                 title = {
@@ -309,12 +323,12 @@ fun MainScreen(
                                 }
                             }
                             is SyncUi.Error -> Text(
-                                s.message,
+                                t.syncFailed,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error,
                             )
                             is SyncUi.NeedLogin -> Text(
-                                text = s.message.ifBlank { t.syncNotLoggedIn },
+                                text = if (s.message.isBlank()) t.syncNotLoggedIn else t.syncFailed,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = if (s.message.isBlank()) {
                                     MaterialTheme.colorScheme.onSurfaceVariant
@@ -342,6 +356,7 @@ fun MainScreen(
                     if (vm.aiRun.collectAsState().value.unread) {
                         IconButton(onClick = {
                             vm.markAiResultSeen()
+                            quickAddOrigin = aiAnchor.bounds
                             showQuickAdd = true
                         }) {
                             Text(
@@ -352,13 +367,14 @@ fun MainScreen(
                             )
                         }
                     }
-                    IconButton(onClick = {
+                    IconButton(modifier = Modifier.dialogAnchor(aiAnchor), onClick = {
                         // 打开界面即视为已查看：熄灭「!」角标
                         vm.markAiResultSeen()
+                        quickAddOrigin = aiAnchor.bounds
                         showQuickAdd = true
                     }) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_deepseek),
+                            painter = painterResource(R.drawable.ic_ai_assistant),
                             contentDescription = t.qaTitle,
                         )
                     }
@@ -369,44 +385,44 @@ fun MainScreen(
             )
         },
         bottomBar = {
-            NavigationBar(
-                containerColor = if (settings.glassUi) {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.78f)
-                } else {
-                    NavigationBarDefaults.containerColor
-                },
-            ) {
-                NavigationBarItem(
-                    selected = tab == HomeTab.Schedule,
-                    onClick = { tab = HomeTab.Schedule },
-                    icon = { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                    label = { Text(t.tabSchedule) },
-                )
-                NavigationBarItem(
-                    selected = tab == HomeTab.Plan,
-                    onClick = { tab = HomeTab.Plan },
-                    icon = { Icon(Icons.Filled.EventNote, contentDescription = null) },
-                    label = { Text(t.tabPlan) },
-                )
-                // 中间的「学校」页签：图标用当前所选学校的校徽（具体页面待做，先显示「暂未完成」）
-                NavigationBarItem(
-                    selected = tab == HomeTab.School,
-                    onClick = { tab = HomeTab.School },
-                    icon = { SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp) },
-                    label = { Text(t.tabSchool) },
-                )
-                NavigationBarItem(
-                    selected = tab == HomeTab.Ongoing,
-                    onClick = { tab = HomeTab.Ongoing },
-                    icon = { Icon(Icons.Filled.EventAvailable, contentDescription = null) },
-                    label = { Text(t.tabOngoing) },
-                )
-                NavigationBarItem(
-                    selected = tab == HomeTab.Settings,
-                    onClick = { tab = HomeTab.Settings },
-                    icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    label = { Text(t.tabSettings) },
-                )
+            if (settings.glassUi) {
+                Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    LiquidNavigation(
+                        labels = listOf(t.tabSchedule, t.tabPlan, t.tabSchool, t.tabOngoing, t.tabSettings),
+                        selectedIndex = tab.ordinal,
+                        onSelect = { tab = HomeTab.entries[it] },
+                        icons = listOf(
+                            { Icon(Icons.Filled.DateRange, contentDescription = null) },
+                            { Icon(Icons.Filled.EventNote, contentDescription = null) },
+                            { SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp) },
+                            { Icon(Icons.Filled.EventAvailable, contentDescription = null) },
+                            { Icon(Icons.Filled.Settings, contentDescription = null) },
+                        ),
+                    )
+                }
+            } else {
+                NavigationBar {
+                    NavigationBarItem(
+                        selected = tab == HomeTab.Schedule, onClick = { tab = HomeTab.Schedule },
+                        icon = { Icon(Icons.Filled.DateRange, contentDescription = null) }, label = { Text(t.tabSchedule) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == HomeTab.Plan, onClick = { tab = HomeTab.Plan },
+                        icon = { Icon(Icons.Filled.EventNote, contentDescription = null) }, label = { Text(t.tabPlan) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == HomeTab.School, onClick = { tab = HomeTab.School },
+                        icon = { SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp) }, label = { Text(t.tabSchool) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == HomeTab.Ongoing, onClick = { tab = HomeTab.Ongoing },
+                        icon = { Icon(Icons.Filled.EventAvailable, contentDescription = null) }, label = { Text(t.tabOngoing) },
+                    )
+                    NavigationBarItem(
+                        selected = tab == HomeTab.Settings, onClick = { tab = HomeTab.Settings },
+                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text(t.tabSettings) },
+                    )
+                }
             }
         },
         // 堆叠展示：先加入的在上、后加入的在下方（旧提示整体上移，而不是被顶掉）
@@ -429,7 +445,10 @@ fun MainScreen(
                 .padding(padding)
                 .onSizeChanged { contentSize = it },
         ) {
-            when (tab) {
+            AnimatedPage(tab.ordinal, Modifier.fillMaxSize()) { pageIndex ->
+            val pageTab = HomeTab.entries[pageIndex]
+            tabState.SaveableStateProvider(pageTab.name) {
+            when (pageTab) {
                 // 日/周/月视图统一放在「日程表」页内，顶部切换
                 HomeTab.Schedule -> ScheduleScreen(vm)
                 // 「计划」：与日程表并列，用于非学校规定的个人计划
@@ -444,11 +463,9 @@ fun MainScreen(
                     onWebLogin = {
                         webLoginLauncher.launch(Intent(context, WebLoginActivity::class.java))
                     },
-                    onOpenDocImport = {
-                        docImportUri = null
-                        docImportOpen = true
-                    },
                 )
+            }
+            }
             }
             // 【已隐藏保留】AI 助手悬浮按钮（应用内可拖拽的圆形 DeepSeek 按钮）。
             // 隐藏原因：开启系统悬浮球时它本就多余；未开启悬浮球时也不应在右下角出现这个圆形图标
@@ -487,11 +504,12 @@ fun MainScreen(
                                     )
                                 }
                             }
-                            .clickable { showQuickAdd = true },
+                            .dialogAnchor(inAppAiAnchor)
+                            .clickable { quickAddOrigin = inAppAiAnchor.bounds; showQuickAdd = true },
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_deepseek),
+                            painter = painterResource(R.drawable.ic_ai_assistant),
                             contentDescription = t.qaTitle,
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                             modifier = Modifier.size(30.dp),
@@ -513,7 +531,7 @@ fun MainScreen(
     }
 
     if (showQuickAdd) {
-        AiQuickAddDialog(vm) { showQuickAdd = false }
+        AiQuickAddDialog(vm, origin = quickAddOrigin) { showQuickAdd = false }
     }
 
     // 安装更新但系统未允许本应用「安装未知应用」：引导用户去系统设置开启
@@ -552,9 +570,10 @@ fun MainScreen(
         DocumentImportScreen(
             vm = vm,
             initialUri = docImportUri,
+            initialText = docImportText,
             onClose = {
                 docImportOpen = false
-                docImportUri = null
+                docImportUri = null; docImportText = null
             },
         )
     }

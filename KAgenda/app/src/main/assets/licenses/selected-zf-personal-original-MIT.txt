@@ -1,0 +1,97 @@
+KAgenda original implementation only. Full MIT below licenses only KAgenda original code.
+No applicable upstream source grant established for the FZFU and zaochih references. Zero upstream implementation lines copied, translated, packaged or relicensed. Only public request/field/DOM facts are used.
+
+Protocol author/account: kqakqakqa; repository kqakqakqa/xiaoai-schedule-parser@3a4bbfced68fcda9c4bc0ead5b5996e772164e58
+School/source scope: 福州外语外贸学院; 明确校名分支；取课代码与其他分支相同，并非上游学校独有实现
+Actual Git tree: 3cd23ac9d8b031586f3bef30343ec45e1d811cfe
+
+Protocol author/account: zaochih; repository zaochih/zf-to-ics@f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1
+School/source scope: 三明学院; README明确三明学院部署示例；共享正方V9工具，并非上游学校独有代码
+Actual Git tree: a3731d6d5fe94c71841f5a25f786be786f04d1ba
+https://github.com/kqakqakqa/xiaoai-schedule-parser/blob/3a4bbfced68fcda9c4bc0ead5b5996e772164e58/新正方V9.0_request/provider.js
+2025-03-27T09:16:01Z; SHA-256 df13562474b03a386c30f41153e5e7bda5eeb3e83b140e6c0f8952012f63858f
+https://github.com/kqakqakqa/xiaoai-schedule-parser/blob/3a4bbfced68fcda9c4bc0ead5b5996e772164e58/README.md
+2025-03-26T21:31:29Z; SHA-256 5f61e6131bd50e8faa66f1d4430b7ab683963cc5e60c2702c76329ac6ac568b2
+https://github.com/zaochih/zf-to-ics/blob/f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1/extension/content.js
+2026-10-12T16:29:07Z; SHA-256 3a986ba07e7351d199b1d16ee3fc9c82ee597719b99110d0d96e9ad9897bfa5d
+https://github.com/zaochih/zf-to-ics/blob/f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1/README.md
+2026-10-12T16:29:07Z; SHA-256 b7a75ea6b5c339db6311e598f6bbfa398cd59108508c6d55e83cc07876fb6c19
+
+Only three explicit school profiles/origins. Current official year/term fields and labels are confirmed by user; no hardcoded semester/date/week/clock. Distinct FZFU form-gnmkdm and SMU query-gnmkdm/kclbdm request contracts retained. Unknown nonempty branches, partial rows/pages, expired session, changed selection/self/raw rows reject before staging. No dummy forced-pass rows, name/teacher merges, majority-vote campus clock or guessed seasonal clock switches.
+
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+Additional school-specific public protocol reference: https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/SMXY/smxy.js
+Author/maintainer Haooz; ShiGuangSchedule community. Source path date 2026-08-31T13:13:03Z; SHA-256 3d6855f96ccf306e55aff4deadb2aa679de24fa8c23f15c85a5e478d59bf6617.
+Existing upstream bundled SMXY script remains unchanged. No upstream source lines copied into the original selected-zf implementation. Its actual school-specific requests corroborate the SMU contract; lossy skip/merge/default20weeks and firstrow calendar guessing are not adopted.
+Full original community MIT notice follows (separate from the KAgenda implementation MIT above):
+MIT License
+
+Copyright (c) 2025 星河欲转
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+FIT school-specific protocol reference (MIT, no upstream implementation copied):
+Author/maintainer: Haooz
+https://github.com/ShiGuangSchedule/shiguang_warehouse/blob/c4a35feb061a3f6db2d6c122927083c067c61309/resources/FIT/fit.js
+Actual source date 2026-08-31T12:42:16Z; SHA-256 9ddaac92c7f8ca83e4225dabf432c0dd8e6bb8c539ee1076af0a8888816919c1; Git blob dcd6b8b296dd7be13f1083206c6fa7a3d8a4ca5a
+Only exact http://oaa.fitedu.net personal page and N2151 module; xnm/xqm from visible selects. POST query gnmkdm; form xnm/xqm/kzlx/xsdm/kclbdm. Do not adopt author week/date defaults, skipped rows or non-atomic save behavior.
+
+Exact original license bytes:
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
