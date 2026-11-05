@@ -1,4 +1,11 @@
 import java.util.Properties
+import java.security.KeyStore
+import java.security.PrivateKey
+import java.security.cert.X509Certificate
+import java.util.zip.ZipFile
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+import com.android.apksig.ApkSigner
 
 plugins {
     alias(libs.plugins.android.application)
@@ -43,6 +50,7 @@ val useReleaseSigning = signingConfiguredCount == signingKeys.size
 
 android {
     namespace = "com.kstudio.agenda"
+    dynamicFeatures += setOf(":engine_ocr", ":engine_pdf", ":engine_ai")
     compileSdk = 35
 
     signingConfigs {
@@ -60,6 +68,8 @@ android {
         applicationId = "com.kstudio.agenda"
         minSdk = 26          // Android 8.0+（向下兼容；悬浮窗 TYPE_APPLICATION_OVERLAY 即 API 26 起）
         targetSdk = 35
+        // The base configuration owns ABI filtering for all dynamic feature APKs.
+        providers.gradleProperty("kagenda.engineAbi").orNull?.let { ndk { abiFilters += it } }
         testInstrumentationRunner = providers.gradleProperty("kagenda.testRunner")
             .getOrElse("com.kstudio.agenda.LocalAiDeviceTestRunner")
         // 版本命名逻辑（2026.9 起）：年份.月份 v序号；versionCode = 年×10000 + 月×100 + 序号
@@ -70,16 +80,9 @@ android {
         //   注意：(revN) 只接在版本号后，**不叠加在 (preN) 之后**；预览阶段自己发现的修复留在同一个 (preN) 里
         // - versionCode 只增不减：2026.10 预览版已用到 20261003（v1(pre3)），
         //   正式版 20261004（v1）→ 修订版 20261005 → v1.1 继续 +1。
-        versionCode = 20261101
-        versionName = "2026.11 v1"
-        externalNativeBuild {
-            cmake {
-                arguments += "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
-                providers.gradleProperty("kagenda.llamaSource").orNull?.let {
-                    arguments += "-DKAGENDA_LLAMA_SOURCE=$it"
-                }
-            }
-        }
+        versionCode = 20261102
+        versionName = "2026.11 v1(rev1)"
+
     }
 
     buildTypes {
@@ -117,18 +120,11 @@ android {
             it.systemProperty("kagenda.runners", project.layout.buildDirectory.dir("reports/warehouse-runners").get().asFile.absolutePath)
         }
     }
+    sourceSets.getByName("androidTest").assets.srcDir(layout.buildDirectory.dir("generated/engine-test-assets"))
 
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-
-    ndkVersion = "27.2.12479018"
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
     }
 
     packaging {
@@ -139,6 +135,12 @@ android {
 }
 
 dependencies {
+    // ML Kit's optional split manifest references this small shared version resource.
+    // Keeping the basement resource in the base does not require Google services on the device.
+    implementation("com.google.android.gms:play-services-basement:18.4.0")
+    // Previously scheduled SDK callbacks may outlive an optional split across app upgrades.
+    // Keep their small implementation in the base; OCR code, models and native libraries stay optional.
+    implementation("com.google.android.datatransport:transport-runtime:2.2.6")
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -162,10 +164,64 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     // 单元测试（解析器等纯 JVM 逻辑）
-    implementation("com.google.mlkit:text-recognition-chinese:16.0.1")
-    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
     implementation("org.jsoup:jsoup:1.23.2")
     implementation("com.google.code.gson:gson:2.11.0")
+    androidTestImplementation("com.tom-roush:pdfbox-android:2.0.27.0")
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")
+}
+
+// Produce per-ABI optional APKs from the same universal build and R8 mapping.
+// Signing credentials stay inside Gradle's existing signing configuration.
+tasks.register("stageOptionalEngineRelease") {
+    dependsOn("assembleRelease", ":engine_ocr:assembleRelease", ":engine_pdf:assembleRelease", ":engine_ai:assembleRelease")
+    doLast {
+        require(!providers.gradleProperty("kagenda.engineAbi").isPresent) { "Build a universal base for publication" }
+        require(useReleaseSigning) { "Formal signing configuration required" }
+        val signing = android.signingConfigs.getByName("kagendaRelease")
+        val store = KeyStore.getInstance(signing.storeType ?: KeyStore.getDefaultType())
+        signing.storeFile!!.inputStream().use { store.load(it, signing.storePassword!!.toCharArray()) }
+        val key = store.getKey(signing.keyAlias, signing.keyPassword!!.toCharArray()) as PrivateKey
+        val certificates = store.getCertificateChain(signing.keyAlias).map { it as X509Certificate }
+        val signer = ApkSigner.SignerConfig.Builder("KAgenda", key, certificates).build()
+        val version = android.defaultConfig.versionCode!!
+        val output = layout.buildDirectory.dir("engine-release-staged/$version").get().asFile.apply { mkdirs() }
+        val zipalign = File(android.sdkDirectory, "build-tools/${android.buildToolsVersion}/" + if (System.getProperty("os.name").startsWith("Windows")) "zipalign.exe" else "zipalign")
+        for (engine in listOf("ocr", "pdf", "ai")) {
+            val folder = rootProject.file("engine-$engine/build/outputs/apk/release")
+            val apk = folder.listFiles()!!.single { it.extension == "apk" }
+            val abis = when (engine) {
+                "ocr" -> listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+                "ai" -> listOf("arm64-v8a", "x86_64")
+                else -> listOf("any")
+            }
+            for (abi in abis) {
+                val target = File(output, "engine-$engine-$version-$abi.apk")
+                if (abi == "any") { apk.copyTo(target, overwrite = true); continue }
+                val unsigned = File(output, "unsigned-$engine-$abi.apk")
+                val aligned = File(output, "aligned-$engine-$abi.apk")
+                ZipFile(apk).use { input ->
+                    ZipOutputStream(unsigned.outputStream().buffered()).use { zip ->
+                        for (entry in input.entries()) {
+                            if (entry.name.startsWith("lib/") && entry.name.split('/').getOrNull(1) != abi) continue
+                            if (Regex("META-INF/.*\\.(SF|RSA|DSA|EC)", RegexOption.IGNORE_CASE).matches(entry.name) || entry.name == "META-INF/MANIFEST.MF") continue
+                            val copy = ZipEntry(entry.name).apply {
+                                method = entry.method; time = entry.time
+                                if (method == ZipEntry.STORED) { size = entry.size; compressedSize = entry.size; crc = entry.crc }
+                            }
+                            zip.putNextEntry(copy)
+                            if (!entry.isDirectory) input.getInputStream(entry).use { it.copyTo(zip) }
+                            zip.closeEntry()
+                        }
+                    }
+                }
+                val process = ProcessBuilder(zipalign.absolutePath, "-P", "16", "-f", "4", unsigned.absolutePath, aligned.absolutePath).inheritIO().start()
+                check(process.waitFor() == 0) { "Component ZIP alignment failed" }
+                ApkSigner.Builder(listOf(signer)).setInputApk(aligned).setOutputApk(target)
+                    .setMinSdkVersion(26).setV1SigningEnabled(true).setV2SigningEnabled(true).setV3SigningEnabled(true).build().sign()
+                check(unsigned.delete()); check(aligned.delete())
+            }
+        }
+        logger.lifecycle("Signed component APKs staged in $output")
+    }
 }

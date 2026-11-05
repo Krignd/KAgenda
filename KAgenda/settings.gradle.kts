@@ -30,4 +30,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "KAgenda"
-include(":app")
+include(":app", ":engine_ocr", ":engine_pdf", ":engine_ai")
+for (engine in listOf("ocr", "pdf", "ai")) { project(":engine_$engine").projectDir = file("engine-$engine") }

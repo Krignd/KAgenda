@@ -4,6 +4,10 @@
 }
 -keep class com.kstudio.agenda.data.KebiaoBridge { *; }
 
+# Optional split entry points are resolved by the host contract.
+-keep class com.kstudio.agenda.engines.** { *; }
+-keep interface com.kstudio.agenda.data.engines.** { *; }
+
 # org.json 为系统内置，无需保留规则
 
 # JNI entry points and the cooperative cancellation callback.

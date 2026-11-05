@@ -91,6 +91,7 @@ object AiInference {
             withContext(Dispatchers.IO) {
                 require(user.length <= 5000) { LocalAiText.error("input_too_long") }
                 check(LocalAiModels.supported()) { LocalAiText.unsupported }
+                com.kstudio.agenda.data.engines.EngineFeatures.requireInstalled(context, com.kstudio.agenda.data.engines.EngineId.AI)
                 check(LocalAiModels.installed(context, model)) { LocalAiText.needModel }
                 val memory = ActivityManager.MemoryInfo()
                 context.getSystemService(ActivityManager::class.java).getMemoryInfo(memory)

@@ -28,13 +28,42 @@ import java.util.concurrent.TimeUnit
 /** Emulator-only, synthetic inputs. Never reads credentials, invokes cloud AI or changes user schedules. */
 class NonAcademicImportDeviceRunner : Instrumentation() {
     private var testAi = false
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); testAi = arguments?.getString("ai") == "true"; start() }
+    private var baseOnly = false
+    private var downloadFixture = false
+    private var installEngine: com.kstudio.agenda.data.engines.EngineId? = null
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); testAi = arguments?.getString("ai") == "true"; baseOnly = arguments?.getString("optional") == "empty"; downloadFixture = arguments?.getString("download") == "true"; installEngine = com.kstudio.agenda.data.engines.EngineId.find(arguments?.getString("install")); start() }
     override fun onStart() {
         val result = Bundle()
         val root = File(targetContext.cacheDir, "nonacademic-import-test-${System.nanoTime()}")
         try {
             check(android.os.Build.MODEL.contains("sdk") || android.os.Build.FINGERPRINT.contains("generic")) { "Emulator only" }
+            installEngine?.let {
+                runOnMainSync { com.kstudio.agenda.ui.engines.EngineDownloadActivity.open(targetContext, it) }
+                com.kstudio.agenda.data.engines.EngineInstaller.install(targetContext, it)
+                result.putString("stream", "Requested OS-confirmed install for ${it.key}; UI/system result must be verified separately")
+                finish(-1, result); return
+            }
+            if (baseOnly) {
+                Class.forName("com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver", false, targetContext.classLoader)
+                Class.forName("com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService", false, targetContext.classLoader)
+                for (engine in com.kstudio.agenda.data.engines.EngineId.entries)
+                    check(!com.kstudio.agenda.data.engines.EngineFeatures.installed(targetContext, engine))
+                check(DocumentTextExtractor.extractBytes("合成纯文本".toByteArray(), "txt").getOrThrow() == "合成纯文本")
+                check(DocumentTextExtractor.extractBytes("%PDF".toByteArray(), "pdf", context = targetContext).exceptionOrNull()
+                    is com.kstudio.agenda.data.engines.EngineMissingException)
+                val ocrMissing = runCatching { runBlocking { ScreenshotTextExtractor.extract(targetContext, Uri.EMPTY) } }.exceptionOrNull()
+                check(ocrMissing is com.kstudio.agenda.data.engines.EngineMissingException)
+                check(runCatching { com.kstudio.agenda.data.engines.EngineFeatures.requireInstalled(targetContext,
+                    com.kstudio.agenda.data.engines.EngineId.AI) }.exceptionOrNull() is com.kstudio.agenda.data.engines.EngineMissingException)
+                result.putString("stream", "PASS: base-only app, plain-text import independent; OCR/PDF/AI absent, missing components fail explicitly without partial imports")
+                if (downloadFixture) result.putString("downloader", EngineDownloadFixture.run(this))
+                finish(-1, result); return
+            }
             root.mkdirs()
+            for (engine in com.kstudio.agenda.data.engines.EngineId.entries)
+                check(com.kstudio.agenda.data.engines.EngineFeatures.installed(targetContext, engine))
+            Class.forName("com.kstudio.agenda.data.LocalAiNative", true, targetContext.classLoader)
+            result.putString("runtime", "PASS: optional JNI runtime loads without downloading model weights")
             val bitmap = Bitmap.createBitmap(1400, 850, Bitmap.Config.ARGB_8888)
             val canvas = Canvas(bitmap).apply { drawColor(Color.WHITE) }
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.BLACK; textSize = 56f }
@@ -52,7 +81,9 @@ class NonAcademicImportDeviceRunner : Instrumentation() {
             check(ocr.contains("高等数学") && ocr.contains("大学英语") && ocr.contains("OCR positions")) { "OCR: $ocr" }
             result.putString("ocr", "PASS: bundled Chinese OCR, weekdays, titles, weeks and positions")
 
-            PDFBoxResourceLoader.init(targetContext)
+            PDFBoxResourceLoader.init(object : ContextWrapper(context) {
+                override fun getApplicationContext(): android.content.Context = this
+            })
             val pdfBytes = PDDocument().use { pdf ->
                 val page = PDPage(); pdf.addPage(page)
                 PDPageContentStream(pdf, page).use { stream ->
@@ -61,8 +92,8 @@ class NonAcademicImportDeviceRunner : Instrumentation() {
                 }
                 ByteArrayOutputStream().also { pdf.save(it) }.toByteArray()
             }
-            check(DocumentTextExtractor.extractBytes(pdfBytes, "pdf").getOrThrow().contains("Math Monday"))
-            check(DocumentTextExtractor.extractBytes(cidPdf(), "pdf").getOrThrow().contains("高等数学"))
+            check(DocumentTextExtractor.extractBytes(pdfBytes, "pdf", context = targetContext).getOrThrow().contains("Math Monday"))
+            check(DocumentTextExtractor.extractBytes(cidPdf(), "pdf", context = targetContext).getOrThrow().contains("高等数学"))
             result.putString("pdf", "PASS: real PDF text and CID hex text with ToUnicode")
 
             val loaded = CountDownLatch(1)

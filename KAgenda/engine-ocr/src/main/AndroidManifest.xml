@@ -1,0 +1,12 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:dist="http://schemas.android.com/apk/distribution" xmlns:tools="http://schemas.android.com/tools">
+    <application>
+        <!-- Feature manifests are forwarded into the base. Never auto-initialize absent OCR code. -->
+        <provider android:name="com.google.mlkit.common.internal.MlKitInitProvider"
+            android:authorities="${applicationId}.mlkitinitprovider" android:enabled="false"
+            tools:replace="android:enabled" />
+    </application>
+    <dist:module dist:instant="false" dist:title="@string/engine_ocr_title">
+        <dist:delivery><dist:on-demand /></dist:delivery>
+        <dist:fusing dist:include="false" />
+    </dist:module>
+</manifest>

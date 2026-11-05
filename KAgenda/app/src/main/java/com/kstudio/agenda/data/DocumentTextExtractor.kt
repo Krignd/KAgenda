@@ -5,9 +5,6 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import org.jsoup.Jsoup
 import org.jsoup.parser.Parser
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
 import com.kstudio.agenda.util.AppLog
 import java.io.InputStream
 import java.util.zip.ZipInputStream
@@ -72,11 +69,10 @@ object DocumentTextExtractor {
         val ext = extensionOf(name)
         val bytes = runCatching { readAll(context, uri) }
             .getOrElse { return Result.failure(it) }
-        PDFBoxResourceLoader.init(context.applicationContext)
-        return extractBytes(bytes, ext, mime)
+        return extractBytes(bytes, ext, mime, context)
     }
 
-    internal fun extractBytes(bytes: ByteArray, ext: String, mime: String? = null): Result<String> {
+    internal fun extractBytes(bytes: ByteArray, ext: String, mime: String? = null, context: Context? = null): Result<String> {
         return runCatching {
             require(bytes.size <= MAX_BYTES)
             val resolved = when (mime?.substringBefore(';')?.lowercase()) {
@@ -105,7 +101,7 @@ object DocumentTextExtractor {
 
                 resolved == "xlsx" -> extractXlsx(bytes)
 
-                resolved == "pdf" || mime == "application/pdf" -> extractPdf(bytes)
+                resolved == "pdf" || mime == "application/pdf" -> extractPdf(bytes, requireNotNull(context) { "PDF component needs context" })
 
                 ext.isEmpty() -> decodeText(bytes, resolved)
 
@@ -294,15 +290,10 @@ object DocumentTextExtractor {
             .replace("&apos;", "'").replace("&amp;", "&")
 
     /** PDFBox resolves PDF fonts/ToUnicode maps; scanned pages require screenshot OCR. */
-    private fun extractPdf(bytes: ByteArray): String {
-        return PDDocument.load(bytes).use { doc ->
-            require(doc.numberOfPages <= 100) { "PDF has too many pages" }
-            val text = PDFTextStripper().apply { sortByPosition = true }.getText(doc).trim()
-            require(text.isNotBlank()) { "PDF 中未提取到文字，请将课表页面截图后使用截图导入" }
-            require(text.length <= MAX_BYTES) { "Input exceeds size limit" }
-            text
-        }
-    }
+    private fun extractPdf(bytes: ByteArray, context: Context): String =
+        com.kstudio.agenda.data.engines.EngineFeatures.instance(context,
+            com.kstudio.agenda.data.engines.EngineId.PDF,
+            com.kstudio.agenda.data.engines.PdfEngineContract::class.java).extract(context, bytes)
 
     /** 记录一次提取失败（便于用户分享日志排查） */
     fun logFailure(name: String, t: Throwable) {

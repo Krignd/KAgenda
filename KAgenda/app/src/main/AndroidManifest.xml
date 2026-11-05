@@ -61,6 +61,9 @@
             android:foregroundServiceType="dataSync"
             tools:node="merge" />
 
+        <activity android:name=".ui.engines.EngineDownloadActivity" android:exported="false" />
+        <receiver android:name=".data.engines.EngineInstallReceiver" android:exported="false" />
+
         <activity
             android:name=".ui.MainActivity"
             android:exported="true"

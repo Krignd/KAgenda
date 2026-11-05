@@ -4,7 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.io.InputStream
 
 /** 在分配整块内存之前限制输入；也用于压缩文档的展开大小。 */
-internal object BoundedInput {
+object BoundedInput {
     class TooLarge : IllegalArgumentException("Input exceeds size limit")
 
     fun read(input: InputStream, maxBytes: Int): ByteArray {

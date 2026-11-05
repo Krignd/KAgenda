@@ -118,7 +118,10 @@ fun DocumentImportScreen(vm: AppViewModel, initialUri: Uri? = null, initialText:
                 needsAi = false
                 msg = ""
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) { msg = if (e is org.json.JSONException || e.message in setOf("invalid_format", "invalid_count", "invalid_slot", "invalid_monday")) ImportText.incomplete else e.message?.takeIf { it.length < 240 } ?: ImportText.failed }
+            catch (e: Exception) {
+                if (e is com.kstudio.agenda.data.engines.EngineMissingException)
+                    com.kstudio.agenda.ui.engines.EngineDownloadActivity.open(context, e.engine)
+                msg = if (e is org.json.JSONException || e.message in setOf("invalid_format", "invalid_count", "invalid_slot", "invalid_monday")) ImportText.incomplete else e.message?.takeIf { it.length < 240 } ?: ImportText.failed }
             finally { busy = false }
         }
     }
@@ -144,7 +147,10 @@ fun DocumentImportScreen(vm: AppViewModel, initialUri: Uri? = null, initialText:
                 text = result.third
                 msg = if (text.isBlank()) ImportText.noText else ""
             } catch (e: kotlinx.coroutines.CancellationException) { throw e }
-            catch (e: Exception) { msg = if (e is org.json.JSONException || e.message in setOf("invalid_format", "invalid_count", "invalid_slot", "invalid_monday")) ImportText.incomplete else e.message?.takeIf { it.length < 240 } ?: ImportText.failed }
+            catch (e: Exception) {
+                if (e is com.kstudio.agenda.data.engines.EngineMissingException)
+                    com.kstudio.agenda.ui.engines.EngineDownloadActivity.open(context, e.engine)
+                msg = if (e is org.json.JSONException || e.message in setOf("invalid_format", "invalid_count", "invalid_slot", "invalid_monday")) ImportText.incomplete else e.message?.takeIf { it.length < 240 } ?: ImportText.failed }
             finally { busy = false }
         }
     }

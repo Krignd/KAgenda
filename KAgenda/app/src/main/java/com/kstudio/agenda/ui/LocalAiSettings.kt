@@ -67,6 +67,7 @@ fun LocalAiSettings(settings: AppSettings, cloudSettings: @Composable () -> Unit
         if (!LocalAiModels.supported()) {
             Text(LocalAiText.unsupported, color = MaterialTheme.colorScheme.error)
         } else {
+            com.kstudio.agenda.ui.engines.EngineComponentRow(com.kstudio.agenda.data.engines.EngineId.AI)
             for (model in LocalAiModels.all) {
                 HorizontalDivider()
                 LocalModelRow(model, settings.localAiModel)
