@@ -95,3 +95,13 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+QUST protocol facts only: fangzi2006/QustSchedule@71f26af3ae090dd0170756b3d4ab641fd5b23656
+https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/zhengfang_client.dart
+2026-11-05T06:42:15Z; SHA-256 9511d6303933646a8ec6a313907a6050958e8497ea943f29b06c4067eec7b134
+School HTTPS origins: lib/src/school.dart. Original upstream license: GPL-3.0; full unmodified text in qust-protocol-reference-GPL-3.0.txt. No upstream implementation copied or translated; MIT applies only to KAgenda original implementation. Fourth profile requires explicit student personal page selection and module; account validation pending.
+
+SDUT protocol facts only: 安稳 / liuayueeryuan0313; KOMA@da932b81edaa617f98376f2729a32a896418823e
+https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/scripts/jw-core.mjs
+2026-10-16T02:18:43Z; SHA-256 89a1915220c4f2b63593043969eacdff13fe3927ba555ca3ba1bf8b78558f04e
+Original Apache-2.0 license and NOTICE retained in sdut-koma-protocol-Apache-2.0.txt and sdut-koma-protocol-NOTICE.txt. No upstream implementation copied or translated. KAgenda MIT applies only to original implementation. Exact HTTPS origin and N2151 body facts used; user must enter a recognized personal timetable page with explicit term controls. No actual account validation claimed.

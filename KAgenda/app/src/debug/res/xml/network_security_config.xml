@@ -265,5 +265,9 @@
         <domain includeSubdomains="false">portal.fzfu.edu.cn</domain>
         <domain includeSubdomains="false">jw.fzfu.edu.cn</domain>
         <domain includeSubdomains="false">jwxxt.fjsmu.edu.cn</domain>
+        <!-- Campus-only academic host from pinned ECUT production endpoints. -->
+        <domain includeSubdomains="false">172.20.130.13</domain>
+        <!-- Exact official student H5 host; no wildcard. -->
+        <domain includeSubdomains="false">jiaowuh5.juwp.edu.cn</domain>
     </domain-config>
 </network-security-config>

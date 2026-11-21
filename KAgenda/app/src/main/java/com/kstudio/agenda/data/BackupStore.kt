@@ -46,11 +46,11 @@ object BackupStore {
         val location: String,
     )
 
-    /** 默认文件名：KAgenda_backup_2026-10-04.json（同一天重复导出时追加时间，避免互相覆盖） */
+    /** 默认文件名：KAgenda_backup_2026-10-04_123456789.zip（同一天重复导出时追加时间，避免互相覆盖） */
     fun defaultFileName(now: Long = System.currentTimeMillis()): String {
         val day = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date(now))
-        val time = SimpleDateFormat("HHmmss", Locale.US).format(Date(now))
-        return "$PREFIX$day" + "_" + time + ".json"
+        val time = SimpleDateFormat("HHmmssSSS", Locale.US).format(Date(now))
+        return "$PREFIX$day" + "_" + time + ".zip"
     }
 
     /** 默认位置的展示文案（设置页提示用） */
@@ -60,15 +60,16 @@ object BackupStore {
     /** 是否需要存储权限（只有 API 26–28 写公共目录才需要） */
     fun needsPermission(): Boolean = Build.VERSION.SDK_INT < 29
 
-    /** 把备份文本写入默认位置；返回写入的文件信息，失败返回 null */
-    fun writeToDefault(context: Context, text: String): Entry? {
+    /** 写入已经生成的 ZIP；返回文件信息，失败返回 null。 */
+    fun writeToDefault(context: Context, archive: File): Entry? {
         val name = defaultFileName()
-        val bytes = text.toByteArray(Charsets.UTF_8)
+        val size = archive.length()
         return runCatching {
             if (Build.VERSION.SDK_INT >= 29) {
                 val values = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, name)
-                    put(MediaStore.MediaColumns.MIME_TYPE, "application/json")
+                    put(MediaStore.MediaColumns.MIME_TYPE, "application/zip")
+                    put(MediaStore.MediaColumns.IS_PENDING, 1)
                     put(
                         MediaStore.MediaColumns.RELATIVE_PATH,
                         Environment.DIRECTORY_DOWNLOADS + "/" + DIR_NAME,
@@ -77,8 +78,15 @@ object BackupStore {
                 val resolver = context.contentResolver
                 val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
                     ?: error("MediaStore 插入失败")
-                resolver.openOutputStream(uri)?.use { it.write(bytes) } ?: error("输出流为空")
-                Entry(uri, name, bytes.size.toLong(), System.currentTimeMillis(), defaultLocationLabel())
+                try {
+                    resolver.openOutputStream(uri)?.use { out -> archive.inputStream().use { it.copyTo(out) } }
+                        ?: error("输出流为空")
+                    check(resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null) == 1)
+                } catch (e: Exception) {
+                    runCatching { resolver.delete(uri, null, null) }
+                    throw e
+                }
+                Entry(uri, name, size, System.currentTimeMillis(), defaultLocationLabel())
             } else {
                 val dir = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -86,8 +94,14 @@ object BackupStore {
                 )
                 if (!dir.exists() && !dir.mkdirs()) error("无法创建目录 ${dir.path}")
                 val file = File(dir, name)
-                file.writeBytes(bytes)
-                Entry(Uri.fromFile(file), name, bytes.size.toLong(), file.lastModified(), defaultLocationLabel())
+                val partial = File.createTempFile("backup-", ".tmp", dir)
+                try {
+                    archive.copyTo(partial, overwrite = true)
+                    AtomicFileStore.replace(partial, file)
+                } finally {
+                    partial.delete()
+                }
+                Entry(Uri.fromFile(file), name, size, file.lastModified(), defaultLocationLabel())
             }
         }.onFailure { AppLog.e(TAG, "写入默认备份目录失败", it) }.getOrNull()
     }
@@ -124,7 +138,7 @@ object BackupStore {
             val timeCol = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DATE_MODIFIED)
             while (c.moveToNext()) {
                 val name = c.getString(nameCol) ?: continue
-                if (!name.startsWith(PREFIX) || !name.endsWith(".json")) continue
+                if (!isBackupName(name)) continue
                 val uri = ContentUris.withAppendedId(
                     MediaStore.Downloads.EXTERNAL_CONTENT_URI,
                     c.getLong(idCol),
@@ -143,6 +157,9 @@ object BackupStore {
         return out
     }
 
+    private fun isBackupName(name: String): Boolean =
+        name.startsWith(PREFIX) && (name.endsWith(".json") || name.endsWith(".zip"))
+
     private fun listViaFile(): List<Entry> {
         val dir = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
@@ -151,7 +168,7 @@ object BackupStore {
         if (!dir.isDirectory) return emptyList()
         return dir.listFiles()
             .orEmpty()
-            .filter { it.isFile && it.name.startsWith(PREFIX) && it.name.endsWith(".json") }
+            .filter { it.isFile && isBackupName(it.name) }
             .sortedByDescending { it.lastModified() }
             .map {
                 Entry(

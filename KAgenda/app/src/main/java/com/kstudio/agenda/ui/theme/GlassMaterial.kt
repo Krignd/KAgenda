@@ -40,11 +40,11 @@ fun glassChromeColor(): Color = if (isSystemInDarkTheme()) {
     lerp(Color(0xD4F7FAFF), Color(0xB8F7FAFF), LocalGlassColorDepth.current.coerceIn(0f, 1f))
 }
 
-/** Full-screen dialogs tint a blurred page; text itself is never blurred. */
+/** Full-screen dialogs cover the underlying window with a solid theme color. */
 @Composable
 fun overlayBackgroundColor(): Color = if (LocalGlassEnabled.current) {
-    MaterialTheme.colorScheme.surfaceContainerHigh
-} else MaterialTheme.colorScheme.background
+    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 1f)
+} else MaterialTheme.colorScheme.background.copy(alpha = 1f)
 
 /** Preserve accent hue while lifting dark colors / deepening pale colors for text. */
 @Composable

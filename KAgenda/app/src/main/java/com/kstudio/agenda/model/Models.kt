@@ -1,5 +1,6 @@
 package com.kstudio.agenda.model
 
+import java.time.LocalTime
 import java.time.LocalDate
 
 /**
@@ -27,10 +28,13 @@ data class Course(
     val colorArgb: Int = 0,
     val editOriginKey: String = "",
     val editWeekdays: Set<Int> = emptySet(),
+    val customStartTime: String = "",
+    val customEndTime: String = "",
 ) {
     /** 稳定标识：用于提醒的 requestCode / 图片配色 */
     val id: String
-        get() = "${code.ifBlank { title }}@${dayOfWeek}-${startPeriod}-${endPeriod}-$room"
+        get() = "${code.ifBlank { title }}@${dayOfWeek}-${startPeriod}-${endPeriod}-$room" +
+            if (hasCustomTime) "@$customStartTime-$customEndTime" else ""
 
     /** 同一门课的标识（「修改全部同一课程」的判定依据）：优先课程代码，无代码时用课程名 */
     val seriesKey: String
@@ -52,7 +56,8 @@ data class Course(
             weeksRaw.trim() == other.weeksRaw.trim() &&
             dayOfWeek == other.dayOfWeek &&
             startPeriod == other.startPeriod &&
-            endPeriod == other.endPeriod
+            endPeriod == other.endPeriod &&
+            customStartTime == other.customStartTime && customEndTime == other.customEndTime
 
     /** 是否与另一条课程属于同一门课（课程代码优先，无代码时用课程名） */
     fun sameSeriesAs(other: Course): Boolean = seriesKey == other.seriesKey
@@ -60,8 +65,13 @@ data class Course(
     val periodLabel: String
         get() = if (startPeriod == endPeriod) "第${startPeriod}节" else "第${startPeriod}-${endPeriod}节"
 
-    val timeRange: String
-        get() = PeriodTimes.rangeOf(startPeriod, endPeriod)
+    private val customTimes by lazy { validCustomTimes(customStartTime, customEndTime) }
+    val hasCustomTime: Boolean get() = customTimes != null
+    val startTime: LocalTime get() = customTimes?.first ?: PeriodTimes.startOf(startPeriod)
+    val endTime: LocalTime get() = customTimes?.second ?: PeriodTimes.endOf(endPeriod)
+    val timeRange: String get() = "${PeriodTimes.format(startTime)}-${PeriodTimes.format(endTime)}"
+    fun startMillisEpoch(date: LocalDate): Long =
+        date.atTime(startTime).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     // 周次区间解析结果缓存：occursInWeek 在月/周视图的循环中会被高频调用，
     // 原实现每次访问都重新解析字符串；改为惰性求值，每个 Course 实例只解析一次
@@ -78,6 +88,17 @@ data class Course(
     fun weeksSet(): Set<Int> =
         weeksRanges.flatMapTo(LinkedHashSet()) { it.toList() }.ifEmpty { (1..MAX_WEEK).toSet() }
     companion object {
+        /** 自定义时间必须成对有效，且在同一天内结束；旧数据不含字段时沿用节次。 */
+        fun validCustomTimes(start: String, end: String): Pair<LocalTime, LocalTime>? {
+            if (!CUSTOM_TIME_PATTERN.matches(start) || !CUSTOM_TIME_PATTERN.matches(end)) return null
+            return runCatching {
+                val a = LocalTime.parse(start); val b = LocalTime.parse(end)
+                require(b.isAfter(a)); a to b
+            }.getOrNull()
+        }
+
+        private val CUSTOM_TIME_PATTERN = Regex("[0-9]{2}:[0-9]{2}")
+
         /** 一门课最多支持的周次（与 [parseWeeks] 上限一致） */
         const val MAX_WEEK = 40
 
@@ -153,7 +174,7 @@ data class WeekSchedule(
     fun dateOfWeekday(dayOfWeek: Int): LocalDate = monday.plusDays((dayOfWeek - 1).toLong())
 
     fun coursesOfDay(dayOfWeek: Int): List<Course> =
-        courses.filter { it.dayOfWeek == dayOfWeek }.sortedBy { it.startPeriod }
+        courses.filter { it.dayOfWeek == dayOfWeek }.sortedBy { it.startTime }
 
     /** 指定日期是否为本周范围内 */
     fun containsDate(date: LocalDate): Boolean =

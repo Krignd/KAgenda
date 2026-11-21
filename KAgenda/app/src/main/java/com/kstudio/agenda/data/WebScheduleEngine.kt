@@ -145,9 +145,6 @@ class WebScheduleEngine(private val appContext: Context) {
     private val apiCaptures = ConcurrentLinkedQueue<Pair<String, String>>()
     private var lastStateKey = ""
 
-    /** 主页导航完成计数（onPageFinished 自增），用于等待“刷新后的新文档”就绪 */
-    private var pageReadyCount = 0
-
     /** 由 Activity 提供宿主 WebView（可见上下文更稳定）；重复调用会替换旧的实例 */
     fun attach(view: WebView) {
         if (webView === view) return
@@ -198,7 +195,6 @@ class WebScheduleEngine(private val appContext: Context) {
             }
 
             override fun onPageFinished(v: WebView, url: String?) {
-                pageReadyCount++
                 AppLog.d(TAG, "加载完成: ${shortUrl(url)}")
                 v.evaluateJavascript(JsScripts.HOOKS, null)
                 WebViewLanguageDiagnostics.environment(v, TAG)
@@ -342,7 +338,7 @@ class WebScheduleEngine(private val appContext: Context) {
         override val appContext: Context get() = this@WebScheduleEngine.appContext
         override suspend fun probePage(view: WebView): PageProbe? = this@WebScheduleEngine.probePage(view)
         override suspend fun waitFor(view: WebView, timeoutMs: Long, predicate: (PageProbe) -> Boolean): PageProbe? =
-            this@WebScheduleEngine.waitFor(view, timeoutMs, predicate)
+            this@WebScheduleEngine.waitFor(view, timeoutMs, predicate = predicate)
         override suspend fun evaluateJs(view: WebView, script: String): String? =
             this@WebScheduleEngine.evaluateJs(view, script)
         override suspend fun customExtract(view: WebView, script: String): SyncResult =
@@ -478,7 +474,7 @@ class WebScheduleEngine(private val appContext: Context) {
             } else {
                 // 若 WebView 已停留在首页，loadUrl 同一地址可能不会真正刷新（沿用上一轮残留的 DOM），
                 // 会导致退出登录后仍被误判为“已登录”。这里强制真正重新加载，并等待新文档就绪。
-                val readyBefore = pageReadyCount
+                val previousDocument = markDocument(view)
                 val currentUrl = view.url.orEmpty()
                 val schoolHome = school.homeUrl.substringBefore("#")
                 if (schoolHome.isNotBlank() && currentUrl.startsWith(schoolHome)) {
@@ -487,12 +483,9 @@ class WebScheduleEngine(private val appContext: Context) {
                 } else {
                     view.loadUrl(school.homeUrl)
                 }
-                // 等待本次导航完成（onPageFinished），避免随后探测到刷新前的残留旧 DOM（最多等 10 秒）
-                val readyDeadline = SystemClock.uptimeMillis() + 10_000
-                while (pageReadyCount <= readyBefore && SystemClock.uptimeMillis() < readyDeadline) {
-                    delay(200)
+                probe = waitFor(view, HOME_FIRST_WAIT_MS, previousDocument) { p ->
+                    looksReady(p) || p.hasLoginForm || p.netError
                 }
-                probe = waitFor(view, HOME_FIRST_WAIT_MS) { p -> looksReady(p) || p.hasLoginForm || p.netError }
                 AppLog.i(TAG, "阶段1 首页探测: ${probe?.summary() ?: "超时无响应"}")
 
                 // 只有“已渲染课表/应用且无网络异常”才可直接提取；
@@ -551,6 +544,18 @@ class WebScheduleEngine(private val appContext: Context) {
             var lastError = ""
             while (attempts < AUTOFILL_ATTEMPTS && SystemClock.uptimeMillis() < hardDeadline) {
                 attempts++
+                // 重试前重新确认表单；不能在未建立会话的首页上填写密码。
+                if (probePage(view)?.hasLoginForm != true) {
+                    loginProbe = openSsoAndWait(view)
+                    if (looksReady(loginProbe)) {
+                        if (verifyCredentials && !ssoFormSeen)
+                            return@withContext SyncResult.LoginRequired(MSG_CREDENTIAL_UNVERIFIED)
+                        return@withContext extract(view, "重新认证后首页", incrementalAgainstSemester)
+                    }
+                    if (loginProbe?.hasLoginForm != true)
+                        return@withContext SyncResult.Failure(com.kstudio.agenda.i18n.SyncLoginText.incomplete)
+                }
+                val submittedDocument = markDocument(view)
                 val fillScript = school.loginJs?.let {
                     JsScripts.customFill(it, credentials.studentId, credentials.password)
                 } ?: JsScripts.autoFill(credentials.studentId, credentials.password)
@@ -559,7 +564,7 @@ class WebScheduleEngine(private val appContext: Context) {
 
                 // 等待 CAS 跳转：离开登录主机 / 出现表单校验错误 / 课表就绪
                 val ssoHost = hostOf(school.ssoUrl)
-                val jumped = waitFor(view, SUBMIT_JUMP_WAIT_MS) { p ->
+                val jumped = waitFor(view, SUBMIT_JUMP_WAIT_MS, submittedDocument, allowFormError = true) { p ->
                     val h = hostOf(p.url)
                     looksReady(p) || p.error.isNotBlank() ||
                         (h.isNotBlank() && (ssoHost.isBlank() || !h.endsWith(ssoHost)))
@@ -585,8 +590,9 @@ class WebScheduleEngine(private val appContext: Context) {
 
                 // 关键：无论 CAS 落在哪个页面，都直接打开教务系统首页验证会话是否已建立
                 // （byxt 的接口未登录时会自动 302 到 sso?service=...，已登录则直接返回数据）
+                val previousDocument = markDocument(view)
                 view.loadUrl(school.homeUrl)
-                val homeProbe = waitFor(view, HOME_RETRY_WAIT_MS) { p ->
+                val homeProbe = waitFor(view, HOME_RETRY_WAIT_MS, previousDocument) { p ->
                     looksReady(p) || p.hasLoginForm || p.netError
                 }
                 AppLog.i(TAG, "回首页验证#$attempts: ${homeProbe?.summary() ?: "超时无响应"}")
@@ -619,9 +625,9 @@ class WebScheduleEngine(private val appContext: Context) {
             if (lastError.isNotBlank()) {
                 return@withContext SyncResult.LoginRequired("登录失败：$lastError")
             }
-            // 【已隐藏保留】原文案提示使用「网页登录」；入口隐藏后改为引导检查账密
+            // 未收到明确的口令拒绝时，不能把跳转/连接失败归因于密码错误。
             return@withContext SyncResult.LoginRequired(
-                "登录未完成（可能账号密码有误或需要验证码），请检查账号密码后重试"
+                com.kstudio.agenda.i18n.SyncLoginText.incomplete
             )
         } catch (t: Throwable) {
             AppLog.e(TAG, "同步异常", t)
@@ -647,8 +653,9 @@ class WebScheduleEngine(private val appContext: Context) {
         )
         for ((index, url) in candidates.withIndex()) {
             AppLog.i(TAG, "打开统一身份认证#${index + 1}: ${url.take(150)}")
+            val previousDocument = markDocument(view)
             view.loadUrl(url)
-            val probe = waitFor(view, LOGIN_PAGE_WAIT_MS) { p ->
+            val probe = waitFor(view, LOGIN_PAGE_WAIT_MS, previousDocument) { p ->
                 p.hasLoginForm || p.hasGrid || p.hasApp ||
                     hostOf(p.url).endsWith(school.host) || p.ssoError
             }
@@ -672,8 +679,9 @@ class WebScheduleEngine(private val appContext: Context) {
                 hostOf(probe.url).endsWith(school.host)
             ) {
                 AppLog.i(TAG, "CAS 已回跳教务系统，打开首页等待课表")
+                val previousHome = markDocument(view)
                 view.loadUrl(school.homeUrl)
-                val back = waitFor(view, HOME_RETRY_WAIT_MS) { p ->
+                val back = waitFor(view, HOME_RETRY_WAIT_MS, previousHome) { p ->
                     p.hasGrid || p.hasApp || p.hasLoginForm || p.netError
                 }
                 AppLog.i(TAG, "回跳后首页状态: ${back?.summary() ?: "超时无响应"}")
@@ -857,22 +865,39 @@ class WebScheduleEngine(private val appContext: Context) {
         return map
     }
 
-    /** 轮询页面状态直到满足条件或超时，返回最后一次探测结果 */
+    /** 导航前标记当前文档，避免异步 loadUrl 后读到旧 DOM。 */
+    private suspend fun markDocument(view: WebView): String {
+        val marker = java.util.UUID.randomUUID().toString()
+        check(evaluateJs(view, WebDocumentGate.markScript(marker)) == "true")
+        return marker
+    }
+
+    private suspend fun documentReady(view: WebView, marker: String): Boolean =
+        evaluateJs(view, WebDocumentGate.readyScript(marker)) == "true"
+
+    /** 导航探测只接受新文档；超时不返回可能误导后续流程的中间页面。 */
     private suspend fun waitFor(
         view: WebView,
         timeoutMs: Long,
+        previousDocument: String? = null,
+        allowFormError: Boolean = false,
         predicate: (PageProbe) -> Boolean,
     ): PageProbe? {
         val deadline = SystemClock.uptimeMillis() + timeoutMs
         var last: PageProbe? = null
         while (SystemClock.uptimeMillis() < deadline) {
             delay(POLL_INTERVAL_MS)
+            val fresh = previousDocument == null || documentReady(view, previousDocument)
+            if (!fresh && !allowFormError) continue
             val probe = probePage(view) ?: continue
+            // 口令拒绝可能由原表单原地显示；只允许明确的表单错误越过文档屏障。
+            if (previousDocument != null && !documentReady(view, previousDocument) &&
+                !(allowFormError && probe.hasLoginForm && probe.error.isNotBlank())) continue
             last = probe
             logState(probe)
             if (predicate(probe)) return probe
         }
-        return last
+        return if (previousDocument == null) last else null
     }
 
     /** 状态变化时记日志（去重，避免刷屏） */
@@ -907,7 +932,6 @@ class WebScheduleEngine(private val appContext: Context) {
     suspend fun resetBrowserSession() = withContext(Dispatchers.Main) {
         apiCaptures.clear()
         lastStateKey = ""
-        pageReadyCount = 0
         ssoFormSeen = false
         expectedStudentId = ""
         runCatching {

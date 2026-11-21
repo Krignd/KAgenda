@@ -880,7 +880,7 @@ object ZhStrings : AppStrings {
     override val warehouseFailed = "提取失败，请重试或选择其他脚本"
     override val warehouseBusy = "正在提取…"
     override val officialCalendarPending = "仅显示传统节日日期；该年的官方放假安排尚未获取。"
-    override val legacyWidgetPreviews = "下一项小组件示意图"
+    override val legacyWidgetPreviews = "小组件示意图"
     override val previewMath = "高等数学"
     override val previewTeacher = "王老师"
     override val previewRemaining = "进行中 · 还剩 20 分钟"
@@ -1304,11 +1304,11 @@ object ZhStrings : AppStrings {
     override val btnSaveWeekImg = "保存周课表图片"
     override val btnSaveMonthImg = "保存月课表图片"
     override val settingsTabFeature = "功能&权限"
-    override val settingsTabCustom = "用户自定义"
+    override val settingsTabCustom = "自定义"
     override val settingsTabAccount = "学校&账号"
     override val settingsTabAccountSub = "选择学校、保存登录账号"
     override val settingsTabFeatureSub = "权限、课前提醒、AI、悬浮球、常驻通知、小组件"
-    override val settingsTabCustomSub = "时间线显示范围、小组件刷新频率"
+    override val settingsTabCustomSub = "底部栏、小组件、课程时间和时间线"
     override val secPermissions = "权限设置"
     override val permGranted = "已授予"
     override val permNotGranted = "未授予"
@@ -1638,7 +1638,7 @@ object ZhStrings : AppStrings {
 
     override val secBackup = "数据备份与导入"
     override val backupIntro =
-        "导出一个备份文件（课表缓存、日程与计划、课程修正、全部设置）。不含密码与 API Key。"
+        "ZIP 备份包含课表、日程、设置、倒计时、账单、作业和原图。还能导入旧版 JSON 备份。密码和 API Key 由本机单独保管。"
     override val btnBackupExport = "导出备份"
     override val btnBackupImport = "导入备份"
     override val backupAskImportTitle = "导入备份？"
@@ -1697,7 +1697,7 @@ object EnStrings : AppStrings {
     override val warehouseFailed = "Extraction failed; retry or select another script"
     override val warehouseBusy = "Extracting…"
     override val officialCalendarPending = "Only festival dates are shown; the official vacation schedule for this year has not been loaded."
-    override val legacyWidgetPreviews = "Next-event widget previews"
+    override val legacyWidgetPreviews = "Widget previews"
     override val previewMath = "Mathematics"
     override val previewTeacher = "Prof. Wang"
     override val previewRemaining = "Ongoing · 20 min left"
@@ -2129,7 +2129,7 @@ object EnStrings : AppStrings {
     override val settingsTabAccountSub = "Pick a school and save your sign-in"
     override val settingsTabFeatureSub =
         "Permissions, reminders, AI, floating ball, persistent notification, widgets"
-    override val settingsTabCustomSub = "Timeline range and widget refresh rate"
+    override val settingsTabCustomSub = "Bottom bar, widgets, class times and timeline"
     override val secPermissions = "Permissions"
     override val permGranted = "Granted"
     override val permNotGranted = "Not granted"
@@ -2468,7 +2468,7 @@ object EnStrings : AppStrings {
 
     override val secBackup = "Backup & restore"
     override val backupIntro =
-        "Export a backup file (timetable cache, events and plans, course edits and all settings). Passwords and API keys are excluded."
+        "ZIP backups include timetables, events, settings, countdowns, bills, homework, and original photos. You can also import older JSON backups. Passwords and API keys stay on this device."
     override val btnBackupExport = "Export backup"
     override val btnBackupImport = "Import backup"
     override val backupAskImportTitle = "Import backup?"
@@ -2527,7 +2527,7 @@ object FrStrings : AppStrings {
     override val warehouseFailed = "Échec de l’extraction ; réessayez ou choisissez un autre script"
     override val warehouseBusy = "Extraction…"
     override val officialCalendarPending = "Seules les dates des fêtes sont affichées ; les congés officiels de cette année ne sont pas chargés."
-    override val legacyWidgetPreviews = "Aperçus des widgets Prochain événement"
+    override val legacyWidgetPreviews = "Aperçus des widgets"
     override val previewMath = "Mathématiques"
     override val previewTeacher = "Pr Wang"
     override val previewRemaining = "En cours · reste 20 min"
@@ -2961,7 +2961,7 @@ object FrStrings : AppStrings {
     override val settingsTabAccountSub = "Choisir l'école et enregistrer le compte"
     override val settingsTabFeatureSub =
         "Autorisations, rappels, IA, bulle, notification permanente, widgets"
-    override val settingsTabCustomSub = "Plage de la frise et fréquence des widgets"
+    override val settingsTabCustomSub = "Barre, widgets, heures de cours et frise"
     override val secPermissions = "Autorisations"
     override val permGranted = "Accordé"
     override val permNotGranted = "Non accordé"
@@ -3301,7 +3301,7 @@ object FrStrings : AppStrings {
 
     override val secBackup = "Sauvegarde et restauration"
     override val backupIntro =
-        "Exporter une sauvegarde (cache des cours, événements et plans, corrections de cours et tous les réglages). Les mots de passe et les clés API sont exclus."
+        "La sauvegarde ZIP inclut les cours, les événements, les réglages, les comptes à rebours, les factures, les devoirs et les photos d’origine. Les anciennes sauvegardes JSON restent importables. Les mots de passe et les clés API restent sur cet appareil."
     override val btnBackupExport = "Exporter"
     override val btnBackupImport = "Importer"
     override val backupAskImportTitle = "Importer la sauvegarde ?"

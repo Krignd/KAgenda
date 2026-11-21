@@ -73,6 +73,11 @@ class SchoolSystemRegressionTest {
             assertFalse(AcademicText.isUndetermined(ndnu))
             assertEquals("ext_ndnu_personal", SchoolCatalog.adapters(ndnu).first().id)
             assertTrue(ndnu.supported)
+            val gmu = rows.single { it.name == "赣南医科大学" }
+            assertEquals(listOf("chaoxing"), SchoolCatalog.knownSystemTypes(gmu))
+            assertEquals("超星", AcademicText.schoolSupportLabel(gmu))
+            assertFalse(AcademicText.isUndetermined(gmu))
+            assertFalse(gmu.supported) // Official vendor evidence does not prove an importer.
             val vendorOnlyRows = load(extraRaw = "[]", indexRaw = "[]")
             assertFalse(vendorOnlyRows.single { it.name == "福州外语外贸学院" }.supported)
             assertFalse(vendorOnlyRows.single { it.name == "三明学院" }.supported)

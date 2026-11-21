@@ -27,8 +27,6 @@ import androidx.compose.ui.graphics.lerp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.haze
 
 /**
  * Liquid glass uses white / slate tints over cached, already defocused color scenery.
@@ -158,14 +156,11 @@ fun GlassBackdrop(
         )
     } else null
 
-    val page = remember { HazeState() }
     CompositionLocalProvider(
         // Scenery is already defocused; per-card blur adds no visible detail.
-        // Popups still blur text/cards through the independent page source.
         LocalGlassScenery provides null,
-        LocalGlassPage provides if (enabled) page else null,
     ) {
-        Box(modifier.fillMaxSize().then(if (enabled) Modifier.haze(page) else Modifier.background(MaterialTheme.colorScheme.background))) {
+        Box(modifier.fillMaxSize().then(if (enabled) Modifier else Modifier.background(MaterialTheme.colorScheme.background))) {
             if (enabled) GlassScenery(Modifier.fillMaxSize(), dark, depth, phase)
             content()
         }

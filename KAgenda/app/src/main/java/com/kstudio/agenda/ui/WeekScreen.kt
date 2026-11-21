@@ -235,7 +235,10 @@ fun WeekScreen(
                             ) { selected = it }
                         } else {
                             // 时间线显示范围可在「设置 → 用户自定义 → 时间线显示范围」中调整（默认 06:00 – 次日 02:00）
-                            val (timelineStartMin, timelineEndMin) = settings.timelineWindow
+                            val (configuredStart, configuredEnd) = settings.timelineWindow
+                            val fixedTimes = currentWeek.courses.filter { it.hasCustomTime }
+                            val timelineStartMin = minOf(configuredStart, fixedTimes.minOfOrNull { it.startTime.toSecondOfDay() / 60 } ?: configuredStart)
+                            val timelineEndMin = maxOf(configuredEnd, fixedTimes.maxOfOrNull { it.endTime.toSecondOfDay() / 60 } ?: configuredEnd)
                             WeekTimelineGrid(
                                 week = currentWeek,
                                 hScroll = gridScroll,
@@ -315,6 +318,7 @@ fun WeekScreen(
     selected?.let { course ->
         CourseDetailSheet(
             course = course,
+            date = currentWeek?.dateOfWeekday(course.dayOfWeek) ?: selDate,
             onEdit = {
                 editingCourse = course
                 selected = null
@@ -349,10 +353,11 @@ fun WeekScreen(
         CourseEditDialog(
             initial = course,
             sourceDate = courseDate,
+            sourceWeek = vm.semester.value?.teachingWeekOf(courseDate)?.takeIf { it in 1..Course.MAX_WEEK } ?: vm.teachingWeekOf(courseDate),
             dayCourses = vm.coursesRawOnDate(courseDate),
             onDismiss = { editingCourse = null },
             onSave = { edited, applyAll, weekdays ->
-                vm.saveCourseEdit(course, edited, applyAll, weekdays)
+                vm.saveCourseEdit(course, edited, applyAll, weekdays, vm.semester.value?.teachingWeekOf(courseDate)?.takeIf { it in 1..Course.MAX_WEEK } ?: vm.teachingWeekOf(courseDate))
                 editingCourse = null
             },
             onDelete = { weeks, applyAll ->
@@ -571,6 +576,7 @@ private fun WeekGrid(
                     val dayDate = week.dateOfWeekday(d)
                     DayColumn(
                         courses = week.coursesOnDate(dayDate),
+                        date = dayDate,
                         width = dayWidth,
                         rowHeight = rowHeight,
                         flashTitle = if (flashDate == dayDate) flashTitle else "",
@@ -623,6 +629,7 @@ private fun TimetableNowLine(week: WeekSchedule, rowHeight: Dp, dayWidth: Dp, ti
 @Composable
 private fun DayColumn(
     courses: List<Course>,
+    date: LocalDate,
     width: Dp,
     rowHeight: Dp,
     flashTitle: String = "",
@@ -685,7 +692,7 @@ private fun DayColumn(
                 val titleLines = ((maxHeight - reserved) / lineHeight).toInt().coerceIn(1, 3)
                 Column {
                     Text(
-                        text = markedTitle(course),
+                        text = taggedCourseTitle(course, date),
                         style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
                         fontWeight = FontWeight.SemiBold,
                         maxLines = titleLines,
@@ -795,6 +802,7 @@ private fun WeekTimelineGrid(
                     val dayDate = week.dateOfWeekday(d)
                     TimelineDayColumn(
                         courses = week.coursesOnDate(dayDate),
+                        date = dayDate,
                         width = dayWidth,
                         height = totalH,
                         startMin = startMin,
@@ -854,6 +862,7 @@ private fun TimelineNowLine(week: WeekSchedule, dayWidth: Dp, timeColWidth: Dp, 
 @Composable
 private fun TimelineDayColumn(
     courses: List<Course>,
+    date: LocalDate,
     width: Dp,
     height: Dp,
     startMin: Int,
@@ -865,8 +874,8 @@ private fun TimelineDayColumn(
     // 与显示范围求交后的课程区间（完全在范围外的课程不显示；跨范围的裁剪到范围内）
     val ranges = remember(courses, startMin, endMin) {
         courses.mapNotNull { c ->
-            val s = PeriodTimes.startOf(c.startPeriod).toSecondOfDay() / 60
-            val e = PeriodTimes.endOf(c.endPeriod).toSecondOfDay() / 60
+            val s = c.startTime.toSecondOfDay() / 60
+            val e = c.endTime.toSecondOfDay() / 60
             val cs = maxOf(s, startMin)
             val ce = minOf(e, endMin)
             if (ce <= cs) null else Triple(c, cs, ce)
@@ -955,7 +964,7 @@ private fun TimelineDayColumn(
                 val reserved = (if (showTime) lineHeight else 0.dp) + (if (showRoom) lineHeight else 0.dp)
                 val titleLines = ((maxHeight - reserved) / lineHeight).toInt().coerceIn(1, 8)
                 Column(Modifier.fillMaxSize().clipToBounds()) {
-                    Text(markedTitle(course), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
+                    Text(taggedCourseTitle(course, date), style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, lineHeight = 14.sp),
                         fontWeight = FontWeight.SemiBold, maxLines = titleLines, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false))
                     if (showRoom) Text(course.room, fontSize = 9.sp, lineHeight = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)

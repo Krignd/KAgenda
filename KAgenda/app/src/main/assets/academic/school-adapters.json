@@ -1045,7 +1045,7 @@
         "implementationOriginal": true,
         "copiedUpstreamLines": 0,
         "licenseScope": "KAgenda-original-implementation-only",
-        "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only"
+        "referenceLicense": "mixed-MIT-Apache2-GPL3-and-NOASSERTION-protocol-only"
       }
     ]
   },
@@ -1071,7 +1071,7 @@
         "implementationOriginal": true,
         "copiedUpstreamLines": 0,
         "licenseScope": "KAgenda-original-implementation-only",
-        "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only",
+        "referenceLicense": "mixed-MIT-Apache2-GPL3-and-NOASSERTION-protocol-only",
         "preferred": true
       }
     ]
@@ -1099,7 +1099,7 @@
         "implementationOriginal": true,
         "copiedUpstreamLines": 0,
         "licenseScope": "KAgenda-original-implementation-only",
-        "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only"
+        "referenceLicense": "mixed-MIT-Apache2-GPL3-and-NOASSERTION-protocol-only"
       }
     ]
   },
@@ -1177,6 +1177,280 @@
         "copiedUpstreamLines": 0,
         "licenseScope": "KAgenda-original-implementation-only",
         "referenceLicense": "NOASSERTION"
+      }
+    ]
+  },
+  {
+    "id": "EX_JJU_PERSONAL",
+    "name": "九江学院",
+    "adapters": [
+      {
+        "id": "ext_jju_personal",
+        "name": "九江学院正方本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://zhjw1.jju.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "path": "EXT/jiangxi-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 drfccv",
+        "description": "在本校正方教务系统完成登录，明确填写学年并选择第一或第二学期。按校历填写教学第一周周一和总周数，在原生预览核对作息。原始课名、完整教师、校区、教学班、单双周及离散节次均保留；非空实践等未核清附加安排、缺项、缺页、身份或数据变化时整批中止。仅参考公开协议事实，不复制上游实现；合成回归与真实账号验证分开，仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/drfccv/ZFJW-backend",
+        "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+        "updated": "2026-09-30T07:36:04Z",
+        "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/schedule.py",
+        "license": "MIT",
+        "licenseAsset": "jiangxi-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "MIT"
+      }
+    ]
+  },
+  {
+    "id": "EX_NVU_PERSONAL",
+    "name": "南昌职业大学",
+    "adapters": [
+      {
+        "id": "ext_nvu_personal",
+        "name": "南昌职业大学正方本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwxt.nvu.edu.cn/xtgl/login_slogin.html",
+        "path": "EXT/jiangxi-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 drfccv",
+        "description": "在本校正方教务系统完成登录，明确填写学年并选择第一或第二学期。按校历填写教学第一周周一和总周数，在原生预览核对作息。原始课名、完整教师、校区、教学班、单双周及离散节次均保留；非空实践等未核清附加安排、缺项、缺页、身份或数据变化时整批中止。仅参考公开协议事实，不复制上游实现；合成回归与真实账号验证分开，仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/drfccv/ZFJW-backend",
+        "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+        "updated": "2026-09-30T07:36:04Z",
+        "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/schedule.py",
+        "license": "MIT",
+        "licenseAsset": "jiangxi-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "MIT"
+      }
+    ]
+  },
+  {
+    "id": "EX_GNNU_PERSONAL",
+    "name": "赣南师范大学",
+    "adapters": [
+      {
+        "id": "ext_gnnu_personal",
+        "name": "赣南师范大学本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwgl.gnnu.edu.cn/",
+        "path": "EXT/gnnu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 LittleFishStars",
+        "description": "在本校 HTTPS 教务系统完成登录并进入个人课表，明确填写学年及第一或第二学期。按校历填写教学第一周周一和总周数，在原生预览核对作息。使用本校完整学期请求，保留原始课名、多教师、教学班及离散节次；身份缺失、附加安排未核清、分页不全、坏行或两次读取变化时整批中止。近期专属来源仅作协议参考，不复制无明确许可代码；仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/LittleFishStars/GNNU_API",
+        "revision": "14718d2adc9185adb0ba2bd0757375fcd0d437a2",
+        "updated": "2026-03-28T17:34:33Z",
+        "sourceUrl": "https://github.com/LittleFishStars/GNNU_API/blob/14718d2adc9185adb0ba2bd0757375fcd0d437a2/api.py",
+        "license": "MIT",
+        "licenseAsset": "gnnu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "NOASSERTION"
+      }
+    ]
+  },
+  {
+    "id": "EX_XYU_PERSONAL",
+    "name": "新余学院",
+    "adapters": [
+      {
+        "id": "ext_xyu_personal",
+        "name": "新余学院正方本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://ehallmobile.xyc.edu.cn/mobile/index",
+        "path": "EXT/xyu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 octmicy",
+        "description": "在本校门户完成登录，再进入本人教务课表页面。明确填写学年和第一、第二或第三学期，按校历填写教学第一周周一与总周数，在原生预览核对作息。请求完整学期而非当前周，保留原始课名、多教师、教学班、楼栋和离散节次；缺项、未核清附加安排、分页或身份/数据变化时整批中止。公开专属来源仅参考协议，不复制无明确许可的实现或登录常量；仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/octmicy/OriCampus",
+        "revision": "79750c666bdcaa8e9efb4072d9b8162a804ad957",
+        "updated": "2026-11-03T17:22:42Z",
+        "sourceUrl": "https://github.com/octmicy/OriCampus/blob/79750c666bdcaa8e9efb4072d9b8162a804ad957/app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+        "license": "MIT",
+        "licenseAsset": "xyu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "MIT"
+      }
+    ]
+  },
+  {
+    "id": "EX_ECUT_PERSONAL",
+    "name": "东华理工大学",
+    "adapters": [
+      {
+        "id": "ext_ecut_personal",
+        "name": "东华理工大学正方本科个人课表（校内独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://172.20.130.13/sso/jziotlogin?url=kbcx%2fxskbcx_cxXskbcxIndex.html%3fgnmkdm%3dN253508%26layout%3ddefault",
+        "path": "EXT/ecut-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 ncxiaofeng",
+        "description": "校内网入口：请先连接学校内网并在官方教务完成登录。明确填写学年，选择第一、第二或小学期，再按校历填写教学第一周周一和总周数，在原生预览核对作息。按本校功能号和六字段协议读取；保留原始课名、完整教师、校区/楼栋/房间号、教学班和离散节次。本人身份缺失、未知非空实践安排、缺页、坏行或两次读取变化时整批中止。仅参考公开协议事实，不复制无许可实现或固定校历；仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/ncxiaofeng/CampusPocket",
+        "revision": "b5f94fe08e2e9d51dcffbf35f435130886db6641",
+        "updated": "2026-11-01T05:36:59Z",
+        "sourceUrl": "https://github.com/ncxiaofeng/CampusPocket/blob/b5f94fe08e2e9d51dcffbf35f435130886db6641/app/src/main/java/com/ecut/campuspocket/data/remote/jw/JwAdapter.kt",
+        "license": "MIT",
+        "licenseAsset": "ecut-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "NOASSERTION"
+      }
+    ]
+  },
+  {
+    "id": "EX_JUWP_H5_PERSONAL",
+    "name": "江西水利电力大学",
+    "adapters": [
+      {
+        "id": "ext_juwp_h5_personal",
+        "name": "江西水利电力大学强智移动本科个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "http://jiaowuh5.juwp.edu.cn/#/login",
+        "path": "EXT/juwp-h5-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 player0729 与学校官方公开前端",
+        "description": "在本校官方移动教务完成学生登录。明确选择学期和时间模式，按校历填写第一周周一及总周数，进入原生预览核对作息。读取全部学期及所有数据块，保留原课名、完整教师地点、教学班及明确的课程时间。未排安排、缺项、未知内容、身份或数据变化时整批中止；仍待本校真实账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/player0729/juwp-CourseWidgetApp",
+        "revision": "296e779b5d2d238e32ae096953e16c910c156d4b",
+        "updated": "2026-09-21T15:05:44Z",
+        "sourceUrl": "https://github.com/player0729/juwp-CourseWidgetApp/blob/296e779b5d2d238e32ae096953e16c910c156d4b/app/src/main/java/com/yang/kcb/data/remote/JwApi.kt",
+        "license": "MIT",
+        "licenseAsset": "juwp-h5-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "NOASSERTION"
+      }
+    ]
+  },
+  {
+    "id": "EX_QUST_PERSONAL",
+    "name": "青岛科技大学",
+    "adapters": [
+      {
+        "id": "ext_qust_personal",
+        "name": "青岛科技大学新正方个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwglxt1.qust.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "path": "EXT/selected-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 fangzi2006",
+        "description": "登录学校教务，须从菜单进入学生个人课表并选择学年学期后导入。支持学校六条 HTTPS 线路；按校历明确填写第一周周一和总教学周数，在原生预览核对作息。保留多教师、校区、教学班、班级及备注。未排或实践附加安排、分页、坏行、会话失效或读取变化均整批中止。仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/fangzi2006/QustSchedule",
+        "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+        "updated": "2026-11-05T06:42:15Z",
+        "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/zhengfang_client.dart",
+        "license": "MIT",
+        "licenseAsset": "selected-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "mixed-MIT-Apache2-GPL3-and-NOASSERTION-protocol-only",
+        "accountValidated": false
+      }
+    ]
+  },
+  {
+    "id": "EX_SDUT_PERSONAL",
+    "name": "山东理工大学",
+    "adapters": [
+      {
+        "id": "ext_sdut_personal",
+        "name": "山东理工大学新正方个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jw.sdut.edu.cn/jwglxt/xtgl/login_slogin.html",
+        "path": "EXT/selected-zf-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 安稳 / liuayueeryuan0313",
+        "description": "在可见教务网页自行登录，从学生个人课表菜单选择学年学期后导入。仅限本校 HTTPS 教务和 N2151 模块。按校历明确填写第一周周一和总教学周数，在原生预览核对作息。保留教师、校区、教室及教学班；未知非空安排、未排或实践课程、分页、学期冲突和登录失效均整批中止。仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/liuayueeryuan0313/KOMA",
+        "revision": "da932b81edaa617f98376f2729a32a896418823e",
+        "updated": "2026-10-16T02:18:43Z",
+        "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/scripts/jw-core.mjs",
+        "license": "MIT",
+        "licenseAsset": "selected-zf-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "mixed-MIT-Apache2-GPL3-and-NOASSERTION-protocol-only",
+        "accountValidated": false
+      }
+    ]
+  },
+  {
+    "id": "EX_QLU_PERSONAL",
+    "name": "齐鲁工业大学",
+    "adapters": [
+      {
+        "id": "ext_qlu_personal",
+        "name": "齐鲁工业大学正方当前学期个人课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jw.qlu.edu.cn",
+        "path": "EXT/qlu-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 Matt-wzy",
+        "description": "在可见教务网页自行登录，返回教务首页后导入当前学期。学期名称及起止范围由学校页面读取并确认；第一周周一和总教学周数需按校历明确填写，在原生预览核对作息。使用本校两字段课表请求和 jc 节次，保留教师、校区、教室、教学班、学分及考核方式。附加非空未核验安排、未排或实践课程、分页、学期变化及登录失效均整批中止。仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+        "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+        "updated": "2026-07-19T08:49:43Z",
+        "sourceUrl": "https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_api.dart",
+        "license": "MIT",
+        "licenseAsset": "qlu-personal-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "MIT-protocol-only",
+        "accountValidated": false
+      }
+    ]
+  },
+  {
+    "id": "EX_SDUST_QZ_PERSONAL",
+    "name": "山东科技大学",
+    "adapters": [
+      {
+        "id": "ext_sdust_qz_personal",
+        "name": "山东科技大学强智个人学期课表（独立适配）",
+        "category": "BACHELOR_AND_ASSOCIATE",
+        "url": "https://jwglxt.sdust.edu.cn/jsxsd/",
+        "path": "EXT/sdust-qz-personal.js",
+        "maintainer": "KAgenda（独立实现）；协议参考 SHST-SDUST、Opingur",
+        "description": "使用可访问本校直连教务的网络，在学生个人课表页选择学期和全部周次后导入。须由服务器明确返回所选学期和全部周次。按校历填写第一周周一及总教学周数，在原生预览核对作息。按时间文本的明确节次区间读取，保留完整校区楼名、教师、教学班及课程说明；不按行号推断节次。非空未排、备注、附加表或未知课程、分页、登录失效及确认期间变化均整批中止。仍待本校账号验证。",
+        "combo": false,
+        "preferred": true,
+        "repository": "https://github.com/SHST-SDUST/SHST-ULTRA",
+        "revision": "008e670031820a3ad4f56e8e6b2eace3cbb7882a",
+        "updated": "2026-09-25T02:46:19Z",
+        "sourceUrl": "https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/pages/plus/study/timetable/model.ts",
+        "license": "MIT",
+        "licenseAsset": "sdust-qz-original-MIT.txt",
+        "implementationOriginal": true,
+        "copiedUpstreamLines": 0,
+        "licenseScope": "KAgenda-original-implementation-only",
+        "referenceLicense": "NOASSERTION-protocol-only",
+        "accountValidated": false
       }
     ]
   }

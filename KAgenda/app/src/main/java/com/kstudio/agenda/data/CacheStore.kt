@@ -151,6 +151,8 @@ object ScheduleCache {
         put("teacher", c.teacher)
         put("weeks", c.weeksRaw)
         put("room", c.room)
+        put("customStartTime", c.customStartTime)
+        put("customEndTime", c.customEndTime)
         put("start", c.startPeriod)
         put("end", c.endPeriod)
         put("day", c.dayOfWeek)
@@ -164,6 +166,8 @@ object ScheduleCache {
         teacher = o.optString("teacher"),
         weeksRaw = o.optString("weeks"),
         room = o.optString("room"),
+        customStartTime = o.optString("customStartTime"),
+        customEndTime = o.optString("customEndTime"),
         startPeriod = o.optInt("start", 1),
         endPeriod = o.optInt("end", o.optInt("start", 1)),
         dayOfWeek = o.optInt("day", 1),

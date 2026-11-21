@@ -44,10 +44,25 @@ object WarehousePayload {
             val name = row.getString("name").trim(); require(name.isNotBlank())
             val day = row.getInt("day"); require(day in 1..7)
             var first = row.optInt("startSection"); var last = row.optInt("endSection")
+            var customStart = ""; var customEnd = ""
             if (row.optBoolean("isCustomTime", false)) {
-                val s = LocalTime.parse(row.getString("customStartTime")); val e = LocalTime.parse(row.getString("customEndTime"))
-                first = slots.indexOfFirst { it.first == s } + 1; last = slots.indexOfLast { it.second == e } + 1
-                if (first < 1 || last < first) throw UnsupportedTime()
+                customStart = row.getString("customStartTime").trim()
+                customEnd = row.getString("customEndTime").trim()
+                val exact = requireNotNull(Course.validCustomTimes(customStart, customEnd)) { "Invalid course times" }
+                val hasFirst = row.has("startSection"); val hasLast = row.has("endSection")
+                require(hasFirst == hasLast) { "Incomplete course sections" }
+                if (hasFirst) {
+                    first = requireNotNull(row.get("startSection").toString().toIntOrNull()) { "Invalid start section" }
+                    last = requireNotNull(row.get("endSection").toString().toIntOrNull()) { "Invalid end section" }
+                }
+                // Keep explicit school periods and actual clocks independently.
+                // Time-only legacy records still need an exact slot mapping;
+                // never invent a period for an otherwise unmappable time.
+                if (!hasFirst || (first == 0 && last == 0)) {
+                    first = slots.indexOfFirst { it.first == exact.first } + 1
+                    last = slots.indexOfLast { it.second == exact.second } + 1
+                    if (first < 1 || last < first) throw UnsupportedTime()
+                }
             }
             require(first in 1..PeriodTimes.MAX_COUNT && last in first..PeriodTimes.MAX_COUNT)
             if (slots.isNotEmpty()) require(last <= slots.size)
@@ -61,8 +76,9 @@ object WarehousePayload {
             val creditInfo = row.optString("credit").takeIf { it.isNotBlank() && it != "null" }
                 ?.let { "${com.kstudio.agenda.i18n.AppText.current.importCreditLabel}: $it" }.orEmpty()
             Course(name, "", if (row.isNull("teacher")) "" else row.optString("teacher"), Course.encodeWeeks(active), if (row.isNull("position")) "" else row.optString("position"), first, last, day,
-                extraInfo = listOf(importedInfo, creditInfo).filter { it.isNotBlank() }.distinct().joinToString("\n"))
-        }.groupBy { listOf(it.title, it.code, it.teacher, it.weeksRaw, it.room, it.startPeriod, it.endPeriod, it.dayOfWeek) }
+                extraInfo = listOf(importedInfo, creditInfo).filter { it.isNotBlank() }.distinct().joinToString("\n"),
+                customStartTime = customStart, customEndTime = customEnd)
+        }.groupBy { listOf(it.title, it.code, it.teacher, it.weeksRaw, it.room, it.startPeriod, it.endPeriod, it.dayOfWeek, it.customStartTime, it.customEndTime) }
             .values.map { equivalent ->
                 // Identical timetable facts can carry multiple teaching-class
                 // descriptions. Keep every distinct block in one occurrence.

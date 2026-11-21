@@ -58,7 +58,7 @@ object NextClassWidgetUpdater {
 
     private data class Upcoming(val course: Course, val date: LocalDate, val start: LocalDateTime) {
         /** 本节课程的结束时刻 */
-        fun end(): LocalDateTime = date.atTime(PeriodTimes.endOf(course.endPeriod))
+        fun end(): LocalDateTime = date.atTime(course.endTime)
     }
 
     // ------------------------------------------------------------ 对外接口
@@ -70,6 +70,7 @@ object NextClassWidgetUpdater {
 
     /** 仅更新全部小组件 */
     fun updateAll(context: Context) {
+        runCatching { CountdownWidget.refresh(context) }.onFailure { com.kstudio.agenda.util.AppLog.e("Widget", "Countdown update failed", it) }
         runCatching { OverviewWidgetUpdater.updateAll(context) }.onFailure { com.kstudio.agenda.util.AppLog.e("Widget", "Overview update failed", it) }
         val manager = AppWidgetManager.getInstance(context) ?: return
         // 叠加用户课程修改后的课表（课程名/地点/时间可能被用户改过）
@@ -95,6 +96,7 @@ object NextClassWidgetUpdater {
 
     /** 是否存在任意尺寸的小组件 */
     fun hasAnyWidget(context: Context): Boolean {
+        if (CountdownWidget.exists(context)) return true
         if (OverviewWidgetUpdater.hasAny(context)) return true
         val manager = AppWidgetManager.getInstance(context) ?: return false
         for (spec in SPECS) {
@@ -163,7 +165,10 @@ object NextClassWidgetUpdater {
                 }
             }
         }
-        val triggerAt = System.currentTimeMillis() + delayMs
+        val countdownDelay = if (CountdownWidget.exists(context)) {
+            CountdownWidget.nearest(context, now)?.let { Duration.between(now, it.at).toMillis().coerceAtLeast(1_000L) }
+        } else null
+        val triggerAt = System.currentTimeMillis() + minOf(delayMs, countdownDelay ?: delayMs)
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()) {
             am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAt, pi)
         } else {
@@ -228,6 +233,7 @@ object NextClassWidgetUpdater {
             putExtra(MainActivity.EXTRA_FOCUS_EPOCH_DAY, focusTarget.first.toEpochDay())
             putExtra(MainActivity.EXTRA_FOCUS_TITLE, focusTarget.second)
             putExtra(MainActivity.EXTRA_FOCUS_FROM_WIDGET, true)
+            putExtra(MainActivity.EXTRA_WIDGET_KIND, "next")
         }
         val openPi = PendingIntent.getActivity(
             context,
@@ -259,13 +265,13 @@ object NextClassWidgetUpdater {
             rv.setTextViewText(R.id.widget_name, current.course.title)
             val endLabel = context.getString(
                 R.string.widget_until,
-                PeriodTimes.format(PeriodTimes.endOf(current.course.endPeriod)),
+                PeriodTimes.format(current.course.endTime),
             )
             val next = upcoming.firstOrNull()
             val nextLabel = next?.let {
                 context.getString(
                     R.string.widget_next_class_line,
-                    PeriodTimes.format(PeriodTimes.startOf(it.course.startPeriod)),
+                    PeriodTimes.format(it.course.startTime),
                     it.course.title,
                 )
             }
@@ -384,7 +390,7 @@ object NextClassWidgetUpdater {
                 R.id.widget_next2,
                 if (second == null) "" else context.getString(
                     R.string.widget_next2,
-                    PeriodTimes.format(PeriodTimes.startOf(second.course.startPeriod)),
+                    PeriodTimes.format(second.course.startTime),
                     second.course.title,
                 ),
             )
@@ -451,7 +457,7 @@ object NextClassWidgetUpdater {
         when {
             upcoming.isNotEmpty() -> context.getString(
                 R.string.widget_next2,
-                PeriodTimes.format(PeriodTimes.startOf(upcoming[0].course.startPeriod)),
+                PeriodTimes.format(upcoming[0].course.startTime),
                 upcoming[0].course.title,
             )
             agendaNext != null -> context.getString(
@@ -464,8 +470,8 @@ object NextClassWidgetUpdater {
 
     /** 时间文案：今天 "08:00-09:35"；明天/后天 "明天 08:00-09:35"；更远 "9/24 周三 08:00"（自动本地化） */
     private fun timeLabel(context: Context, u: Upcoming): String {
-        val start = PeriodTimes.format(PeriodTimes.startOf(u.course.startPeriod))
-        val end = PeriodTimes.format(PeriodTimes.endOf(u.course.endPeriod))
+        val start = PeriodTimes.format(u.course.startTime)
+        val end = PeriodTimes.format(u.course.endTime)
         val range = "$start-$end"
         val today = LocalDate.now()
         return when (u.date) {
@@ -507,8 +513,8 @@ object NextClassWidgetUpdater {
         val courses = sem.weeks[weekNo].orEmpty()
             .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
         for (c in courses) {
-            val start = date.atTime(PeriodTimes.startOf(c.startPeriod))
-            val end = date.atTime(PeriodTimes.endOf(c.endPeriod))
+            val start = date.atTime(c.startTime)
+            val end = date.atTime(c.endTime)
             if (!now.isBefore(start) && !now.isAfter(end)) return Upcoming(c, date, start)
         }
         return null
@@ -524,9 +530,9 @@ object NextClassWidgetUpdater {
             if (HolidayTable.hidesCourses(date)) continue   // 法定节假日停课（可在设置里改）
             val courses = sem.weeks[weekNo].orEmpty()
                 .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
-                .sortedBy { it.startPeriod }
+                .sortedBy { it.startTime }
             for (c in courses) {
-                val start = date.atTime(PeriodTimes.startOf(c.startPeriod))
+                val start = date.atTime(c.startTime)
                 if (start.isAfter(now)) {
                     out.add(Upcoming(c, date, start))
                     if (out.size >= limit) return out

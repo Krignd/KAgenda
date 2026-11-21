@@ -47,14 +47,15 @@ class SelectedZfImportDeviceRunner : Instrumentation() {
                     window.__kagendaSgReply(m.id,true,value);}
                 }};
                 window.fetch=async function(raw,init){
-                  var u=new URL(raw),f=window.__fault,fields=new URLSearchParams(init.body),isQuery=window.__school==='smu'||window.__school==='fit';window.__requests.push(u.href);window.__reads++;
+                  var u=new URL(raw),f=window.__fault,fields=new URLSearchParams(init.body),isQuery=['smu','fit','qust','sdut'].includes(window.__school);window.__requests.push(u.href);window.__reads++;
                   if(u.origin!==location.origin||u.pathname!=='/jwglxt/kbcx/xskbcx_cxXsgrkb.html'||init.method!=='POST'||init.credentials!=='same-origin'||init.redirect!=='error'||init.cache!=='no-store'||init.referrer!==location.href||init.referrerPolicy!=='same-origin')throw Error('Wrong selected-school request');
                   var year=(document.querySelector('#xnm')||document.querySelector('#xnm_hide')).value,term=(document.querySelector('#xqm')||document.querySelector('#xqm_hide')).value,module=document.querySelector('#gnmkdm').value;
-                  if(fields.get('xnm')!==year||fields.get('xqm')!==term||fields.get('kzlx')!=='ck'||fields.get('xsdm')!==''||fields.has('su')||Array.from(fields.keys()).length!==5)throw Error('Wrong actualselected fields');
+                  if(fields.get('xnm')!==year||fields.get('xqm')!==term||fields.get('kzlx')!=='ck'||fields.get('xsdm')!==''||fields.has('su')||Array.from(fields.keys()).length!==(['qust','sdut'].includes(window.__school)?6:5))throw Error('Wrong actualselected fields');
+                  if(['qust','sdut'].includes(window.__school)&&fields.get('kclxdm')!=='')throw Error('Missing QUST course type filter');
                   if(isQuery){if(u.searchParams.get('gnmkdm')!==module||fields.has('gnmkdm')||fields.get('kclbdm')!=='')throw Error('Wrong SMU/FIT contract');}
                   else if(u.search||fields.get('gnmkdm')!==module||fields.has('kclbdm'))throw Error('Wrong FZFU contract');
                   if(f==='second-failure'&&window.__reads>1)throw Error('Synthetic second failure');
-                  var row={kcmc:'合成选定学期高数',xm:'合成甲、合成乙',cdmc:'A101',xqmc:'合成校区',xqj:2,jcs:'1-2,5',zcd:'1-8周(单),12周',jxb_id:'SYN-T1',jxbmc:'合成教学班'};
+                  var row={kcmc:'合成选定学期高数',xm:'合成甲、合成乙',cdmc:'A101',xqmc:'合成校区',xqj:2,jcs:'1-2,5',zcd:'1-8周(单),12周',jxb_id:'SYN-T1',jxbmc:'合成教学班',bjmc:'合成班级',bz:'合成备注'};
                   var d={kbList:[row],xsxx:{XH:'SYN-SELF',XNMC:'2026-2027',XQMMC:window.__third?'3':'1'}};
                   if(window.__variants)d.kbList.push(Object.assign({},row,{xm:'另一教师',cdmc:'B202',xqmc:'另一校区',jxb_id:'SYN-T2'}));
                   if(window.__duplicates)d.kbList.push(Object.assign({},row));
@@ -73,14 +74,14 @@ class SelectedZfImportDeviceRunner : Instrumentation() {
             """.trimIndent()
             var successes=0;var rejections=0
             fun fixture(school:String,flags:String="",reject:Boolean=false,hidden:Boolean=false,third:Boolean=false,opaque:Boolean=false,baseUrl:String?=null,expected:Int=2,password:Boolean=false):WarehousePayload.Batch? {
-                val origin=if(school=="fit")"http://oaa.fitedu.net" else if(school=="smu")"http://jwxxt.fjsmu.edu.cn" else "http://portal.fzfu.edu.cn"
+                val origin=if(school=="sdut")"https://jw.sdut.edu.cn" else if(school=="qust")"https://jwglxt1.qust.edu.cn" else if(school=="fit")"http://oaa.fitedu.net" else if(school=="smu")"http://jwxxt.fjsmu.edu.cn" else "http://portal.fzfu.edu.cn"
                 val url=baseUrl?:"$origin/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?gnmkdm=N2151"
                 val y=if(opaque)"Y-OPAQUE" else "2026";val q=if(opaque)"Q-OPAQUE" else if(third)"16" else "3";val qLabel=if(third)"第三学期" else "第一学期"
                 val html=if(hidden)"<input id=xnm_hide type=hidden value='$y'><input id=xqm_hide type=hidden value='$q'>" else "<select id=xnm><option value=2025>2025-2026学年</option><option value='$y' selected>2026-2027学年</option></select><select id=xqm><option value=12>第二学期</option><option value='$q' selected>$qLabel</option></select>"
                 val loaded=CountDownLatch(1)
                 main{view.webViewClient=object:WebViewClient(){override fun onPageFinished(v:WebView?,u:String?){loaded.countDown()};override fun shouldInterceptRequest(v:WebView?,r:WebResourceRequest?)=WebResourceResponse("text/plain","UTF-8",ByteArrayInputStream(ByteArray(0)))};view.loadDataWithBaseURL(url,"<html><body>$html<input id=gnmkdm type=hidden value=N2151>${if(password)"<input type=password>" else ""}</body></html>","text/html","UTF-8",null)}
                 check(loaded.await(10,TimeUnit.SECONDS));evaluate("window.__school='$school';window.__third=$third;"+flags+setup)
-                val id=if(school=="fit")"ext_fit_personal" else if(school=="smu")"ext_smu_personal" else "ext_fzfu_personal"
+                val id=if(school=="sdut")"ext_sdut_personal" else if(school=="qust")"ext_qust_personal" else if(school=="fit")"ext_fit_personal" else if(school=="smu")"ext_smu_personal" else "ext_fzfu_personal"
                 val bridge=read("shiguang/bridge.js").replace("__TOKEN__",JSONObject.quote("synthetic-selected-zf"))+"\n"+read("academic/school-common.js").replace("__ADAPTER_ID__",JSONObject.quote(id))
                 evaluate(WarehouseScriptRunner.wrap(bridge,read("shiguang/scripts/EXT/selected-zf-personal.js"),read("shiguang/runner.js")))
                 val deadline=SystemClock.elapsedRealtime()+10000
@@ -89,10 +90,11 @@ class SelectedZfImportDeviceRunner : Instrumentation() {
                 if(reject){check(data("courses").isBlank()&&data("config").isBlank()&&data("times").isBlank()){"Partial data staged: $messages"};check((0 until messages.length()).any{messages.getJSONObject(it).getString("action")=="alert"});rejections++;return null}
                 check(data("courses").isNotBlank()){"Selected-ZF failed: $messages"};val batch=WarehousePayload.parse(data("courses"),data("times"),data("config"));check(batch.courses.size==expected&&batch.totalWeeks==18&&batch.firstMonday.toString()=="2026-09-07"&&batch.times.isEmpty());check(evaluate("window.__requests.length")==2);successes++;return batch
             }
-            for(school in listOf("fzfu","smu","fit")){
+            for(school in listOf("fzfu","smu","fit","qust","sdut")){
                 val regular=fixture(school)!!;check(regular.courses.map{it.startPeriod}==listOf(1,5));check(regular.courses.all{it.title=="合成选定学期高数"&&it.teacher=="合成甲、合成乙"&&it.room=="合成校区 A101"&&it.weeksSet()==setOf(1,3,5,7,12)&&it.extraInfo.contains("SYN-T1")&&!it.extraInfo.contains("SYN-SELF")})
                 check(evaluate("window.__kagendaSgValidate('kagendaSelectedZfMondayValidator','2026-09-07')")==false)
-                fixture(school,hidden=true,reject=school=="fit");fixture(school,third=true);fixture(school,opaque=true);fixture(school,"window.__emptyBranches=true;")
+                fixture(school,hidden=true,reject=school in listOf("fit","qust","sdut"));fixture(school,third=true);fixture(school,opaque=true,reject=school in listOf("qust","sdut"));fixture(school,"window.__emptyBranches=true;")
+                if(school=="qust")check(regular.courses.all{it.extraInfo.contains("合成班级")&&it.extraInfo.contains("合成备注")})
                 val variants=fixture(school,"window.__variants=true;window.__reorder=true;",expected=4)!!;check(variants.courses.count{it.teacher=="另一教师"&&it.room=="另一校区 B202"}==2)
                 val duplicates=fixture(school,"window.__duplicates=true;")!!;check(duplicates.courses.all{it.extraInfo.contains("\"sourceRow\":1")&&it.extraInfo.contains("\"sourceRow\":2")})
                 for(fault in listOf("missing-year","module-conflict","cancel-selection","bad-monday","short-weeks","cancel-weeks","selection-change","module-change","teacher","room","weekday","weekday-conflict","section","jc-only","section-conflict","week","nested","practice","adjustment","unknown-root","mixed","total","pages","has-more","empty","success-zero","code","error","expiry","self-year","self-term","root-term","row-term","identity-change","class-change","raw-change","second-failure","html","json","http","redirect","wrong-path","charset","encoding")){
@@ -101,7 +103,7 @@ class SelectedZfImportDeviceRunner : Instrumentation() {
                 }
                 fixture(school,"window.__fault='cancel-label';",reject=true,hidden=true)
                 fixture(school,reject=true,password=true)
-                val base=if(school=="fit")"http://oaa.fitedu.net" else if(school=="smu")"http://jwxxt.fjsmu.edu.cn" else "http://portal.fzfu.edu.cn"
+                val base=if(school=="sdut")"https://jw.sdut.edu.cn" else if(school=="qust")"https://jwglxt1.qust.edu.cn" else if(school=="fit")"http://oaa.fitedu.net" else if(school=="smu")"http://jwxxt.fjsmu.edu.cn" else "http://portal.fzfu.edu.cn"
                 fixture(school,reject=true,baseUrl="$base/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html?jsdm=js")
                 fixture(school,reject=true,baseUrl="$base/cas/login")
                 fixture(school,reject=true,baseUrl="http://wrong.invalid/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html")
@@ -118,6 +120,8 @@ class SelectedZfImportDeviceRunner : Instrumentation() {
                 val school=schools.single{it.name==name};check(school.supported&&"zf_new" in SchoolCatalog.knownSystemTypes(school));check(!AcademicText.isUndetermined(school));check(SchoolCatalog.adapters(school).first().let{it.id==id&&it.licenseAsset=="selected-zf-personal-original-MIT.txt"})
             }
             val fit=schools.single{it.name=="福州理工学院"};check(fit.supported&&"zhengfang" in SchoolCatalog.knownSystemTypes(fit));check(!AcademicText.isUndetermined(fit));check(SchoolCatalog.adapters(fit).first().id=="ext_fit_personal");check(SchoolCatalog.adapters(fit).any{it.id=="FIT"})
+            val qust=schools.single{it.name=="青岛科技大学"};check(qust.supported&&"zf_new" in SchoolCatalog.knownSystemTypes(qust));check(!AcademicText.isUndetermined(qust));check(SchoolCatalog.adapters(qust).first().id=="ext_qust_personal")
+            val sdut=schools.single{it.name=="山东理工大学"};check(sdut.supported&&"zf_new" in SchoolCatalog.knownSystemTypes(sdut));check(!AcademicText.isUndetermined(sdut));check(SchoolCatalog.adapters(sdut).first().id=="ext_sdut_personal")
             val policy=NetworkSecurityPolicy.getInstance();for(host in listOf("portal.fzfu.edu.cn","jw.fzfu.edu.cn","jwxxt.fjsmu.edu.cn","oaa.fitedu.net"))check(policy.isCleartextTrafficPermitted(host));check(!policy.isCleartextTrafficPermitted("unreviewed.invalid"))
             result.putString("stream","PASS: $successes selected-school successes and $rejections whole-batch rejections; real Chromium selected/hidden DOM, exact per-school requests, production bridge/native payload, catalogNewZF and exact-host network policy; no school requests/user data.");finish(-1,result)
         }catch(e:Throwable){result.putString("stream","FAIL: ${e.stackTraceToString().take(5000)}");finish(0,result)}finally{runOnMainSync{web?.destroy()}}

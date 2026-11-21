@@ -1,0 +1,35 @@
+KAgenda original implementation only. Zero upstream implementation lines copied, translated or relicensed.
+Protocol references below have no established upstream permission grant (NOASSERTION); no upstream license text exists to relicense. MIT below licenses only KAgenda original code. Authors not established; credited repository publishers SHST-SDUST and Opingur.
+https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/pages/plus/study/timetable/model.ts
+2026-09-25T02:46:19Z; SHA-256 f215a55a4d89da688eaf71415da023ab88e7b1d46742ce1dd70b5b50975e4a09
+https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/pages/plus/study/timetable/parser.ts
+2026-09-11T09:35:25Z; SHA-256 f961a872013e6fb52cf9fa994c339f602670fc2f47457f4072caf92cc590b866
+https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/utils/constant.ts
+2026-10-08T13:46:57Z; SHA-256 7a0313e9d372de0b62ef9d0c4b53d0ad4b85a267c0549752742dcc939d4936d8
+https://github.com/Opingur/ScheduleClawer_SDUST/blob/1ed117b7d7da525b7cc1ae73e3a4a269d23a5ee2/src/browser_reader.py
+2026-09-04T01:43:24Z; SHA-256 82843a20b4f714e196b01143f67e8b9feab38a3d4937768cb9b4a99841905564
+https://github.com/Opingur/ScheduleClawer_SDUST/blob/1ed117b7d7da525b7cc1ae73e3a4a269d23a5ee2/src/normalize.py
+2026-08-31T07:23:04Z; SHA-256 6fdca3fc074654c07fd6900f8b96a9fed57696a994493d59b46c163046e5ebf9
+Direct school HTTPS route only. WebVPN source is protocol context, not a support claim. No upstream source execution or real account validation.
+
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

@@ -16,6 +16,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
+import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,7 @@ class WarehouseImportActivity : ComponentActivity() {
     private var status by mutableStateOf("")
     private var page by mutableStateOf("")
     private var batch by mutableStateOf<WarehousePayload.Batch?>(null)
+    private var pendingSync by mutableStateOf<BrowserSyncReview?>(null)
     private var dialog by mutableStateOf<Request?>(null)
     private var adapterIndex by mutableIntStateOf(0)
     private var token = ""
@@ -55,6 +57,7 @@ class WarehouseImportActivity : ComponentActivity() {
     private val adapters by lazy { SchoolCatalog.adapters(school) }
     private val t get() = AppText.current
     private data class Request(val id: String, val action: String, val data: JSONObject, val token: String)
+    private data class BrowserSyncReview(val batch: WarehousePayload.Batch, val anchor: LocalDate, val review: CourseSyncReview)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,6 +114,7 @@ class WarehouseImportActivity : ComponentActivity() {
                     .replace("__TOKEN__", JSONObject.quote(token)).replace("__PARSER__", JSONObject.quote(adapter.parser))
             } else {
                 var bridge = assets.open("shiguang/bridge.js").bufferedReader().use { it.readText() }.replace("__TOKEN__", JSONObject.quote(token))
+                bridge += "\nwindow.kagendaUiLanguage=" + JSONObject.quote(AppText.resolve(AppText.state.value).tag) + ";"
                 if (adapter.path.startsWith("EXT/")) {
                     bridge += "\n" + assets.open("academic/school-common.js").bufferedReader().use { it.readText() }
                         .replace("__ADAPTER_ID__", JSONObject.quote(adapter.id))
@@ -122,7 +126,7 @@ class WarehouseImportActivity : ComponentActivity() {
             web?.evaluateJavascript(source, null)
         }.onFailure { fail(t.warehouseFailed) }
         timeout?.cancel()
-        timeout = lifecycleScope.launch { delay(120_000); if (busy) fail(t.warehouseFailed) }
+        timeout = lifecycleScope.launch { delay(adapter.timeoutSeconds.coerceIn(30, 600) * 1000L); if (busy) fail(t.warehouseFailed) }
     }
 
     private fun openPortal(raw: String) {
@@ -199,7 +203,7 @@ class WarehouseImportActivity : ComponentActivity() {
         }.onFailure { fail(if (it is WarehousePayload.UnsupportedTime) t.warehouseUnsupportedTime else t.warehouseInvalid) }
     }
 
-    private fun save(result: WarehousePayload.Batch, anchor: LocalDate) {
+    private fun save(result: WarehousePayload.Batch, anchor: LocalDate, reviewAccepted: Boolean = false) {
         if (busy || Schools.currentId != school.id) return
         busy = true
         lifecycleScope.launch {
@@ -207,6 +211,17 @@ class WarehouseImportActivity : ComponentActivity() {
                 val label = "${school.name} · $anchor"
                 // 所有脚本字段已校验；确认预览后才写入，保留原教务数据与修改覆盖层的分离。
                 val semester = SemesterSchedule(label, anchor.toEpochDay(), (1..result.totalWeeks).associateWith { week -> result.courses.filter { it.occursInWeek(week) } }, System.currentTimeMillis())
+                if (!reviewAccepted) {
+                    val review = withContext(Dispatchers.IO) {
+                        ScheduleCache.load(this@WarehouseImportActivity)?.let { compareCourseSync(it, semester, result.times) }
+                    }
+                    if (review != null) {
+                        pendingSync = BrowserSyncReview(result, anchor, review)
+                        busy = false
+                        return@launch
+                    }
+                }
+                check(Schools.currentId == school.id)
                 if (result.times.isNotEmpty()) {
                     SettingsStore.setPeriodTimes(this@WarehouseImportActivity, PeriodTimes.encode(result.times))
                     PeriodTimes.applyCustom(result.times)
@@ -273,6 +288,12 @@ class WarehouseImportActivity : ComponentActivity() {
         }, confirmButton = { TextButton(onClick = { choose = false }) { Text(text.cancel) } })
         dialog?.let { request -> BridgeDialog(request) }
         batch?.let { result -> Preview(result) }
+        pendingSync?.let { pending ->
+            CourseSyncDialog(pending.review, onApply = {
+                pendingSync = null
+                save(pending.batch, pending.anchor, reviewAccepted = true)
+            }, onKeep = { pendingSync = null })
+        }
         if (license) WarehouseLicenseDialog(selected) { license = false }
     }
 

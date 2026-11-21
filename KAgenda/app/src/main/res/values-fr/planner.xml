@@ -1,0 +1,4 @@
+<resources>
+    <string name="planner_countdown_widget">Compte à rebours</string>
+    <string name="planner_empty_widget">Aucun compte à rebours à venir</string>
+</resources>

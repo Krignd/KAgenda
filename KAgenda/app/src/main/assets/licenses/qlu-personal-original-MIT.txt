@@ -1,0 +1,35 @@
+KAgenda original implementation only; own MIT row parser reused from selected-zf-personal.js. Zero upstream implementation lines copied or translated.
+Protocol facts: Matt-wzy/jiaowu-adapters@152c95b90b66b2a994f99718102bea8e91840704
+https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_api.dart
+2026-07-19T08:49:43Z; SHA-256 0f22b4224bf842448a522cc68822786ba6f529daccec76638c993a65c51f7054
+https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_adapter.dart
+2026-07-19T08:49:43Z; SHA-256 f8759a4dbd39e467205bfd08c9d0edd7715ddd8a4314a47b1f1fdfea7cd30355
+https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_sdk/lib/src/models.dart
+2026-07-19T08:49:43Z; SHA-256 2bb0bfaac9f45ee467a3f44d1434aae6b2332631db39aeb6430eacf157454152
+https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/LICENSE
+2026-07-19T08:49:43Z; SHA-256 43a26c952ce4ecb60b4a3e873936c0b9005be1c90c9d22d9012ef513b6ad3b9b
+https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_login.dart
+2026-07-19T08:49:43Z; SHA-256 a1868b8c815d631cbbd55444856629dc3a98f070735d6c27642c7450d3aae27b
+Full upstream MIT license/copyright retained separately in qlu-protocol-MIT.txt. MIT below applies only to KAgenda original implementation. Actual account validation pending.
+
+MIT License
+
+Copyright (c) 2026 Krignd
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

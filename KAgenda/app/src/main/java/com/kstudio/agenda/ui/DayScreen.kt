@@ -88,8 +88,8 @@ import java.time.temporal.ChronoUnit
 internal fun isOngoing(course: Course, date: LocalDate): Boolean {
     if (date != LocalDate.now()) return false
     val now = LocalTime.now()
-    return !now.isBefore(PeriodTimes.startOf(course.startPeriod)) &&
-        now.isBefore(PeriodTimes.endOf(course.endPeriod))
+    return !now.isBefore(course.startTime) &&
+        now.isBefore(course.endTime)
 }
 
 /**
@@ -226,6 +226,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                         items(courses, key = { it.id }) { course ->
                             CourseCard(
                                 course = course,
+                                occurrence = selected,
                                 highlight = isOngoing(course, selected),
                                 flash = matchesFlash(course.title),
                                 onClick = { detailCourse = course },
@@ -315,6 +316,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
                             when (item) {
                                 is DayItem.CourseItem -> CourseCard(
                                     course = item.course,
+                                    occurrence = selected,
                                     highlight = isOngoing(item.course, selected),
                                     flash = matchesFlash(item.course.title),
                                     onClick = { detailCourse = item.course },
@@ -350,6 +352,7 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
     detailCourse?.let { course ->
         CourseDetailSheet(
             course = course,
+            date = selected,
             onEdit = {
                 editingCourse = course
                 detailCourse = null
@@ -366,10 +369,11 @@ fun DayScreen(vm: AppViewModel, timetableMode: Boolean, flash: FocusRequest? = n
         CourseEditDialog(
             initial = course,
             sourceDate = selected,
+            sourceWeek = vm.semester.value?.teachingWeekOf(selected)?.takeIf { it in 1..Course.MAX_WEEK } ?: vm.teachingWeekOf(selected),
             dayCourses = vm.coursesRawOnDate(selected),
             onDismiss = { editingCourse = null },
             onSave = { edited, applyAll, weekdays ->
-                vm.saveCourseEdit(course, edited, applyAll, weekdays)
+                vm.saveCourseEdit(course, edited, applyAll, weekdays, vm.semester.value?.teachingWeekOf(selected)?.takeIf { it in 1..Course.MAX_WEEK } ?: vm.teachingWeekOf(selected))
                 editingCourse = null
             },
             onDelete = { weeks, applyAll ->
@@ -436,7 +440,7 @@ private sealed interface DayItem {
 private fun mergeDayItems(courses: List<Course>, events: List<AgendaEvent>): List<DayItem> {
     val items = mutableListOf<DayItem>()
     for (c in courses) {
-        items.add(DayItem.CourseItem(c, PeriodTimes.startOf(c.startPeriod).toSecondOfDay() / 60))
+        items.add(DayItem.CourseItem(c, c.startTime.toSecondOfDay() / 60))
     }
     for (e in events) {
         items.add(DayItem.EventItem(e, FuzzyTime.sortKey(e.startTime).coerceAtLeast(0)))
@@ -651,6 +655,7 @@ fun CourseCard(
     course: Course,
     highlight: Boolean = false,
     flash: Boolean = false,
+    occurrence: LocalDate? = null,
     onClick: (() -> Unit)? = null,
 ) {
     val calendarRevision by HolidayTable.revision.collectAsState()
@@ -718,6 +723,11 @@ fun CourseCard(
                     }
                 }
                 Spacer(Modifier.height(6.dp))
+                if (occurrence != null) {
+                    val labels = lessonTags(course, occurrence)
+                    if (labels.isNotEmpty()) Text(labels.joinToString(" · "), color = glassAccentColor(color),
+                        style = MaterialTheme.typography.labelMedium)
+                }
                 Text(
                     text = "${course.timeRange}  ·  ${course.periodLabel}",
                     style = MaterialTheme.typography.labelLarge,

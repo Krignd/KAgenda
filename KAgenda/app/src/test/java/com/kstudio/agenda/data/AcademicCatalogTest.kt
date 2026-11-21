@@ -33,6 +33,22 @@ class AcademicCatalogTest {
             assertTrue(SchoolCatalog.knownSystemTypes(rows.single {it.name==name}).contains("eams"))
         }
         assertEquals(rows.size, rows.map { it.id }.toSet().size)
+        val qust=rows.single { it.name=="青岛科技大学" }
+        assertTrue(SchoolCatalog.knownSystemTypes(qust).contains("zf_new"))
+        assertEquals("ext_qust_personal",SchoolCatalog.adapters(qust).first().id)
+        assertFalse(rows.filter { it.name!="青岛科技大学" }.any { school -> SchoolCatalog.adapters(school).any { it.id=="ext_qust_personal" } })
+        val sdut=rows.single { it.name=="山东理工大学" }
+        val qlu=rows.single { it.name=="齐鲁工业大学" }
+        val sdust=rows.single { it.name=="山东科技大学" }
+        assertTrue(SchoolCatalog.knownSystemTypes(sdust).contains("qz"))
+        assertEquals("ext_sdust_qz_personal",SchoolCatalog.adapters(sdust).first().id)
+        assertFalse(rows.filter { it.name!="山东科技大学" }.any { school -> SchoolCatalog.adapters(school).any { it.id=="ext_sdust_qz_personal" } })
+        assertTrue(SchoolCatalog.knownSystemTypes(qlu).contains("zhengfang"))
+        assertEquals("ext_qlu_personal",SchoolCatalog.adapters(qlu).first().id)
+        assertFalse(rows.filter { it.name!="齐鲁工业大学" }.any { school -> SchoolCatalog.adapters(school).any { it.id=="ext_qlu_personal" } })
+        assertTrue(SchoolCatalog.knownSystemTypes(sdut).contains("zf_new"))
+        assertEquals("ext_sdut_personal",SchoolCatalog.adapters(sdut).first().id)
+        assertFalse(rows.filter { it.name!="山东理工大学" }.any { school -> SchoolCatalog.adapters(school).any { it.id=="ext_sdut_personal" } })
         assertEquals(own.homeUrl, rows.first { it.id == own.id }.homeUrl)
         assertFalse(SchoolCatalog.usesBrowserImport(own))
         assertFalse(SchoolCatalog.usesBrowserImport(own.copy(custom = true, supported = false)))

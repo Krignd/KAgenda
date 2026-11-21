@@ -8,9 +8,11 @@ import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.nio.file.Files
+import kotlinx.coroutines.CancellationException
 
 /**
- * 数据备份与导入（导出为单个 JSON 文本文件，通过系统文件选择器保存/读取，不需要任何权限）。
+ * 数据备份与导入（新备份为单个 ZIP，通过系统文件选择器保存/读取）。
  *
  * 备份内容（**只含本机用户数据，不含任何上传行为**）：
  * - `settings`：全部设置（含学号、学校、课程时间、界面/提醒/小组件等偏好）；
@@ -18,6 +20,7 @@ import java.io.File
  * - `courseEdits`：课程修改/删除/新增/调课记录（`course_edits.json`）；
  * - `extraCourses`：导入与手动添加的课程（`extra_courses.json`）；
  * - `schedule`：最近一次同步到的课表缓存（`schedule_cache.json`，导入后无需重新登录即可看到课表）。
+ * - `planner`：底栏、小组件点击动作、课程标签、倒计时、账单、作业和截止时间。ZIP 同时携带原图。
  *
  * **不包含**：登录密码与 AI Key —— 它们用 Android Keystore（设备硬件密钥）加密，
  * 卸载/换机/清数据后必然解不开，写进备份只会让人误以为“已备份”。
@@ -30,12 +33,9 @@ object BackupManager {
     const val FORMAT = "kagenda-backup"
 
     /** 当前备份格式版本（导入时拒绝更新的版本号） */
-    const val VERSION = 1
+    const val VERSION = 2
 
     private const val TAG = "Backup"
-
-    /** 单次导入的大小上限（防止误选了一个大文件把内存吃满） */
-    private const val MAX_BYTES = 20 * 1024 * 1024
 
     /** 不写入备份文件的设置项：密码 / AI Key 的密文（设备密钥保护，换机后必然解不开） */
     private val EXCLUDED_SETTING_KEYS = setOf("password_enc", "ai_key_enc")
@@ -62,13 +62,14 @@ object BackupManager {
     // ------------------------------------------------------------ 导出
 
     /** 收集当前数据生成备份 JSON 文本（[prefs] = 已导出的设置，见 [SettingsStore.exportPreferences]） */
-    fun buildJson(context: Context, appVersion: String, prefs: Map<String, Any>): String {
+    private fun buildJson(context: Context, appVersion: String, prefs: Map<String, Any>, planner: PlannerData): String {
         val root = JSONObject()
         root.put("format", FORMAT)
         root.put("version", VERSION)
         root.put("app", appVersion)
         root.put("exportedAt", System.currentTimeMillis())
         root.put("settings", settingsJson(prefs))
+        root.put("planner", JSONObject(PlannerStore.encode(planner)))
         putFileIfPresent(root, "agenda", File(context.filesDir, AgendaStore.FILE_NAME))
         putFileIfPresent(root, "courseEdits", File(context.filesDir, CourseEditStore.FILE_NAME))
         putFileIfPresent(root, "extraCourses", File(context.filesDir, ExtraCoursesStore.FILE_NAME))
@@ -128,43 +129,79 @@ object BackupManager {
         }.onFailure { AppLog.e(TAG, "备份打包失败：${file.name}", it) }
     }
 
-    /** 导出到 SAF 目标；返回写入的字节数，失败返回 -1 */
-    suspend fun exportTo(context: Context, uri: Uri, appVersion: String): Long =
+    private suspend fun <T> withArchive(context: Context, appVersion: String, write: (File) -> T): T =
         withContext(Dispatchers.IO) {
-            runCatching {
-                val prefs = SettingsStore.exportPreferences(context)
-                val bytes = buildJson(context, appVersion, prefs).toByteArray(Charsets.UTF_8)
-                context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                    ?: error("no output stream")
-                bytes.size.toLong()
-            }.onFailure { AppLog.e(TAG, "备份导出失败", it) }.getOrDefault(-1L)
+            val prefs = SettingsStore.exportPreferences(context)
+            val file = File.createTempFile("kagenda-backup-", ".zip", context.cacheDir)
+            try {
+                PlannerStore.withSnapshot(context) { planner ->
+                    val metadata = buildJson(context, appVersion, prefs, planner)
+                    val photos = planner.notes.mapNotNull { it.photo }.distinct().associateWith { id ->
+                        require(isPlannerPhotoId(id)) { "Invalid lesson photo ID" }
+                        PlannerStore.photo(context, id)
+                    }
+                    file.outputStream().use { BackupArchive.write(it, metadata, photos) }
+                }
+                write(file)
+            } finally {
+                file.delete()
+            }
         }
 
-    // ------------------------------------------------------------ 导入
-
-    /** 从 SAF 目标读取并导入 */
-    suspend fun importFrom(context: Context, uri: Uri): ImportResult = withContext(Dispatchers.IO) {
-        val text = runCatching {
-            val size = context.contentResolver.openInputStream(uri)?.use { stream ->
-                val bytes = BoundedInput.read(stream, MAX_BYTES)
-                bytes.toString(Charsets.UTF_8)
-            } ?: error("no input stream")
-            size
-        }.getOrElse { return@withContext ImportResult.Failed(it.message ?: "read failed") }
-        import(context, text)
+    suspend fun exportTo(context: Context, uri: Uri, appVersion: String): Long = try {
+        withArchive(context, appVersion) { archive ->
+            context.contentResolver.openOutputStream(uri, "wt")?.use { out ->
+                archive.inputStream().use { it.copyTo(out) }
+            } ?: error("no output stream")
+        }
+    } catch (e: CancellationException) { throw e }
+    catch (e: Exception) {
+        AppLog.e(TAG, "备份导出失败", e)
+        -1L
     }
 
-    /** 导入备份文本（会覆盖同名的数据文件） */
-    suspend fun import(context: Context, text: String): ImportResult {
+    suspend fun exportToDefault(context: Context, appVersion: String): BackupStore.Entry? = try {
+        withArchive(context, appVersion) { BackupStore.writeToDefault(context, it) }
+    } catch (e: CancellationException) { throw e }
+    catch (e: Exception) {
+        AppLog.e(TAG, "备份导出失败", e)
+        null
+    }
+
+    /** 新 ZIP 及旧 JSON 共用同一导入入口。 */
+    suspend fun importFrom(context: Context, uri: Uri): ImportResult = withContext(Dispatchers.IO) {
+        val scratch = runCatching { Files.createTempDirectory(context.cacheDir.toPath(), "backup-read-").toFile() }
+            .getOrElse { return@withContext ImportResult.Failed(it.message ?: "cannot stage backup") }
+        try {
+            val contents = context.contentResolver.openInputStream(uri)?.use { BackupArchive.read(it, scratch) }
+                ?: error("no input stream")
+            import(context, contents)
+        } catch (e: CancellationException) { throw e }
+        catch (e: Exception) {
+            ImportResult.Failed(e.message ?: "read failed")
+        } finally {
+            scratch.deleteRecursively()
+        }
+    }
+
+    private suspend fun import(context: Context, contents: BackupArchive.Contents): ImportResult {
+        val text = contents.metadata
         val root = runCatching { JSONObject(text) }.getOrNull() ?: return ImportResult.NotABackup
         if (root.optString("format") != FORMAT) return ImportResult.NotABackup
         val version = root.optInt("version", 0)
         if (version <= 0) return ImportResult.NotABackup
         if (version > VERSION) return ImportResult.NewerVersion(version)
 
-        val importedSettings = runCatching {
+        val (importedSettings, planner) = runCatching {
             BackupPayload.validate(root)
-            parseSettings(root.optJSONArray("settings"))
+            val planner = if (version >= 2) {
+                require(contents.zipped) { "Planner backups must be ZIP archives" }
+                plannerBackupData(root.getJSONObject("planner"), contents.photos.keys)
+            } else {
+                require(contents.photos.isEmpty())
+                null
+            }
+            parseSettings(root.optJSONArray("settings")) to planner
         }.getOrElse { return ImportResult.Failed(it.message ?: "invalid backup") }
         val files = linkedMapOf<String, String>()
         fun add(name: String, value: Any?) {
@@ -184,14 +221,24 @@ object BackupManager {
 
         add(SchoolLocationsStore.FILE_NAME, root.opt("locations"))
         add(OfficialHolidayStore.FILE_NAME, root.opt("holidays"))
+        val oldPhotos = if (planner == null) emptySet() else
+            runCatching { PlannerStore.read(context).notes.mapNotNull { it.photo }.toSet() }.getOrDefault(emptySet())
+        if (planner != null) files[PlannerStore.FILE_NAME] = PlannerStore.encode(planner)
+        val photos = contents.photos.mapKeys { (id, _) -> "lesson-photos/$id.jpg" }
         try {
-            BackupFileTransaction.restore(context.filesDir, files) {
+            BackupFileTransaction.restore(context.filesDir, files, photos) {
                 SettingsStore.importPreferences(context, importedSettings)
             }
         } catch (e: kotlinx.coroutines.CancellationException) { throw e }
         catch (e: Exception) {
             AppLog.e(TAG, "备份导入失败，已回滚文件", e)
             return ImportResult.Failed(e.message ?: "write failed")
+        }
+        if (planner != null) {
+            PlannerStore.reload(context)
+            (oldPhotos - contents.photos.keys).filter(::isPlannerPhotoId).forEach { id ->
+                PlannerStore.photo(context, id).delete()
+            }
         }
         // 旧备份的导入课程没有学校字段，先确定学校再迁移归属。
         com.kstudio.agenda.model.Schools.setCurrent(SettingsStore.read(context).schoolId)

@@ -8,12 +8,17 @@ import java.nio.file.StandardCopyOption
 internal object BackupFileTransaction {
     private data class Entry(val target: File, val staged: File, val previous: File?)
 
-    suspend fun restore(root: File, files: Map<String, String>, saveSettings: suspend () -> Unit) {
+    suspend fun restore(
+        root: File,
+        files: Map<String, String>,
+        photos: Map<String, File> = emptyMap(),
+        saveSettings: suspend () -> Unit,
+    ) {
         val entries = mutableListOf<Entry>()
         val applied = mutableListOf<Entry>()
         val preserve = mutableSetOf<File>()
         try {
-            for ((name, text) in files) {
+            for (name in photos.keys + files.keys) {
                 val target = File(root, name).canonicalFile
                 require(target.toPath().startsWith(root.canonicalFile.toPath()) && target != root.canonicalFile)
                 val parent = target.parentFile!!
@@ -22,7 +27,9 @@ internal object BackupFileTransaction {
                 val staged = File.createTempFile("restore-", ".new", parent)
                 var previous: File? = null
                 try {
-                    AtomicFileStore.write(staged, text)
+                    val photo = photos[name]
+                    if (photo != null) Files.copy(photo.toPath(), staged.toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    else AtomicFileStore.write(staged, files.getValue(name))
                     if (target.exists()) {
                         previous = File.createTempFile("restore-", ".old", parent)
                         Files.copy(target.toPath(), previous.toPath(), StandardCopyOption.REPLACE_EXISTING)

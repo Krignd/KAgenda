@@ -2,7 +2,6 @@
 
 package com.kstudio.agenda.ui
 
-import com.kstudio.agenda.ui.theme.glassFrost
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +28,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -36,9 +36,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import com.kstudio.agenda.ui.components.AppButton as Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -52,8 +51,8 @@ import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import com.kstudio.agenda.ui.theme.FrostedSurface as Surface
 import androidx.compose.material3.Text
 import com.kstudio.agenda.ui.components.AppTextButton as TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,10 +65,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.AgendaTextParser
 import com.kstudio.agenda.data.AiInference
+import com.kstudio.agenda.data.CountdownLink
+import com.kstudio.agenda.data.PlannerStore
+import com.kstudio.agenda.data.agendaCountdownTime
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.AgendaEvent
 import com.kstudio.agenda.model.AgendaTypes
@@ -226,6 +231,20 @@ fun AgendaEditorDialog(
     origin: androidx.compose.ui.geometry.Rect? = null,
 ) {
     val t = LocalStrings.current
+    val vm = LocalPlanner.current
+    val planner by PlannerStore.data.collectAsState()
+    fun occurrenceOf(event: AgendaEvent): LocalDate =
+        if (!event.isLong && event.repeatRule.isNotBlank()) {
+            if (event.occursOn(defaultDate)) defaultDate else event.upcomingView(java.time.LocalDateTime.now()).date
+        } else event.date
+    fun linkFor(event: AgendaEvent): CountdownLink {
+        val occurrence = occurrenceOf(event)
+        val suffix = if (!event.isLong && event.repeatRule.isNotBlank()) "/$occurrence" else ""
+        return CountdownLink("agenda/${event.id}$suffix", event.title, agendaCountdownTime(event, occurrence).toString(), agendaId = event.id)
+    }
+    val originalLink = initial?.let(::linkFor)
+    val wasLinked = originalLink != null && planner.links.any { it.id == originalLink.id }
+    var countdownChoice by rememberSaveable { mutableStateOf<Boolean?>(null) }
     // 计划语境：用于“短/长计划”“重复规则”等仅计划适用的文案与选项
     val isPlanContext = initial?.isPlan ?: asPlan
     // 编辑字段用 rememberSaveable：旋转屏幕 / 系统重建后输入不丢失
@@ -282,7 +301,7 @@ fun AgendaEditorDialog(
         startDateEpoch.toString(), endDateEpoch.toString(),
         startTime, endTime, location, note,
         followReminder.toString(), notifyEnabled.toString(), alarmEnabled.toString(), leadMinutes.toString(), statusTag, originalText,
-    ) != initialSnapshot
+    ) != initialSnapshot || countdownChoice?.let { it != wasLinked } == true
 
     AlertDialog(
         origin = origin,
@@ -557,6 +576,12 @@ fun AgendaEditorDialog(
                 StatusTagPicker(statusTag) { statusTag = it }
                 ReminderOptions(followReminder, notifyEnabled, alarmEnabled, leadMinutes,
                     { followReminder = it }, { notifyEnabled = it }, { alarmEnabled = it }, { leadMinutes = it })
+                val countdown = countdownChoice ?: wasLinked
+                Row(Modifier.fillMaxWidth().toggleable(countdown, role = Role.Checkbox, onValueChange = { countdownChoice = it }).padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Checkbox(countdown, onCheckedChange = null)
+                    Text(plannerText("加入倒计时", "Add to countdowns", "Ajouter aux comptes à rebours"))
+                }
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
@@ -618,8 +643,7 @@ fun AgendaEditorDialog(
                     title = titleText,
                     dateEpochDay = startDate.toEpochDay(),
                 )
-                onSave(
-                    base.copy(
+                val saved = base.copy(
                         title = titleText,
                         dateEpochDay = startDate.toEpochDay(),
                         startTime = startTime,
@@ -644,8 +668,16 @@ fun AgendaEditorDialog(
                         alarmEnabled = alarmEnabled,
                         reminderLeadMinutes = leadMinutes,
                         statusTag = statusTag,
-                    )
                 )
+                onSave(saved)
+                val link = linkFor(saved)
+                val enable = countdownChoice ?: wasLinked
+                if (countdownChoice != null || (wasLinked && originalLink?.id != link.id)) {
+                    vm.editPlanner { data ->
+                        val remaining = data.links.filterNot { it.id == link.id || it.id == originalLink?.id }
+                        data.copy(links = if (enable) remaining + link else remaining)
+                    }
+                }
             }) { Text(t.save) }
         },
         dismissButton = {
@@ -679,25 +711,10 @@ fun AgendaEditorDialog(
     // ---------- 日期选择（月历/年历弹窗） ----------
     if (picker == "startDate" || picker == "endDate") {
         val pickerInit = if (picker == "endDate") endDate else startDate
-        val dateState = rememberDatePickerState(
-            initialSelectedDateMillis = pickerInit.toEpochDay() * 86_400_000L
-        )
-        DatePickerDialog(
-            modifier = Modifier.glassFrost(RoundedCornerShape(28.dp), popup = true),
-            onDismissRequest = { picker = "" },
-            confirmButton = {
-                TextButton(onClick = {
-                    dateState.selectedDateMillis?.let { millis ->
-                        val epoch = millis / 86_400_000L
-                        if (picker == "endDate") endDateEpoch = epoch else startDateEpoch = epoch
-                        if (isLong && endDateEpoch < startDateEpoch) endDateEpoch = startDateEpoch
-                    }
-                    picker = ""
-                }) { Text(t.confirm) }
-            },
-            dismissButton = { TextButton(onClick = { picker = "" }) { Text(t.cancel) } },
-        ) {
-            DatePicker(state = dateState)
+        PlannerDatePicker(pickerInit, { picker = "" }) { date ->
+            if (picker == "endDate") endDateEpoch = date.toEpochDay() else startDateEpoch = date.toEpochDay()
+            if (isLong && endDateEpoch < startDateEpoch) endDateEpoch = startDateEpoch
+            picker = ""
         }
     }
 
@@ -767,6 +784,7 @@ private fun PickerField(
             Box(
                 Modifier
                     .matchParentSize()
+                    .semantics { contentDescription = "$label, $value" }
                     .clickable { onClick() }
             )
         }

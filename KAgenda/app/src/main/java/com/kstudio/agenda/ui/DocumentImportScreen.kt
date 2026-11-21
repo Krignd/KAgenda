@@ -2,7 +2,6 @@
 
 package com.kstudio.agenda.ui
 
-import com.kstudio.agenda.ui.theme.glassFrost
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -267,8 +266,9 @@ fun DocumentImportScreen(vm: AppViewModel, initialUri: Uri? = null, initialText:
         content(PaddingValues(0.dp))
     } else {
         Dialog(onDismissRequest = onClose, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true)) {
-            Scaffold(modifier = Modifier.fillMaxSize().glassFrost(popup = true),
+            Scaffold(modifier = Modifier.fillMaxSize(),
                 containerColor = com.kstudio.agenda.ui.theme.overlayBackgroundColor(),
+                contentColor = MaterialTheme.colorScheme.onSurface,
                 topBar = { SettingsSubHeader(ImportText.title, onBack = onClose) }) { padding -> content(padding) }
         }
     }

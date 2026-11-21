@@ -320,5 +320,149 @@
         "linkBasis": "Explicit fixed README deployment URL and official domain-family link, not a claim that the notice directly links this student endpoint."
       }
     }
+  },
+  {
+    "name": "九江学院",
+    "type": "zhengfang",
+    "sources": [
+      {
+        "repository": "https://github.com/drfccv/ZFJW-backend",
+        "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+        "path": "config/schools_config.json",
+        "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/config/schools_config.json",
+        "sha256": "a067f0bc156873c56640a93594c66d572304d78e63c44e1599bf55d05ce9e9dd",
+        "updated": "2026-09-30T07:36:04Z"
+      }
+    ],
+    "basis": "School-bound configuration plus personal schedule production API explicitly establish Zhengfang family; exact generation not inferred.",
+    "referenceLicense": "MIT",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "南昌职业大学",
+    "type": "zhengfang",
+    "sources": [
+      {
+        "repository": "https://github.com/drfccv/ZFJW-backend",
+        "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+        "path": "config/schools_config.json",
+        "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/config/schools_config.json",
+        "sha256": "a067f0bc156873c56640a93594c66d572304d78e63c44e1599bf55d05ce9e9dd",
+        "updated": "2026-09-30T07:36:04Z"
+      }
+    ],
+    "basis": "School-bound configuration plus personal schedule production API explicitly establish Zhengfang family; exact generation not inferred.",
+    "referenceLicense": "MIT",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "江西水利电力大学",
+    "type": "qz",
+    "sources": [
+      {
+        "repository": "https://github.com/Inonvation/JUWPHub",
+        "revision": "903336e39abc5b7e885cd2ed7466d8a0cf9aaec4",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/Inonvation/JUWPHub/blob/903336e39abc5b7e885cd2ed7466d8a0cf9aaec4/README.md",
+        "sha256": "7546050dbcf60397dbcad3aa2e1d9372d00a0829fcc7b13fbeb007255e14ffe9",
+        "updated": "2026-10-23T02:16:45Z"
+      },
+      {
+        "repository": "https://github.com/Inonvation/JUWPHub",
+        "revision": "903336e39abc5b7e885cd2ed7466d8a0cf9aaec4",
+        "path": "app/src/main/java/edu/jxslu/schedule/data/jw/CourseImporter.kt",
+        "sourceUrl": "https://github.com/Inonvation/JUWPHub/blob/903336e39abc5b7e885cd2ed7466d8a0cf9aaec4/app/src/main/java/edu/jxslu/schedule/data/jw/CourseImporter.kt",
+        "sha256": "26a40699b0a46790216731ff924aa6469eb43359b1318947bca4bd543b523e43",
+        "updated": "2026-10-22T09:12:04Z"
+      },
+      {
+        "repository": "https://github.com/Inonvation/JUWPHub",
+        "revision": "903336e39abc5b7e885cd2ed7466d8a0cf9aaec4",
+        "path": "app/src/main/java/edu/jxslu/schedule/data/jw/QiangzhiScheduleParser.kt",
+        "sourceUrl": "https://github.com/Inonvation/JUWPHub/blob/903336e39abc5b7e885cd2ed7466d8a0cf9aaec4/app/src/main/java/edu/jxslu/schedule/data/jw/QiangzhiScheduleParser.kt",
+        "sha256": "97390edd3177e5de36aea064048c4abf545f2512537631f9ea41a84ae3ba0d9a",
+        "updated": "2026-10-22T09:12:04Z"
+      }
+    ],
+    "basis": "Fixed school-bound README names the university; production CourseImporter gives the exact jiaowu.juwp.edu.cn:8080/jsxsd personal timetable and laboratory routes, and QiangzhiScheduleParser explicitly parses the vendor DOM. Vendor label only: no importer inferred.",
+    "referenceLicense": "MIT",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "新余学院",
+    "type": "zhengfang",
+    "sources": [
+      {
+        "repository": "https://github.com/octmicy/xinyuan-app",
+        "revision": "e613997cb19b9ec524219bea5e2505e07fe0fbcd",
+        "path": "app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+        "sourceUrl": "https://github.com/octmicy/xinyuan-app/blob/e613997cb19b9ec524219bea5e2505e07fe0fbcd/app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+        "sha256": "d14db99f82ffd8398947cbd68af68575c9ba053707d4648915d5ecde1fb724dd",
+        "updated": "2026-09-08T06:45:40Z"
+      },
+      {
+        "repository": "https://github.com/octmicy/xinyuan-app",
+        "revision": "e613997cb19b9ec524219bea5e2505e07fe0fbcd",
+        "path": "README.md",
+        "sourceUrl": "https://github.com/octmicy/xinyuan-app/blob/e613997cb19b9ec524219bea5e2505e07fe0fbcd/README.md",
+        "sha256": "707f690765a26590ec5b606bef9328149d1697547ceb926dc96279f9910fcf32",
+        "updated": "2026-10-08T06:41:31Z"
+      }
+    ],
+    "basis": "Fixed school-bound README and production JwxtApi explicitly identify Zhengfang at zfjwxt.xyc.edu.cn/jwglxt. Family confirmed; exact generation not inferred.",
+    "referenceLicense": "NOASSERTION; protocol facts only, no code copied",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support"
+  },
+  {
+    "name": "赣南医科大学",
+    "type": "chaoxing",
+    "sources": [],
+    "basis": "The current official university homepage explicitly links 教务系统 to https://gmu.jw.chaoxing.com/admin. Independent public login page is titled 赣南医科大学综合教务管理系统. Confirms the school-bound Chaoxing family only; does not establish full-semester import or account validation.",
+    "referenceLicense": "Official public school identity/link facts only; no site implementation copied",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialPublicPage": {
+      "url": "https://www.gmu.cn/",
+      "finalUrl": "https://www.gmu.cn/",
+      "sha256": "023f735c0ef3ccc55747ee7b38845b27c22f8a0c837f758f2fcc0e149b9dc0a6",
+      "status": 200,
+      "unauthenticated": true,
+      "observedAt": "2026-11-09T17:24:07.144013+00:00",
+      "identityLines": [
+        "赣南医科大学",
+        "教务系统 https://gmu.jw.chaoxing.com/admin"
+      ],
+      "linkedAcademicSystem": {
+        "text": "教务系统",
+        "url": "https://gmu.jw.chaoxing.com/admin"
+      }
+    }
+  },
+  {
+    "name": "青岛科技大学",
+    "type": "zf_new",
+    "sources": [],
+    "basis": "学校官方教务处列出教务管理系统入口；官方服务器登录页公开展示学校名称、正方软件股份有限公司与V-9.0。当前为厂商证据，不推导完整导入能力。",
+    "referenceLicense": "Official public-page identity facts only; no upstream implementation copied",
+    "accountValidated": false,
+    "classification": "vendor_evidence_only_not_import_support",
+    "officialIndexedEvidence": {
+      "url": "https://jwglxt5.qust.edu.cn/jwglxt/xtgl/login_slogin.html",
+      "referringOfficialUrl": "https://jw.qust.edu.cn/jwglxt.htm",
+      "officialNoticeUrl": "https://jw.qust.edu.cn/info/1069/10033.htm",
+      "observedAt": "2026-11-16T01:22:31.611591+00:00",
+      "observationKind": "official_page_rendered_by_web_tool",
+      "freshness": "Web tool reports crawled last month; not a live account verification",
+      "identityFacts": [
+        "青岛科技大学",
+        "正方软件股份有限公司",
+        "V-9.0"
+      ],
+      "directFetchLimitation": "Anonymous curl returned an access-error page titled403; that response is not vendor evidence. Original response receipt kept in local research docs."
+    }
   }
 ]

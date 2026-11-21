@@ -21,20 +21,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import com.kstudio.agenda.ui.components.AppOutlinedButton as OutlinedButton
 import com.kstudio.agenda.ui.components.AppOutlinedTextField as OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import com.kstudio.agenda.ui.components.AppTextButton as TextButton
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +45,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kstudio.agenda.data.CourseEditConflict
 import com.kstudio.agenda.i18n.AppStrings
-import com.kstudio.agenda.ui.theme.glassFrost
 import com.kstudio.agenda.i18n.LocalStrings
 import com.kstudio.agenda.model.Course
 import com.kstudio.agenda.model.CoursePalette
@@ -82,30 +79,23 @@ internal fun courseSummary(course: Course, t: AppStrings): String {
 @Composable
 fun CourseDetailSheet(
     course: Course,
+    date: LocalDate,
     onEdit: (() -> Unit)?,
     onDismiss: () -> Unit,
     onCopy: (() -> Unit)? = null,
 ) {
     val t = LocalStrings.current
     val color = Color(CoursePalette.colorFor(course))
-    val glass = com.kstudio.agenda.ui.theme.LocalGlassEnabled.current
     ModalBottomSheet(
         onDismissRequest = onDismiss,
-        containerColor = if (glass) Color.Transparent else androidx.compose.material3.BottomSheetDefaults.ContainerColor,
-        dragHandle = {
-            Box(
-                Modifier.fillMaxWidth()
-                    .glassFrost(androidx.compose.material3.BottomSheetDefaults.ExpandedShape, popup = true)
-                    .background(if (glass) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent),
-                contentAlignment = Alignment.Center,
-            ) { androidx.compose.material3.BottomSheetDefaults.DragHandle() }
-        },
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 1f),
+        contentColor = MaterialTheme.colorScheme.onSurface,
     ) {
         Column(
             Modifier
                 .fillMaxWidth()
-                .glassFrost(popup = true)
-                .background(if (glass) MaterialTheme.colorScheme.surfaceContainerLow else Color.Transparent)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 36.dp),
         ) {
@@ -153,6 +143,7 @@ fun CourseDetailSheet(
                     }
                 }
             }
+            CourseTagActions(course, date)
             if (onEdit != null) {
                 Spacer(Modifier.height(18.dp))
                 OutlinedButton(
@@ -167,6 +158,7 @@ fun CourseDetailSheet(
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text(t.btnCopyCourse) }
             }
+            LessonDetailsActions(course, date)
         }
     }
 }
@@ -189,6 +181,7 @@ fun CourseDetailSheet(
 fun CourseEditDialog(
     initial: Course,
     sourceDate: LocalDate?,
+    sourceWeek: Int?,
     dayCourses: List<Course>,
     onDismiss: () -> Unit,
     onSave: (Course, Boolean, Set<Int>) -> Unit,
@@ -202,8 +195,13 @@ fun CourseEditDialog(
     var teacher by remember(initial) { mutableStateOf(initial.teacher) }
     var room by remember(initial) { mutableStateOf(initial.room) }
     var colorArgb by remember(initial) { mutableStateOf(initial.colorArgb) }
-    var weeks by remember(initial) { mutableStateOf(initial.weeksRaw) }
+    val archivedWeeks = com.kstudio.agenda.data.CourseEditStore.edits.value
+        .firstOrNull { it.targetKey == initial.editOriginKey }?.original?.weeksRaw ?: initial.weeksRaw
+    var weeks by remember(initial) { mutableStateOf(archivedWeeks) }
     var days by remember(initial) { mutableStateOf(initial.editWeekdays.ifEmpty { setOf(initial.dayOfWeek) }) }
+    var customTime by remember(initial) { mutableStateOf(initial?.hasCustomTime == true) }
+    var customStart by remember(initial) { mutableStateOf(PeriodTimes.format(initial?.startTime ?: PeriodTimes.startOf(1))) }
+    var customEnd by remember(initial) { mutableStateOf(PeriodTimes.format(initial?.endTime ?: PeriodTimes.endOf(1))) }
     var startPeriod by remember(initial) { mutableStateOf(initial.startPeriod) }
     var endPeriod by remember(initial) { mutableStateOf(initial.endPeriod) }
     var applyAll by remember(initial) { mutableStateOf(false) }
@@ -337,17 +335,28 @@ fun CourseEditDialog(
                     }
                     Spacer(Modifier.height(6.dp))
                     Text(
-                        text = "${t.detailTime}：${PeriodTimes.rangeOf(startPeriod, endPeriod)}",
+                        text = "${com.kstudio.agenda.i18n.CourseTimeText.periods}：${PeriodTimes.rangeOf(startPeriod, endPeriod)}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    CustomCourseTimeEditor(customTime, customStart, customEnd,
+                        onMode = { enabled ->
+                            if (enabled && !customTime) {
+                                customStart = PeriodTimes.format(PeriodTimes.startOf(startPeriod))
+                                customEnd = PeriodTimes.format(PeriodTimes.endOf(endPeriod))
+                            }
+                            customTime = enabled
+                        }, onStart = { customStart = it }, onEnd = { customEnd = it })
                     Spacer(Modifier.height(12.dp))
-                    // 周次：多选
-                    WeeksPicker(
-                        weeks = Course.parseWeeks(weeks).flatMapTo(LinkedHashSet()) { it.toList() },
-                        onChange = { weeks = Course.encodeWeeks(it) },
-                        maxWeek = maxWeek,
-                    )
+                    if (applyAll || sourceWeek == null) {
+                        WeeksPicker(
+                            weeks = Course.parseWeeks(weeks).flatMapTo(LinkedHashSet()) { it.toList() },
+                            onChange = { weeks = Course.encodeWeeks(it) },
+                            maxWeek = maxWeek,
+                        )
+                    } else {
+                        Text(com.kstudio.agenda.i18n.CourseScopeText.week(sourceWeek), style = MaterialTheme.typography.bodySmall)
+                    }
                     Spacer(Modifier.height(16.dp))
                     HorizontalDivider(color = com.kstudio.agenda.ui.components.subtleDividerColor(0.4f))
                     Spacer(Modifier.height(12.dp))
@@ -357,7 +366,7 @@ fun CourseEditDialog(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     ScopeOption(
-                        label = t.editScopeOne,
+                        label = com.kstudio.agenda.i18n.CourseScopeText.only,
                         selected = !applyAll,
                         onSelect = { applyAll = false },
                     )
@@ -449,7 +458,7 @@ fun CourseEditDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            TextButton(enabled = action != ACTION_MODIFY || ((applyAll || sourceWeek != null) && (!customTime || Course.validCustomTimes(customStart, customEnd) != null)), onClick = {
                 when (action) {
                     ACTION_DELETE -> if (delWeeks.isEmpty()) {
                         onNoChange()
@@ -463,12 +472,15 @@ fun CourseEditDialog(
                         onMove(selected, target)
                     }
                     else -> {
+                        if (customTime && Course.validCustomTimes(customStart, customEnd) == null) return@TextButton
                         val edited = initial.copy(
                             title = title.trim(),
                             teacher = teacher.trim(),
                             room = room.trim(),
-                            weeksRaw = weeks.trim(),
+                            weeksRaw = if (!applyAll && sourceWeek != null) sourceWeek.toString() else weeks.trim(),
                             dayOfWeek = days.minOrNull() ?: initial.dayOfWeek,
+                            customStartTime = if (customTime) customStart else "",
+                            customEndTime = if (customTime) customEnd else "",
                             startPeriod = startPeriod,
                             endPeriod = endPeriod,
                             edited = false,
@@ -499,26 +511,9 @@ fun CourseEditDialog(
 
     // 调课：目标日期选择（月历弹窗）
     if (showTargetPicker) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = (moveTarget ?: sourceDate ?: LocalDate.now())
-                .toEpochDay() * 86_400_000L,
-        )
-        DatePickerDialog(
-            modifier = Modifier.glassFrost(RoundedCornerShape(28.dp), popup = true),
-            onDismissRequest = { showTargetPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        moveTarget = LocalDate.ofEpochDay(millis / 86_400_000L)
-                    }
-                    showTargetPicker = false
-                }) { Text(t.confirm) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showTargetPicker = false }) { Text(t.cancel) }
-            },
-        ) {
-            DatePicker(state = state)
+        PlannerDatePicker(moveTarget ?: sourceDate ?: LocalDate.now(), { showTargetPicker = false }) {
+            moveTarget = it
+            showTargetPicker = false
         }
     }
 }
@@ -605,6 +600,9 @@ fun CourseAddDialog(
     var colorArgb by remember { mutableStateOf(initial?.colorArgb ?: 0) }
     var room by remember { mutableStateOf(initial?.room.orEmpty()) }
     var day by remember { mutableStateOf((initial?.dayOfWeek ?: defaultDay).coerceIn(1, 7)) }
+    var customTime by remember(initial) { mutableStateOf(initial?.hasCustomTime == true) }
+    var customStart by remember(initial) { mutableStateOf(PeriodTimes.format(initial?.startTime ?: PeriodTimes.startOf(1))) }
+    var customEnd by remember(initial) { mutableStateOf(PeriodTimes.format(initial?.endTime ?: PeriodTimes.endOf(1))) }
     var startPeriod by remember { mutableStateOf(initial?.startPeriod ?: 1) }
     var endPeriod by remember { mutableStateOf(initial?.endPeriod ?: 2) }
     var weeks by remember {
@@ -698,16 +696,25 @@ fun CourseAddDialog(
                 }
                 Spacer(Modifier.height(6.dp))
                 Text(
-                    text = "${t.detailTime}：${PeriodTimes.rangeOf(startPeriod, endPeriod)}",
+                    text = "${com.kstudio.agenda.i18n.CourseTimeText.periods}：${PeriodTimes.rangeOf(startPeriod, endPeriod)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+                    CustomCourseTimeEditor(customTime, customStart, customEnd,
+                        onMode = { enabled ->
+                            if (enabled && !customTime) {
+                                customStart = PeriodTimes.format(PeriodTimes.startOf(startPeriod))
+                                customEnd = PeriodTimes.format(PeriodTimes.endOf(endPeriod))
+                            }
+                            customTime = enabled
+                        }, onStart = { customStart = it }, onEnd = { customEnd = it })
                 Spacer(Modifier.height(12.dp))
                 WeeksPicker(weeks = weeks, onChange = { weeks = it }, maxWeek = maxWeek)
             }
         },
         confirmButton = {
-            TextButton(onClick = {
+            TextButton(enabled = !customTime || Course.validCustomTimes(customStart, customEnd) != null, onClick = {
+                if (customTime && Course.validCustomTimes(customStart, customEnd) == null) return@TextButton
                 val name = title.trim()
                 if (name.isBlank()) {
                     onInvalid()
@@ -715,6 +722,8 @@ fun CourseAddDialog(
                 }
                 onSave(
                     Course(
+                        customStartTime = if (customTime) customStart else "",
+                        customEndTime = if (customTime) customEnd else "",
                         title = name,
                         colorArgb = colorArgb,
                         code = "",
@@ -846,25 +855,9 @@ fun RescheduleDialog(
     )
 
     if (showPicker) {
-        val state = rememberDatePickerState(
-            initialSelectedDateMillis = (target ?: sourceDate).toEpochDay() * 86_400_000L,
-        )
-        DatePickerDialog(
-            modifier = Modifier.glassFrost(RoundedCornerShape(28.dp), popup = true),
-            onDismissRequest = { showPicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    state.selectedDateMillis?.let { millis ->
-                        target = LocalDate.ofEpochDay(millis / 86_400_000L)
-                    }
-                    showPicker = false
-                }) { Text(t.confirm) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPicker = false }) { Text(t.cancel) }
-            },
-        ) {
-            DatePicker(state = state)
+        PlannerDatePicker(target ?: sourceDate, { showPicker = false }) {
+            target = it
+            showPicker = false
         }
     }
 }
@@ -911,7 +904,8 @@ private fun PeriodPicker(
         OutlinedButton(onClick = { open = true }, modifier = Modifier.fillMaxWidth()) {
             Text("$label：第${value}节", maxLines = 1)
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        DropdownMenu(expanded = open, onDismissRequest = { open = false },
+            containerColor = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 1f)) {
             for (p in 1..PeriodTimes.count) {
                 DropdownMenuItem(
                     text = { Text("第${p}节") },

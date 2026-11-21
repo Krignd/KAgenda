@@ -298,7 +298,7 @@ internal fun MonthCell(
             val entries = mutableListOf<Pair<String, Color>>()
             // 已修改的课程（教务系统未更新）加记号，便于一眼区分
             for (course in courses) {
-                entries.add(markedTitle(course) to Color(CoursePalette.colorFor(course)))
+                entries.add(taggedCourseTitle(course, date) to Color(CoursePalette.colorFor(course)))
             }
             for (ev in events) {
                 val color = if (ev.displayColor != 0) Color(ev.displayColor) else agendaDefault
@@ -351,7 +351,7 @@ private fun buildCourseMap(sem: SemesterSchedule?, monthStart: LocalDate): Map<L
         val weekCourses = sem.weeks[weekNo] ?: continue
         val list = weekCourses
             .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
-            .sortedBy { it.startPeriod }
+            .sortedBy { it.startTime }
         if (list.isNotEmpty()) map[date.toEpochDay()] = list
     }
     return map

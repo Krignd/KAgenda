@@ -169,9 +169,8 @@ internal fun OriginAlertDialog(
                                 captured = true
                             }
                         }
-                    }.pointerInput(Unit) { detectTapGestures { /* consume the surface, not its children */ } }
-                    .glassFrost(shape, popup = true),
-                shape = shape, color = containerColor, tonalElevation = tonalElevation,
+                    }.pointerInput(Unit) { detectTapGestures { /* consume the surface, not its children */ } },
+                shape = shape, color = containerColor, contentColor = MaterialTheme.colorScheme.onSurface, tonalElevation = tonalElevation,
             ) {
                 Column(Modifier.padding(24.dp)) {
                     icon?.let {

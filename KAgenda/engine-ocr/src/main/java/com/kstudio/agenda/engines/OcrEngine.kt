@@ -19,8 +19,19 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class OcrEngine : OcrEngineContract {
-    override suspend fun extract(context: Context, uri: Uri): String = withContext(Dispatchers.IO) {
-        com.google.mlkit.common.MlKit.initialize(context.applicationContext)
+    private companion object {
+        private var initialized = false
+
+        @Synchronized fun initialize(context: Context) {
+            if (initialized) return
+            // The optional split disables ML Kit's startup provider.
+            com.google.mlkit.common.MlKit.initialize(context.applicationContext)
+            initialized = true
+        }
+    }
+
+    override suspend fun extract(context: Context, uri: Uri, plainText: Boolean): String = withContext(Dispatchers.IO) {
+        initialize(context)
         val bytes = context.contentResolver.openInputStream(uri)?.use { BoundedInput.read(it, 16 * 1024 * 1024) }
             ?: error(ImportText.failed)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -41,10 +52,12 @@ class OcrEngine : OcrEngineContract {
                 if (!continuation.isActive) return@addOnCompleteListener
                 if (!task.isSuccessful) continuation.resumeWithException(task.exception ?: IllegalStateException(ImportText.failed))
                 else {
-                    val lines = task.result.textBlocks.flatMap { it.lines }.mapNotNull { line ->
-                        line.boundingBox?.let { OcrTimetableLayout.Line(line.text, it.left, it.top, it.right, it.bottom) }
+                    val text = if (plainText) task.result.text else {
+                        val lines = task.result.textBlocks.flatMap { it.lines }.mapNotNull { line ->
+                            line.boundingBox?.let { OcrTimetableLayout.Line(line.text, it.left, it.top, it.right, it.bottom) }
+                        }
+                        OcrTimetableLayout.extract(lines)
                     }
-                    val text = OcrTimetableLayout.extract(lines)
                     if (text.isBlank()) continuation.resumeWithException(IllegalStateException(ImportText.noText))
                     else continuation.resume(text)
                 }

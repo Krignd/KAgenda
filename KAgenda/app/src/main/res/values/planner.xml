@@ -1,0 +1,4 @@
+<resources>
+    <string name="planner_countdown_widget">Countdown</string>
+    <string name="planner_empty_widget">No upcoming countdown</string>
+</resources>

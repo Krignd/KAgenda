@@ -1,0 +1,4 @@
+<resources>
+    <string name="planner_countdown_widget">倒计时</string>
+    <string name="planner_empty_widget">暂无待到期的倒计时</string>
+</resources>

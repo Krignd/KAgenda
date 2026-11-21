@@ -36,6 +36,7 @@ data class LaunchRequest(
     /** 由其他应用「用 K日程 打开 / 分享到」传入的文档（进入文档导入页） */
     val docUri: android.net.Uri? = null,
     val docText: String? = null,
+    val widgetKind: String? = null,
     val id: Long = System.nanoTime(),
 )
 
@@ -52,8 +53,18 @@ class MainActivity : ComponentActivity() {
             val vm: AppViewModel = viewModel()
             // 界面风格（默认 / 液态玻璃）由设置驱动，切换后立即生效
             val settings by vm.settings.collectAsState()
+            val semester by vm.semester.collectAsState()
+            val planner by com.kstudio.agenda.data.PlannerStore.data.collectAsState()
             val glass = settings.glassUi
-            CompositionLocalProvider(LocalStrings provides AppText.stringsFor(lang)) {
+            CompositionLocalProvider(
+                LocalStrings provides AppText.stringsFor(lang),
+                LocalPlanner provides vm,
+                LocalTeachingAnchor provides (semester?.mondayOf(1) ?: settings.anchorEpochDay?.let(java.time.LocalDate::ofEpochDay)),
+                LocalPlannerTags provides planner.courseTags,
+                LocalCourseTagDefinitions provides planner.courseTagDefinitions,
+                LocalPlannerSchool provides settings.schoolId,
+                LocalPlannerSemester provides semester,
+            ) {
                 KAgendaTheme(glass = glass, colorDepth = settings.glassColorDepth, motionSpeedPercent = settings.motionSpeedPercent) {
                     // 液态玻璃：先铺渐变背景（含三团柔光），内容叠在其上形成玻璃材质观感
                     GlassBackdrop(enabled = glass, animateBackground = settings.glassBackgroundMotion) {
@@ -113,7 +124,8 @@ class MainActivity : ComponentActivity() {
         // 其他应用「用 K日程 打开」/「分享到 K日程」带进来的文档
         val docUri = docUriFrom(intent)
         val docText = if (intent.action == Intent.ACTION_SEND) intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()?.takeIf { it.isNotBlank() } else null
-        if (!quickAdd && focusDay == null && docUri == null && docText == null) return
+        val widgetKind = intent.getStringExtra(EXTRA_WIDGET_KIND)?.takeIf { it in setOf("next", "overview", "countdown") }
+        if (!quickAdd && focusDay == null && docUri == null && docText == null && widgetKind == null) return
         launchRequest.value = LaunchRequest(
             quickAdd = quickAdd,
             focusEpochDay = focusDay,
@@ -122,6 +134,7 @@ class MainActivity : ComponentActivity() {
             aiOrigin = aiOrigin,
             docUri = docUri,
             docText = docText,
+            widgetKind = widgetKind,
         )
         // 消费后清除 extras：避免旋转/恢复时重复触发快速添加或闪烁
         intent.removeExtra(EXTRA_QUICK_ADD)
@@ -130,6 +143,7 @@ class MainActivity : ComponentActivity() {
         intent.removeExtra(EXTRA_FOCUS_EPOCH_DAY)
         intent.removeExtra(EXTRA_FOCUS_TITLE)
         intent.removeExtra(EXTRA_FOCUS_FROM_WIDGET)
+        intent.removeExtra(EXTRA_WIDGET_KIND)
         if (docUri != null || docText != null) {
             intent.removeExtra(Intent.EXTRA_TEXT)
             intent.removeExtra(Intent.EXTRA_STREAM)
@@ -171,5 +185,6 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_FOCUS_EPOCH_DAY = "com.kstudio.agenda.extra.FOCUS_EPOCH_DAY"
         const val EXTRA_FOCUS_TITLE = "com.kstudio.agenda.extra.FOCUS_TITLE"
         const val EXTRA_FOCUS_FROM_WIDGET = "com.kstudio.agenda.extra.FOCUS_FROM_WIDGET"
+        const val EXTRA_WIDGET_KIND = "com.kstudio.agenda.extra.WIDGET_KIND"
     }
 }

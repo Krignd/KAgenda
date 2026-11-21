@@ -3,6 +3,8 @@
      · share/   日志分享生成的 txt/md 文件
      · updates/ 应用内更新下载的 APK（交给系统安装器安装） -->
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <cache-path name="lesson_drafts" path="lesson-drafts/" />
+    <files-path name="lesson_photos" path="lesson-photos/" />
     <cache-path
         name="shared_logs"
         path="share/" />

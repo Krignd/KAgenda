@@ -241,7 +241,7 @@ object ScheduleImageRenderer {
             val textPaint = paintText(26f, TEXT_MAIN, bold = true)
             val maxW = rect.width() - 40f
             // Start time has its own untrimmed line; a long title cannot hide it.
-            canvas.drawText(PeriodTimes.format(PeriodTimes.startOf(course.startPeriod)), rect.left + 20f, rect.top + 27f, paintText(22f, color, bold = true))
+            canvas.drawText(PeriodTimes.format(course.startTime), rect.left + 20f, rect.top + 27f, paintText(22f, color, bold = true))
             var ty = rect.top + 58f
             val titleLines = ((rect.height() - 66f) / 30f).toInt().coerceIn(1, 3)
             trimmedLines(markedTitle(course), textPaint, maxW, titleLines).forEach { line ->
@@ -321,9 +321,9 @@ object ScheduleImageRenderer {
                 val weekNo = semester.teachingWeekOf(date)
                 semester.weeks[weekNo]
                     ?.filter { it.dayOfWeek == date.dayOfWeek.value }
-                    ?.sortedBy { it.startPeriod }
+                    ?.sortedBy { it.startTime }
                     ?.filter { it.occursInWeek(weekNo) }
-                    ?.forEach { bars.add(bar(markedTitle(it), PeriodTimes.format(PeriodTimes.startOf(it.startPeriod)), PeriodTimes.format(PeriodTimes.endOf(it.endPeriod)), CoursePalette.colorFor(it))) }
+                    ?.forEach { bars.add(bar(markedTitle(it), PeriodTimes.format(it.startTime), PeriodTimes.format(it.endTime), CoursePalette.colorFor(it))) }
             }
             // occursOn：重复日程要出现在每一个命中的日子（以前用 coversDate → 只在开始日）
             events.filter { it.occursOn(date) }

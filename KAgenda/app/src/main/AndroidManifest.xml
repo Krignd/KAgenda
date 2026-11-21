@@ -4,6 +4,10 @@
 
     <!-- 访问教务系统（仅联网权限，安装/首次启动时不会弹窗） -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.any" android:required="false" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 
     <!-- 安装后不主动申请任何权限：
          · 通知（课前提醒 / 常驻通知）：两者默认关闭，用户在设置里开启时才申请
@@ -209,6 +213,12 @@
                 android:resource="@xml/widget_info_4x2" />
         </receiver>
 
+        <receiver android:name=".widget.CountdownWidget" android:exported="false" android:label="@string/planner_countdown_widget">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_countdown" />
+        </receiver>
         <receiver android:name=".widget.TodayAgendaWidget" android:exported="false" android:label="@string/feature_widget_today_agenda">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/widget_info_today_agenda" />

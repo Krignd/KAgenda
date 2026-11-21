@@ -30,9 +30,23 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.EventAvailable
-import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.automirrored.filled.EventNote
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.kstudio.agenda.data.PlannerStore
+import com.kstudio.agenda.data.LessonRef
+import com.kstudio.agenda.data.CourseEditStore
+import com.kstudio.agenda.data.lessonCaptureCandidates
+import com.kstudio.agenda.data.SettingsStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.time.LocalDateTime
 import com.kstudio.agenda.ui.theme.FrostedAlertDialog as AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,6 +113,8 @@ private enum class HomeTab {
     School,
     Ongoing,
     Settings,
+    Countdown,
+    Bills,
 }
 
 @Composable
@@ -125,6 +141,8 @@ fun MainScreen(
     val settings by vm.settings.collectAsState()
     // 应用内更新状态（顶栏小字与「设置 → 关于」共用同一份）
     val updateState by AppUpdater.state.collectAsState()
+    var dismissedOffer by rememberSaveable { mutableStateOf(0L) }
+    var openUpdateDetails by rememberSaveable { mutableStateOf(false) }
     var showInstallPermDialog by remember { mutableStateOf(false) }
     // 下载完成后提示一次（含包体大小）；失败时也提示一次
     var announcedUpdate by remember { mutableStateOf(0) }
@@ -137,6 +155,32 @@ fun MainScreen(
     val toasts = remember { mutableStateListOf<Pair<Long, String>>() }
     val context = LocalContext.current
     val t = LocalStrings.current
+    val planner by PlannerStore.data.collectAsState()
+    var widgetLessonSchool by rememberSaveable { mutableStateOf("") }
+    var widgetLessonDay by rememberSaveable { mutableStateOf(0L) }
+    var widgetLessonKey by rememberSaveable { mutableStateOf<String?>(null) }
+    var widgetLessonTitle by rememberSaveable { mutableStateOf("") }
+    var editingLessonNote by rememberSaveable { mutableStateOf<String?>(null) }
+    var autoOpenCamera by rememberSaveable { mutableStateOf(false) }
+    var widgetChoices by remember { mutableStateOf<List<Pair<LessonRef, String>>>(emptyList()) }
+    val labels = mapOf(
+        HomeTab.Schedule to t.tabSchedule, HomeTab.Plan to t.tabPlan, HomeTab.School to t.tabSchool,
+        HomeTab.Ongoing to t.tabOngoing, HomeTab.Settings to t.tabSettings,
+        HomeTab.Countdown to plannerText("倒计时", "Countdown", "Décompte"),
+        HomeTab.Bills to plannerText("账单日", "Bills", "Factures"),
+    )
+    val enabledTabs = planner.tabs.mapNotNull { name -> HomeTab.entries.find { it.name == name } }
+        .distinct().ifEmpty { listOf(HomeTab.Settings) }
+    val navTabs = if (tab in enabledTabs) enabledTabs else enabledTabs + tab
+    fun openLessonNote(lesson: LessonRef, noteId: String?, camera: Boolean) {
+        widgetLessonSchool = lesson.school
+        widgetLessonDay = lesson.day
+        widgetLessonTitle = lesson.title
+        widgetLessonKey = lesson.key
+        editingLessonNote = noteId
+        autoOpenCamera = camera
+        widgetChoices = emptyList()
+    }
 
     /** 带单位的包体大小（拿不到时显示「大小未知」） */
     fun sizeText(bytes: Long): String =
@@ -189,9 +233,8 @@ fun MainScreen(
 
     // 启动时静默检查一次更新（内部按 6 小时节流；失败不打扰用户）。
     // 可在设置里关闭（默认开）—— 先等设置读到再判断，避免读取未完成时误判。
-    val updateSettings by vm.settings.collectAsState()
-    LaunchedEffect(updateSettings.autoCheckUpdate) {
-        if (updateSettings.autoCheckUpdate) AppUpdater.check(context, auto = true)
+    LaunchedEffect(settings.autoCheckUpdate) {
+        if (settings.autoCheckUpdate && SettingsStore.read(context).autoCheckUpdate) AppUpdater.check(context, auto = true)
     }
     // 下载完成 / 更新出错时各提示一次（包体大小取自实际文件）
     LaunchedEffect(updateState) {
@@ -212,6 +255,40 @@ fun MainScreen(
     // 通知 / 小组件点击带入的启动请求：打开 AI 助手，或定位到指定日期并闪烁反馈
     LaunchedEffect(launch?.id) {
         val l = launch ?: return@LaunchedEffect
+        if (l.widgetKind != null) {
+            val now = LocalDateTime.now()
+            val action = withContext(Dispatchers.IO) { PlannerStore.read(context).widgetActions[l.widgetKind] }.orEmpty()
+            when (action.ifEmpty { if (l.widgetKind == "countdown") "countdown" else "" }) {
+                "countdown" -> tab = HomeTab.Countdown
+                "agenda" -> { tab = HomeTab.Schedule; vm.goToday() }
+                "course", "camera" -> {
+                    val (semester, school) = withContext(Dispatchers.IO) {
+                        CourseEditStore.appliedFromCache(context) to SettingsStore.read(context).schoolId
+                    }
+                    val date = now.toLocalDate()
+                    val live = lessonCaptureCandidates(semester, now)
+                    tab = HomeTab.Schedule
+                    if (action == "course") {
+                        if (live.size == 1) vm.requestFocus(date, live.single().title) else vm.requestFocus(date, "")
+                    } else {
+                        val choices = live.ifEmpty { semester?.coursesOnDate(date).orEmpty() }
+                        if (live.size == 1) openLessonNote(LessonRef.of(school, live.single(), date, semester), null, true)
+                        else if (choices.isNotEmpty()) widgetChoices = choices.map { LessonRef.of(school, it, date, semester) to it.timeRange }
+                        else {
+                            vm.goToday()
+                            vm.message(plannerText("今天没有可关联的课程", "No class available today", "Aucun cours disponible aujourd’hui"))
+                        }
+                    }
+                }
+                else -> {
+                    val date = l.focusEpochDay?.let { LocalDate.ofEpochDay(it) } ?: now.toLocalDate()
+                    tab = HomeTab.Schedule
+                    if (l.fromWidget) vm.focusFromWidget(date, l.focusTitle) else vm.requestFocus(date, l.focusTitle)
+                }
+            }
+            onLaunchHandled()
+            return@LaunchedEffect
+        }
         // 只有「定位日期」类请求才需要回到日程表页；
         // 打开 AI 助手（顶栏图标 / 常驻通知 / 悬浮球）不应改动当前页签，
         // 否则在计划/进行中/设置页点悬浮球会被强行跳回日程表
@@ -291,12 +368,7 @@ fun MainScreen(
                                         .clickable {
                                             when (val u = updateState) {
                                                 is UpdateUi.Available -> {
-                                                    vm.message(
-                                                        t.updateStartDownload(
-                                                            sizeText(u.info.sizeBytes),
-                                                        ),
-                                                    )
-                                                    AppUpdater.download(context)
+                                                    openUpdateDetails = true
                                                 }
                                                 is UpdateUi.Downloaded -> startInstall()
                                                 else -> Unit
@@ -385,43 +457,37 @@ fun MainScreen(
             )
         },
         bottomBar = {
+            val icons: List<@Composable () -> Unit> = navTabs.map { destination ->
+                {
+                    when (destination) {
+                        HomeTab.Schedule -> Icon(Icons.Filled.DateRange, null)
+                        HomeTab.Plan -> Icon(Icons.AutoMirrored.Filled.EventNote, null)
+                        HomeTab.School -> SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp)
+                        HomeTab.Ongoing -> Icon(Icons.Filled.EventAvailable, null)
+                        HomeTab.Settings -> Icon(Icons.Filled.Settings, null)
+                        HomeTab.Countdown -> Icon(Icons.Filled.Timer, null)
+                        HomeTab.Bills -> Icon(Icons.AutoMirrored.Filled.ReceiptLong, null)
+                    }
+                }
+            }
             if (settings.glassUi) {
                 Box(Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp)) {
                     LiquidNavigation(
-                        labels = listOf(t.tabSchedule, t.tabPlan, t.tabSchool, t.tabOngoing, t.tabSettings),
-                        selectedIndex = tab.ordinal,
-                        onSelect = { tab = HomeTab.entries[it] },
-                        icons = listOf(
-                            { Icon(Icons.Filled.DateRange, contentDescription = null) },
-                            { Icon(Icons.Filled.EventNote, contentDescription = null) },
-                            { SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp) },
-                            { Icon(Icons.Filled.EventAvailable, contentDescription = null) },
-                            { Icon(Icons.Filled.Settings, contentDescription = null) },
-                        ),
+                        labels = navTabs.map { labels.getValue(it) },
+                        selectedIndex = navTabs.indexOf(tab),
+                        onSelect = { tab = navTabs[it] },
+                        icons = icons,
                     )
                 }
             } else {
                 NavigationBar {
-                    NavigationBarItem(
-                        selected = tab == HomeTab.Schedule, onClick = { tab = HomeTab.Schedule },
-                        icon = { Icon(Icons.Filled.DateRange, contentDescription = null) }, label = { Text(t.tabSchedule) },
-                    )
-                    NavigationBarItem(
-                        selected = tab == HomeTab.Plan, onClick = { tab = HomeTab.Plan },
-                        icon = { Icon(Icons.Filled.EventNote, contentDescription = null) }, label = { Text(t.tabPlan) },
-                    )
-                    NavigationBarItem(
-                        selected = tab == HomeTab.School, onClick = { tab = HomeTab.School },
-                        icon = { SchoolLogo(com.kstudio.agenda.model.Schools.of(settings.schoolId), 24.dp) }, label = { Text(t.tabSchool) },
-                    )
-                    NavigationBarItem(
-                        selected = tab == HomeTab.Ongoing, onClick = { tab = HomeTab.Ongoing },
-                        icon = { Icon(Icons.Filled.EventAvailable, contentDescription = null) }, label = { Text(t.tabOngoing) },
-                    )
-                    NavigationBarItem(
-                        selected = tab == HomeTab.Settings, onClick = { tab = HomeTab.Settings },
-                        icon = { Icon(Icons.Filled.Settings, contentDescription = null) }, label = { Text(t.tabSettings) },
-                    )
+                    navTabs.forEachIndexed { index, destination ->
+                        NavigationBarItem(
+                            selected = tab == destination, onClick = { tab = destination },
+                            icon = icons[index],
+                            label = { Text(labels.getValue(destination), maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) },
+                        )
+                    }
                 }
             }
         },
@@ -448,6 +514,7 @@ fun MainScreen(
             AnimatedPage(tab.ordinal, Modifier.fillMaxSize()) { pageIndex ->
             val pageTab = HomeTab.entries[pageIndex]
             tabState.SaveableStateProvider(pageTab.name) {
+            CompositionLocalProvider(LocalOpenLessonNote provides { ref, id -> openLessonNote(ref, id, false) }) {
             when (pageTab) {
                 // 日/周/月视图统一放在「日程表」页内，顶部切换
                 HomeTab.Schedule -> ScheduleScreen(vm)
@@ -457,13 +524,17 @@ fun MainScreen(
                 HomeTab.Ongoing -> OngoingScreen(vm)
                 // 「学校」页只放各校特色功能，未接入时留空；学校选择在设置中。
                 HomeTab.School -> SchoolHomeScreen()
+                HomeTab.Countdown -> CountdownScreen(vm)
+                HomeTab.Bills -> BillsScreen(vm)
                 // 【已隐藏保留】网页登录入口：显隐由 SettingsScreen 内的 SHOW_WEB_LOGIN_ENTRY 控制
                 HomeTab.Settings -> SettingsScreen(
                     vm = vm,
+                    plannerTabs = labels.map { it.key.name to it.value },
                     onWebLogin = {
                         webLoginLauncher.launch(Intent(context, WebLoginActivity::class.java))
                     },
                 )
+            }
             }
             }
             }
@@ -532,6 +603,56 @@ fun MainScreen(
 
     if (showQuickAdd) {
         AiQuickAddDialog(vm, origin = quickAddOrigin) { showQuickAdd = false }
+    }
+    val syncReview by vm.courseSyncReview.collectAsState()
+    syncReview?.let { pending ->
+        CourseSyncDialog(pending.review, onApply = { vm.resolveCourseSync(pending, true) },
+            onKeep = { vm.resolveCourseSync(pending, false) })
+    }
+    val updateOffer = updateState as? UpdateUi.Available
+    val offered = updateOffer?.info
+    if (offered != null && syncReview == null && !docImportOpen && !showQuickAdd && widgetLessonKey == null &&
+        widgetChoices.isEmpty() && launch?.widgetKind == null &&
+        (openUpdateDetails || (dismissedOffer != updateOffer.offerId && !AppUpdater.isIgnored(context, offered.versionCode)))
+    ) {
+        UpdateOfferSheet(
+            offered,
+            onIgnore = {
+                AppUpdater.ignore(context, offered.versionCode)
+                dismissedOffer = updateOffer.offerId
+                openUpdateDetails = false
+            },
+            onUpdate = {
+                openUpdateDetails = false
+                vm.message(t.updateStartDownload(sizeText(offered.sizeBytes)))
+                AppUpdater.download(context)
+            },
+            onDismiss = {
+                dismissedOffer = updateOffer.offerId
+                openUpdateDetails = false
+            },
+        )
+    }
+    if (widgetChoices.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = { widgetChoices = emptyList() },
+            title = { Text(plannerText("选择要记录的课程", "Choose a class", "Choisir un cours")) },
+            text = { Column(Modifier.verticalScroll(rememberScrollState())) {
+                widgetChoices.forEach { (lesson, time) ->
+                    TextButton(onClick = { openLessonNote(lesson, null, true) }) { Text("${lesson.title} · $time") }
+                }
+            } },
+            confirmButton = { TextButton(onClick = { widgetChoices = emptyList() }) { Text(t.cancel) } },
+        )
+    }
+    widgetLessonKey?.let {
+        val note = planner.notes.firstOrNull { item -> item.id == editingLessonNote }
+        if (editingLessonNote == null || note != null) key(it, editingLessonNote) {
+            LessonNoteEditor(LessonRef(widgetLessonSchool, it, widgetLessonDay, widgetLessonTitle), note, autoCamera = autoOpenCamera) {
+                widgetLessonKey = null
+                editingLessonNote = null
+            }
+        }
     }
 
     // 安装更新但系统未允许本应用「安装未知应用」：引导用户去系统设置开启

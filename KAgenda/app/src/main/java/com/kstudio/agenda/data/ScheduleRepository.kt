@@ -63,7 +63,10 @@ class ScheduleRepository private constructor(private val appContext: Context) {
     private val generationLock = Any()
     private var generation = 0L
 
-    private fun bumpGeneration() = synchronized(generationLock) { generation++ }
+    private fun bumpGeneration() = synchronized(generationLock) {
+        generation++
+        _syncReview.value = null
+    }
 
     private fun currentGeneration(): Long = synchronized(generationLock) { generation }
 
@@ -78,6 +81,35 @@ class ScheduleRepository private constructor(private val appContext: Context) {
 
     private val _sync = MutableStateFlow<SyncUi>(SyncUi.Idle)
     val sync: StateFlow<SyncUi> = _sync.asStateFlow()
+
+    internal data class PendingCourseSync(
+        val review: CourseSyncReview,
+        val semester: SemesterSchedule,
+        val notice: String,
+        val generation: Long,
+        val school: String,
+    )
+
+    private val _syncReview = MutableStateFlow<PendingCourseSync?>(null)
+    internal val syncReview = _syncReview.asStateFlow()
+
+    internal fun resolveCourseSync(review: PendingCourseSync, apply: Boolean) {
+        synchronized(this) {
+            if (_syncReview.value !== review) return
+            if (apply) _sync.value = SyncUi.Running
+            _syncReview.value = null
+        }
+        if (!apply) return
+        syncJob = scope.launch {
+            try {
+                applySyncedSemester(review.semester, review.notice, review.generation, review.school)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                if (review.generation == currentGeneration()) _sync.value = SyncUi.Error(e.message ?: "Sync failed")
+            }
+        }
+    }
 
     /**
      * 同步后发现「教务数据既不是用户改前、也不是用户改后」的课程修改冲突。
@@ -199,10 +231,11 @@ class ScheduleRepository private constructor(private val appContext: Context) {
         // 防误操作/并发：互斥判定在进入协程之前完成（原实现两次快速调用可能同时通过检查，
         // 导致两个同步流程并发运行、状态互相覆盖）
         synchronized(this) {
-            if (_sync.value is SyncUi.Running) return
+            if (_sync.value is SyncUi.Running || _syncReview.value != null) return
             _sync.value = SyncUi.Running
         }
         val generationAtStart = currentGeneration()
+        val schoolAtStart = com.kstudio.agenda.model.Schools.currentId
         // 静默自动刷新走增量模式：缓存较新且同学期时只抓当前周 DOM（由引擎内部判定并降级），
         // 显著减少联网耗时；手动刷新始终做完整同步
         val incrementalAgainst = if (silent) {
@@ -241,52 +274,23 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                 }
                 when (result) {
                     is SyncResult.Success -> {
-                        var semester = result.semester
-                        // 防退化：若本次周数少于缓存（例如会话失效导致重放全部失败、只剩当前周 DOM），
-                        // 与缓存合并（同周次以新数据为准），避免整个学期的课表被单周数据覆盖
-                        runCatching {
-                            val cached = ScheduleCache.load(appContext)
-                            if (cached != null &&
-                                cached.semesterLabel.isNotBlank() &&
-                                cached.semesterLabel == semester.semesterLabel &&
-                                cached.anchorEpochDay == semester.anchorEpochDay &&
-                                semester.weeks.size < cached.weeks.size
-                            ) {
-                                val merged = LinkedHashMap(cached.weeks)
-                                semester.weeks.forEach { (weekNo, courses) -> merged[weekNo] = courses }
-                                AppLog.w(
-                                    TAG,
-                                    "本次仅抓到 ${semester.weeks.size} 周，与缓存合并为 ${merged.size} 周（防止课表缓存退化）"
-                                )
-                                semester = semester.copy(weeks = merged)
+                        val incoming = result.semester
+                        val cached = ScheduleCache.load(appContext)
+                        // An incremental result can replace observed weeks only.
+                        val semester = if (cached != null && cached.semesterLabel.isNotBlank() &&
+                            cached.semesterLabel == incoming.semesterLabel &&
+                            cached.anchorEpochDay == incoming.anchorEpochDay &&
+                            incoming.weeks.size < cached.weeks.size
+                        ) incoming.copy(weeks = cached.weeks + incoming.weeks) else incoming
+                        val review = cached?.let { compareCourseSync(it, semester) }
+                        if (review == null) {
+                            applySyncedSemester(semester, result.notice, generationAtStart, schoolAtStart)
+                        } else synchronized(generationLock) {
+                            if (generation == generationAtStart && com.kstudio.agenda.model.Schools.currentId == schoolAtStart) {
+                                _sync.value = SyncUi.Idle
+                                _syncReview.value = PendingCourseSync(review, semester, result.notice, generationAtStart, schoolAtStart)
                             }
                         }
-                        // 提醒/小组件统一通过 appliedFromCache 合并导入课程，缓存仅保存教务原始数据。
-                        check(ScheduleCache.save(appContext, semester)) { com.kstudio.agenda.i18n.AppText.current.msgSaveFailed }
-                        SettingsStore.setLastSync(appContext, semester.fetchedAtMillis)
-                        SettingsStore.setSemesterAnchor(
-                            appContext,
-                            semester.semesterLabel.ifBlank { "当前学期" },
-                            semester.anchorEpochDay,
-                        )
-                        _semester.value = semester
-                        _sync.value = SyncUi.Success(semester.fetchedAtMillis, result.notice)
-                        // 课程修改与最新教务数据比对：教务已一致 → 去掉「已修改」标记；两者都不同 → 询问用户
-                        runCatching { CourseEditStore.reconcile(appContext, semester) }
-                            .onSuccess { conflicts ->
-                                _editConflicts.value = conflicts
-                                if (conflicts.isNotEmpty()) {
-                                    AppLog.w(TAG, "发现 ${conflicts.size} 门课程的修改与教务系统不一致，等待用户确认")
-                                }
-                            }
-                            .onFailure { AppLog.e(TAG, "课程修改比对失败", it) }
-                        runCatching { ReminderScheduler.reschedule(appContext) }
-                        runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
-                        runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
-                        AppLog.i(
-                            TAG,
-                            "同步成功：共 ${semester.weeks.size} 周，周次=${semester.weekNumbers}"
-                        )
                     }
 
                     is SyncResult.LoginRequired -> {
@@ -312,6 +316,25 @@ class ScheduleRepository private constructor(private val appContext: Context) {
                 }
             }
         }
+    }
+
+    private suspend fun applySyncedSemester(semester: SemesterSchedule, notice: String, expectedGeneration: Long, school: String) {
+        synchronized(generationLock) {
+            if (generation != expectedGeneration || com.kstudio.agenda.model.Schools.currentId != school) return
+            check(ScheduleCache.save(appContext, semester)) { com.kstudio.agenda.i18n.AppText.current.msgSaveFailed }
+            _semester.value = semester
+        }
+        SettingsStore.setLastSync(appContext, semester.fetchedAtMillis)
+        SettingsStore.setSemesterAnchor(appContext, semester.semesterLabel.ifBlank { "当前学期" }, semester.anchorEpochDay)
+        if (expectedGeneration != currentGeneration()) return
+        _sync.value = SyncUi.Success(semester.fetchedAtMillis, notice)
+        runCatching { CourseEditStore.reconcile(appContext, semester) }
+            .onSuccess { _editConflicts.value = it }
+            .onFailure { AppLog.e(TAG, "课程修改比对失败", it) }
+        runCatching { ReminderScheduler.reschedule(appContext) }
+        runCatching { NextClassWidgetUpdater.updateAndSchedule(appContext) }
+        runCatching { com.kstudio.agenda.notif.StatusNotification.refresh(appContext) }
+        AppLog.i(TAG, "同步成功：共 ${semester.weeks.size} 周，周次=${semester.weekNumbers}")
     }
 
     /** 仅重新调度提醒（不联网） */

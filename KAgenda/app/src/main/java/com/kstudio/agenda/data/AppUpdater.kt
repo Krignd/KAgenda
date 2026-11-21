@@ -35,6 +35,7 @@ data class UpdateInfo(
     val sha256: String,
     /** 更新说明（可空） */
     val notes: String,
+    val publishedAt: String = "",
 )
 
 /** 更新状态（顶部小字与「设置 → 关于」共用同一份状态） */
@@ -48,7 +49,7 @@ sealed interface UpdateUi {
     data object UpToDate : UpdateUi
 
     /** 有新版本，尚未下载 */
-    data class Available(val info: UpdateInfo) : UpdateUi
+    data class Available(val info: UpdateInfo, val offerId: Long = System.nanoTime()) : UpdateUi
 
     /** 正在下载 */
     data class Downloading(val info: UpdateInfo, val percent: Int) : UpdateUi
@@ -106,6 +107,7 @@ object AppUpdater {
 
     private const val PREF_NAME = "app_updater"
     private const val KEY_LAST_AUTO_CHECK = "last_auto_check_at"
+    private const val KEY_IGNORED_VERSION = "ignored_version"
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
@@ -113,6 +115,12 @@ object AppUpdater {
     val state: StateFlow<UpdateUi> = _state.asStateFlow()
 
     private var job: Job? = null
+
+    fun isIgnored(context: Context, code: Int): Boolean = prefs(context).getInt(KEY_IGNORED_VERSION, 0) == code
+
+    fun ignore(context: Context, code: Int) {
+        prefs(context).edit().putInt(KEY_IGNORED_VERSION, code).apply()
+    }
 
     // ---------------------------------------------------------------- 检查
 
@@ -138,6 +146,7 @@ object AppUpdater {
             try {
                 if (auto) prefs(appContext).edit().putLong(KEY_LAST_AUTO_CHECK, System.currentTimeMillis()).apply()
                 val info = fetchManifest()
+                if (!auto && isIgnored(appContext, info.versionCode)) prefs(appContext).edit().remove(KEY_IGNORED_VERSION).apply()
                 if (info.versionCode <= BuildConfig.VERSION_CODE) {
                     cleanDownloaded(appContext, keepVersionCode = 0)
                     _state.value = UpdateUi.UpToDate
@@ -340,6 +349,7 @@ object AppUpdater {
             sizeBytes = o.optLong("sizeBytes", 0L),
             sha256 = o.optString("sha256").trim(),
             notes = o.optString("notes").trim(),
+            publishedAt = o.optString("publishedAt").trim().ifBlank { o.optString("updatedAt").trim() }.take(64),
         )
     }
 

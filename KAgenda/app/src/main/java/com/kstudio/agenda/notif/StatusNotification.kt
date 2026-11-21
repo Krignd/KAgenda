@@ -266,17 +266,17 @@ object StatusNotification {
         if ("course" in sources && semester != null) {
             val current = findCurrentCourse(semester, now)
             if (current != null) {
-                val end = PeriodTimes.format(PeriodTimes.endOf(current.endPeriod))
+                val end = PeriodTimes.format(current.endTime)
                 lines.add(t.statusInClassFmt(current.title, end))
             } else {
                 val next = findNextCourse(semester, now)
                 if (next != null) {
                     val (course, date, start) = next
                     val timeText = if (date == now.toLocalDate()) {
-                        PeriodTimes.format(PeriodTimes.startOf(course.startPeriod))
+                        PeriodTimes.format(course.startTime)
                     } else {
                         "${date.monthValue}/${date.dayOfMonth} " +
-                            PeriodTimes.format(PeriodTimes.startOf(course.startPeriod))
+                            PeriodTimes.format(course.startTime)
                     }
                     val left = remaining(context, Duration.between(now, start).toMinutes())
                     lines.add(t.statusNextClassFmt(course.title, timeText, left))
@@ -343,8 +343,8 @@ object StatusNotification {
         if (weekNo < 1 || weekNo > 40) return null
         if (HolidayTable.hidesCourses(date)) return null   // 法定节假日停课（可在设置里改）
         for (c in sem.weeks[weekNo].orEmpty().filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }) {
-            val start = date.atTime(PeriodTimes.startOf(c.startPeriod))
-            val end = date.atTime(PeriodTimes.endOf(c.endPeriod))
+            val start = date.atTime(c.startTime)
+            val end = date.atTime(c.endTime)
             if (!now.isBefore(start) && !now.isAfter(end)) return c
         }
         return null
@@ -358,9 +358,9 @@ object StatusNotification {
             if (HolidayTable.hidesCourses(date)) continue   // 法定节假日停课（可在设置里改）
             val courses = sem.weeks[weekNo].orEmpty()
                 .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
-                .sortedBy { it.startPeriod }
+                .sortedBy { it.startTime }
             for (c in courses) {
-                val start = date.atTime(PeriodTimes.startOf(c.startPeriod))
+                val start = date.atTime(c.startTime)
                 if (start.isAfter(now)) return Triple(c, date, start)
             }
         }

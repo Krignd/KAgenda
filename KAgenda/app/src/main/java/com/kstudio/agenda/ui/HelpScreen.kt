@@ -2,7 +2,6 @@
 
 package com.kstudio.agenda.ui
 
-import com.kstudio.agenda.ui.theme.glassFrost
 import com.kstudio.agenda.ui.theme.LocalGlassEnabled
 
 import android.content.Intent
@@ -60,7 +59,7 @@ fun HelpScreen(initialTopic: String = "", onClose: () -> Unit) {
     val scheme = MaterialTheme.colorScheme
     // Separate the reading cards from the page by luminance, including in dark mode.
     val pageColor = if (!glass) overlayBackgroundColor()
-        else if (dark) Color(0xD9101A2A) else Color(0xCDE0E9F7)
+        else if (dark) Color(0xFF101A2A) else Color(0xFFE0E9F7)
     val cardColor = if (!glass) com.kstudio.agenda.ui.components.cardBaseColor()
         else if (dark) Color(0xD933455E) else scheme.surface
     var query by rememberSaveable { mutableStateOf("") }
@@ -73,7 +72,7 @@ fun HelpScreen(initialTopic: String = "", onClose: () -> Unit) {
         onDismissRequest = onClose,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = true),
     ) {
-        Surface(Modifier.fillMaxSize().glassFrost(popup = true), color = pageColor, contentColor = scheme.onSurface) {
+        Surface(Modifier.fillMaxSize(), color = pageColor, contentColor = scheme.onSurface) {
             Scaffold(
                 containerColor = if (LocalGlassEnabled.current) androidx.compose.ui.graphics.Color.Transparent else overlayBackgroundColor(),
                 contentColor = scheme.onSurface,

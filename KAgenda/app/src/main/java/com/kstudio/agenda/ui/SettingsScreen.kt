@@ -150,6 +150,7 @@ private fun sizeLabel(bytes: Long, unknown: String): String =
 fun SettingsScreen(
     vm: AppViewModel,
     onWebLogin: () -> Unit,
+    plannerTabs: List<Pair<String, String>> = emptyList(),
 ) {
     val settings by vm.settings.collectAsState()
     val selectedDate by vm.selectedDate.collectAsState()
@@ -212,6 +213,8 @@ fun SettingsScreen(
     var expOverlay by rememberSaveable { mutableStateOf(true) }
     var expStatus by rememberSaveable { mutableStateOf(true) }
     var expWidget by rememberSaveable { mutableStateOf(true) }
+    var expBottomBar by rememberSaveable { mutableStateOf(true) }
+    var expWidgetActions by rememberSaveable { mutableStateOf(true) }
     var expTimeline by rememberSaveable { mutableStateOf(true) }
     var expWeekDays by rememberSaveable { mutableStateOf(true) }
     var expWidgetRefresh by rememberSaveable { mutableStateOf(true) }
@@ -339,7 +342,7 @@ fun SettingsScreen(
     var importChoices by remember { mutableStateOf<List<com.kstudio.agenda.data.BackupStore.Entry>>(emptyList()) }
     var showImportChoice by remember { mutableStateOf(false) }
     val backupExportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
+        ActivityResultContracts.CreateDocument("application/zip")
     ) { uri -> uri?.let { vm.exportBackup(it) } }
     val backupImportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.OpenDocument()
@@ -782,7 +785,22 @@ fun SettingsScreen(
             }
         }
 
-        // ---------------------------------------------------------- 【选项卡 2】用户自定义：课程时间
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                plannerText("编辑底部栏", "Edit bottom bar", "Modifier la barre"),
+                expanded = expBottomBar,
+                onToggle = { expBottomBar = !expBottomBar },
+            ) { BottomBarSettings(vm, plannerTabs) }
+        }
+        if (settingsTab == 2) item {
+            CollapsibleSectionCard(
+                plannerText("小组件点击动作", "Widget tap action", "Action au toucher"),
+                expanded = expWidgetActions,
+                onToggle = { expWidgetActions = !expWidgetActions },
+            ) { WidgetTapActions(vm) }
+        }
+
+        // ---------------------------------------------------------- 【选项卡 2】自定义：课程时间
         if (settingsTab == 2) item {
             CollapsibleSectionCard(
                 t.secPeriodTimes,
@@ -1263,8 +1281,22 @@ fun SettingsScreen(
                 expanded = expWidget,
                 onToggle = { expWidget = !expWidget },
             ) {
+                Text(plannerText("小组件点击动作", "Widget tap action", "Action au toucher"), style = MaterialTheme.typography.titleSmall)
+                WidgetTapActions(vm)
                 Text(t.legacyWidgetPreviews, style = MaterialTheme.typography.titleSmall)
                 Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Column(Modifier.width(240.dp)) {
+                        Text(plannerText("倒计时 3×2", "Countdown 3×2", "Compte à rebours 3×2"), style = MaterialTheme.typography.labelMedium)
+                        CountdownWidgetPreview {
+                            val manager = android.appwidget.AppWidgetManager.getInstance(context)
+                            if (!manager.isRequestPinAppWidgetSupported || !manager.requestPinAppWidget(
+                                    android.content.ComponentName(context, com.kstudio.agenda.widget.CountdownWidget::class.java),
+                                    null, null,
+                                )) {
+                                vm.message(t.widgetPinUnsupported)
+                            }
+                        }
+                    }
                     listOf("2×1" to R.drawable.widget_preview_2x1, "2×2" to R.drawable.widget_preview_2x2,
                         "4×1" to R.drawable.widget_preview_4x1, "4×2" to R.drawable.widget_preview_4x2,
                         t.widgetTodayAgenda to R.drawable.widget_preview_today_agenda, t.widgetTodayCourses to R.drawable.widget_preview_today_courses,
@@ -1334,7 +1366,7 @@ fun SettingsScreen(
                         val found = vm.defaultBackups()
                         if (found.isEmpty()) {
                             runCatching {
-                                backupImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                                backupImportLauncher.launch(arrayOf("application/zip", "application/json", "text/plain", "*/*"))
                             }
                         } else {
                             importChoices = found
@@ -1855,7 +1887,7 @@ fun SettingsScreen(
                                 showExportChoice = false
                                 runCatching {
                                     backupExportLauncher.launch(
-                                        t.backupFileName + "_" + java.time.LocalDate.now() + ".json"
+                                        t.backupFileName + "_" + java.time.LocalDate.now() + ".zip"
                                     )
                                 }
                             }
@@ -1914,7 +1946,7 @@ fun SettingsScreen(
                     TextButton(onClick = {
                         showImportChoice = false
                         runCatching {
-                            backupImportLauncher.launch(arrayOf("application/json", "text/plain", "*/*"))
+                            backupImportLauncher.launch(arrayOf("application/zip", "application/json", "text/plain", "*/*"))
                         }
                     }) { Text(t.backupImportPickOther) }
                 }
@@ -1964,6 +1996,23 @@ fun SettingsScreen(
                 TextButton(onClick = { showInstallPermDialog = false }) { Text(t.cancel) }
             },
         )
+    }
+}
+
+@Composable
+private fun CountdownWidgetPreview(onClick: () -> Unit) {
+    val addToHome = plannerText("添加到桌面", "Add to home screen", "Ajouter à l’écran d’accueil")
+    Surface(
+        modifier = Modifier.fillMaxWidth().height(160.dp).padding(vertical = 12.dp)
+            .clip(RoundedCornerShape(20.dp)).clickable(onClickLabel = addToHome, onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        color = Color(0xFF202F47),
+        contentColor = Color.White,
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.Center) {
+            Text(plannerText("作业截止", "Homework due", "Devoir à rendre"), style = MaterialTheme.typography.titleSmall)
+            Text("02:34:56", style = MaterialTheme.typography.headlineSmall, color = Color(0xFFC6DCFF))
+        }
     }
 }
 

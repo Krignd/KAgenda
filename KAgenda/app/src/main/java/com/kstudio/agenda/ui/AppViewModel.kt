@@ -18,6 +18,9 @@ import com.kstudio.agenda.data.BackupManager
 import com.kstudio.agenda.data.CourseEditConflict
 import com.kstudio.agenda.data.CourseEditStore
 import com.kstudio.agenda.data.ExtraCoursesStore
+import com.kstudio.agenda.data.LessonNote
+import com.kstudio.agenda.data.PlannerData
+import com.kstudio.agenda.data.PlannerStore
 import com.kstudio.agenda.data.ScheduleRepository
 import com.kstudio.agenda.data.SchoolFlows
 import com.kstudio.agenda.data.SchoolToggleSpec
@@ -41,6 +44,7 @@ import com.kstudio.agenda.notif.StatusNotification
 import com.kstudio.agenda.overlay.FloatingBallService
 import com.kstudio.agenda.util.AppLog
 import com.kstudio.agenda.widget.NextClassWidgetUpdater
+import com.kstudio.agenda.widget.CountdownWidget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -78,6 +82,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         sem?.copy(calendarRevision = revision)
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     val syncState: StateFlow<SyncUi> = repo.sync
+    internal val courseSyncReview = repo.syncReview
+    internal fun resolveCourseSync(review: ScheduleRepository.PendingCourseSync, apply: Boolean) = repo.resolveCourseSync(review, apply)
 
     /** 当前查看的教学周（哨兵 MIN_VALUE 表示未指定，自动选择当前教学周） */
     private val _selectedWeekNo = MutableStateFlow(Int.MIN_VALUE)
@@ -154,8 +160,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     .filter { it.dayOfWeek == now.dayOfWeek.value && it.occursInWeek(wn) }
                     .firstOrNull { c ->
                         val t = now.toLocalTime()
-                        !t.isBefore(PeriodTimes.startOf(c.startPeriod)) &&
-                            t.isBefore(PeriodTimes.endOf(c.endPeriod))
+                        !t.isBefore(c.startTime) &&
+                            t.isBefore(c.endTime)
                     }
             } else null
         }
@@ -175,6 +181,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         // 日程/导入课程文件读取放到 IO 线程（不在主线程做文件 IO；写操作内部也会确保已加载）
         viewModelScope.launch(Dispatchers.IO) {
             AgendaStore.ensureLoaded(getApplication())
+            PlannerStore.read(getApplication())
             ExtraCoursesStore.ensureLoaded(getApplication())
             CourseEditStore.ensureLoaded(getApplication())
         }
@@ -240,6 +247,68 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    internal fun editPlanner(change: (PlannerData) -> PlannerData) {
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                runCatching {
+                    PlannerStore.edit(getApplication(), change)
+                    runCatching { CountdownWidget.refresh(getApplication()); NextClassWidgetUpdater.scheduleNext(getApplication()) }
+                }.isSuccess
+            }
+            if (!success) message(t.msgSaveFailed)
+        }
+    }
+
+    internal fun movePlannerTab(key: String, offset: Int) = editPlanner { data ->
+        val order = data.tabs.toMutableList()
+        val index = order.indexOf(key)
+        if (index in order.indices && index + offset in order.indices) {
+            order.add(index + offset, order.removeAt(index))
+        }
+        data.copy(tabs = order)
+    }
+
+    internal fun saveLessonNote(note: LessonNote, draft: java.io.File?, oldPhoto: String?, result: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                val context = getApplication<Application>()
+                val newFile = if (draft != null && note.photo != null) PlannerStore.photo(context, note.photo) else null
+                val saved = runCatching {
+                    if (newFile != null) {
+                        newFile.parentFile?.mkdirs()
+                        checkNotNull(draft).copyTo(newFile)
+                    }
+                    PlannerStore.edit(context) { data ->
+                        val existing = data.notes.indexOfFirst { it.id == note.id }
+                        val notes = if (existing < 0) data.notes + note else data.notes.toMutableList().apply { set(existing, note) }
+                        data.copy(notes = notes)
+                    }
+                }.isSuccess
+                if (!saved) newFile?.delete()
+                if (saved) {
+                    if (oldPhoto != null && oldPhoto != note.photo) PlannerStore.photo(context, oldPhoto).delete()
+                    runCatching { CountdownWidget.refresh(context); NextClassWidgetUpdater.scheduleNext(context) }
+                }
+                saved
+            }
+            result(success)
+        }
+    }
+
+    internal fun deleteLessonNote(note: LessonNote, result: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                runCatching {
+                    val context = getApplication<Application>()
+                    PlannerStore.edit(context) { it.copy(notes = it.notes.filterNot { old -> old.id == note.id }) }
+                    note.photo?.let { PlannerStore.photo(context, it).delete() }
+                    runCatching { CountdownWidget.refresh(context); NextClassWidgetUpdater.scheduleNext(context) }
+                }.isSuccess
+            }
+            result(success)
+        }
+    }
+
     // ------------------------------------------------------------ 交互动作
 
     fun selectDate(date: LocalDate) {
@@ -280,6 +349,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
         val wasPlan = agenda.value.firstOrNull { it.id == id }?.isPlan == true
         viewModelScope.launch(Dispatchers.IO) {
             AgendaStore.delete(getApplication(), id)
+            runCatching { PlannerStore.edit(getApplication()) { data -> data.copy(links = data.links.filterNot { it.agendaId == id }) } }
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
             repo.rescheduleReminders()
@@ -291,6 +361,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun clearAgendaData() {
         viewModelScope.launch(Dispatchers.IO) {
             AgendaStore.clear(getApplication())
+            runCatching { PlannerStore.edit(getApplication()) { data -> data.copy(links = data.links.filter { it.agendaId == null }) } }
             runCatching { StatusNotification.refresh(getApplication()) }
             runCatching { NextClassWidgetUpdater.updateAndSchedule(getApplication()) }
             repo.rescheduleReminders()
@@ -408,6 +479,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             val events = agenda.value.size
             // 文件 IO 放 IO 线程（本协程跑在主线程，避免重置时卡顿/ANR 风险）
             withContext(Dispatchers.IO) { runCatching { AgendaStore.clear(getApplication()) } }
+            withContext(Dispatchers.IO) { runCatching { PlannerStore.clear(getApplication()) } }
             AppLog.i("设置", "已清空本地日程与计划：$events 条")
 
             // 悬浮球属于“开箱状态”：重置时一并关闭并停止前台服务，避免重置后悬浮球仍残留
@@ -767,14 +839,18 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
      *
      * @param applyAll true=修改全部同一课程；false=仅修改这一次
      */
-    fun saveCourseEdit(source: Course, edited: Course, applyAll: Boolean, weekdays: Set<Int> = setOf(edited.dayOfWeek)) {
+    fun saveCourseEdit(source: Course, edited: Course, applyAll: Boolean, weekdays: Set<Int> = setOf(edited.dayOfWeek), sourceWeek: Int? = null) {
         if (edited.title.isBlank()) return
+        if (!applyAll && sourceWeek !in 1..Course.MAX_WEEK) {
+            message(com.kstudio.agenda.i18n.CourseScopeText.unknownWeek)
+            return
+        }
         val app = getApplication<Application>()
         viewModelScope.launch {
             // 导入课程属于本地数据：直接改本地记录，不走「与教务系统比对」的流程
             val imported = importedCourses.value.any { it.id == source.id }
             withContext(Dispatchers.IO) {
-                if (imported) {
+                if (imported && (applyAll || sourceWeek == null)) {
                     if (applyAll) {
                         ExtraCoursesStore.replaceSeries(app, source, edited)
                     } else {
@@ -782,7 +858,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     ExtraCoursesStore.addAll(app, weekdays.filter { it != edited.dayOfWeek }.map { edited.copy(dayOfWeek = it) }, importedAnchor.value)
                 } else {
-                    CourseEditStore.save(app, source, edited, applyAll, weekdays)
+                    CourseEditStore.save(app, source, edited, applyAll, weekdays, sourceWeek, semester.value?.anchorEpochDay)
                 }
             }
             // 导入课程走导入链路刷新；教务课程走课程修改链路（重排提醒 + 刷新小组件/常驻通知）
@@ -795,7 +871,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     /** 某天「原本要上的课」（不受节假日停课影响）：调休/调课要能看到节假日当天的课 */
     fun coursesRawOnDate(date: LocalDate): List<Course> =
-        semester.value?.rawCoursesOnDate(date).orEmpty().sortedBy { it.startPeriod }
+        semester.value?.rawCoursesOnDate(date).orEmpty().sortedBy { it.startTime }
 
     /** 删除课程：选中的周次里不再显示（选全部周次 = 整门课隐藏） */
     fun deleteCourse(source: Course, weeks: Set<Int>, applyAll: Boolean) {
@@ -942,14 +1018,7 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     fun exportBackupToDefault() {
         withExportPermission {
             viewModelScope.launch {
-                val entry = withContext(Dispatchers.IO) {
-                    val json = com.kstudio.agenda.data.BackupManager.buildJson(
-                        getApplication(),
-                        com.kstudio.agenda.BuildConfig.VERSION_NAME,
-                        SettingsStore.exportPreferences(getApplication()),
-                    )
-                    com.kstudio.agenda.data.BackupStore.writeToDefault(getApplication(), json)
-                }
+                val entry = BackupManager.exportToDefault(getApplication(), com.kstudio.agenda.BuildConfig.VERSION_NAME)
                 message(
                     if (entry != null) {
                         t.msgBackupExportedDefault(

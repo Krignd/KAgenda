@@ -26,7 +26,7 @@ enum class EngineId(val key: String, val split: String, val entry: String) {
 class EngineMissingException(val engine: EngineId) : IllegalStateException(
     engineText("请先下载并安装", "Download and install first: ", "Téléchargez et installez : ") + engine.title)
 
-interface OcrEngineContract { suspend fun extract(context: Context, uri: Uri): String }
+interface OcrEngineContract { suspend fun extract(context: Context, uri: Uri, plainText: Boolean = false): String }
 interface PdfEngineContract { fun extract(context: Context, bytes: ByteArray): String }
 
 object EngineFeatures {

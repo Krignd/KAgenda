@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/countdown_widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_countdown_background"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="8dp">
+
+    <TextView
+        android:id="@+id/countdown_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold" />
+
+    <Chronometer
+        android:id="@+id/countdown_clock"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#C6DCFF"
+        android:textSize="22sp" />
+
+    <TextView
+        android:id="@+id/countdown_due"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#C6DCFF"
+        android:textSize="12sp" />
+</LinearLayout>

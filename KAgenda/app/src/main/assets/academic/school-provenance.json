@@ -1546,11 +1546,11 @@
       ]
     },
     "EXT/selected-zf-personal.js": {
-      "sha256": "890f629e801eb281c45451410f53b79411e4f13acd1496f0d4c77c9b4365a737",
+      "sha256": "9a0a543aeaf7d76656db1c6e25bbd5170a12ab1975683ffe28d3db3c850106a7",
       "implementationOriginal": true,
       "copiedUpstreamLines": 0,
       "implementationLicense": "MIT",
-      "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only",
+      "referenceLicense": "mixed-MIT-Apache2-GPL3-and-NOASSERTION-protocol-only",
       "sources": [
         {
           "adapterId": "ext_smu_personal",
@@ -1619,6 +1619,198 @@
           "updated": "2026-08-31T12:42:16Z",
           "license": "MIT",
           "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "packages/zf_academic/lib/src/schedule.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/schedule.dart",
+          "sha256": "1cbf5e3017eef30e9d6fb9ba5dbfdba70d3a397c8126872c1cb8621b8aaaee5c",
+          "updated": "2026-11-13T09:25:01Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "packages/zf_academic/lib/src/urls.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/urls.dart",
+          "sha256": "7197d18b533bd21966a7c589a2b5217888d7efc9ccbbafbae6c85dbb51698fbf",
+          "updated": "2026-11-04T15:33:44Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "packages/zf_academic/lib/src/respond.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/respond.dart",
+          "sha256": "cfe5633f10002ed06897041f41e28179d5fc5d3e9a7b38d520f7c0af4b6e3cc4",
+          "updated": "2026-11-04T12:00:49Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "lib/src/schedule_service.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/lib/src/schedule_service.dart",
+          "sha256": "f3a16813296249b8a92a84ea34f0b2d21b707df80f1413f818220f4e43f87954",
+          "updated": "2026-11-15T11:53:32Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/LICENSE",
+          "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+          "updated": "2026-10-18T14:41:57Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "lib/src/school.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/lib/src/school.dart",
+          "sha256": "7aee65ee4a5eba6da07f3fdf2696b287a7c970abd8f00f553994c73e047c9ec6",
+          "updated": "2026-10-29T14:41:32Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "packages/zf_academic/lib/src/types.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/types.dart",
+          "sha256": "8d03583ba1f70f54acd4a7d1b00f796ab1b599c22d5a2f34b3a117c4ce20f0a5",
+          "updated": "2026-11-16T00:58:42Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "packages/zf_academic/lib/src/zhengfang_client.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/packages/zf_academic/lib/src/zhengfang_client.dart",
+          "sha256": "9511d6303933646a8ec6a313907a6050958e8497ea943f29b06c4067eec7b134",
+          "updated": "2026-11-05T06:42:15Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_qust_personal",
+          "repository": "https://github.com/fangzi2006/QustSchedule",
+          "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+          "path": "lib/src/backends.dart",
+          "sourceUrl": "https://github.com/fangzi2006/QustSchedule/blob/71f26af3ae090dd0170756b3d4ab641fd5b23656/lib/src/backends.dart",
+          "sha256": "a83732fb9aeb6c43b754e7125a7c1ffff2081c8d5cb1be793d622ec76801fba2",
+          "updated": "2026-11-04T12:00:49Z",
+          "license": "GPL-3.0",
+          "protocolReferenceOnly": true,
+          "author": "fangzi2006"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "adapters/scripts/fetch-jw-password.mjs",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/scripts/fetch-jw-password.mjs",
+          "sha256": "a559e7472adb1ee2ce912fecde9c4aaf81aa9632300f7e91dc25c41698342ce8",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "adapters/scripts/import_jw.py",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/scripts/import_jw.py",
+          "sha256": "dd972579032974c9aa9ee817642414d9b355dfb1621c07269b0ad2be1a77260e",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "adapters/scripts/jw-core.mjs",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/scripts/jw-core.mjs",
+          "sha256": "89a1915220c4f2b63593043969eacdff13fe3927ba555ca3ba1bf8b78558f04e",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "adapters/scripts/school-profile.mjs",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/scripts/school-profile.mjs",
+          "sha256": "17e02b9f498767deb2c0b006b7cdad2f8e144bac59bacffe8db99c006a696a14",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "adapters/school-defaults.json",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/adapters/school-defaults.json",
+          "sha256": "174242856cfe84f6f25a8b10744134f476d927806fdef79c0623a594466f8ee2",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/LICENSE",
+          "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
+        },
+        {
+          "adapterId": "ext_sdut_personal",
+          "repository": "https://github.com/liuayueeryuan0313/KOMA",
+          "revision": "da932b81edaa617f98376f2729a32a896418823e",
+          "path": "NOTICE",
+          "sourceUrl": "https://github.com/liuayueeryuan0313/KOMA/blob/da932b81edaa617f98376f2729a32a896418823e/NOTICE",
+          "sha256": "f4c38d7f8520987b35d848400baf10df9ab3962ce48ac88f66e6c5ec83f323f4",
+          "updated": "2026-10-16T02:18:43Z",
+          "license": "Apache-2.0",
+          "protocolReferenceOnly": true,
+          "author": "安稳 / liuayueeryuan0313"
         }
       ],
       "localFixes": [
@@ -1626,7 +1818,10 @@
         "No source forced pass, skip, majority-clock selection, name merge, current-date semester guess, seasonal switch or unlicensed implementation copied.",
         "Keep all raw course facts for re-read consistency; reject unknown nonempty branches, inconsistent self/selection, any missing row/page or failed/expired response before staging.",
         "Authoritative selected labels (or explicit manual page label for source-documented hidden fields), user calendar/week count, native preview clocks; original row detail blocks retained.",
-        "Third explicit FIT profile from recent school-specific MIT source facts; exact reviewed HTTP origin/N2151 and real selects only. Request gnmkdm query with blank kclbdm. No source calendar defaults/skipped rows/save order copied. Existing community FIT entry and known vendor retained."
+        "Third explicit FIT profile from recent school-specific MIT source facts; exact reviewed HTTP origin/N2151 and real selects only. Request gnmkdm query with blank kclbdm. No source calendar defaults/skipped rows/save order copied. Existing community FIT entry and known vendor retained.",
+        "Fourth explicit QUST profile: exact six HTTPS origins from school.dart; personal route in zhengfang_client.dart lines1295-1300 corrects DSH case typo. Explicit DOM module and selects,3/12/16 term/label consistency, both blank course filters. Optional class/credit/sequence/content/notes preserved. Unknown nonempty secondary arrangements abort; no GPL implementation copied.",
+        "QUST-only source-documented uppercase/alternative fields are normalized with conflicting aliases rejected; preserve campus/class/notes without silently dropping a fallback. Other three profiles retain their own field contracts.",
+        "SDUT explicit HTTPS origin and N2151 from fixed school source; exact six-field personal-semester request. Own existing strict personal-page/selected-DOM contract reused without auto-navigating a guessed page or copying upstream HTTP login/sanitization/fixtures. No password handling, default campus ID, clock, or calendar adopted. Nonempty sjkList/unknown branches abort before staging. QUST aliases remain QUST-only."
       ]
     },
     "EXT/lmu-personal.js": {
@@ -1767,6 +1962,537 @@
         "All proven aliases agree semantically, reject unparsed nonempty arrangements/pages/errors; full response/raw identity/rows compared before staging.",
         "Original names/full teachers/campus/class and source-row retained; discrete sections and odd/even weeks; no skipped or truncated records.",
         "Real school account verification pending; main-owned synthetic/native validation separate."
+      ]
+    },
+    "EXT/jiangxi-zf-personal.js": {
+      "sha256": "6f6f217a212e77865e823294e05c011e7d407982320b3ca4808ee61230fe4baf",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "MIT",
+      "sources": [
+        {
+          "adapterId": "ext_jju_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "zfjw/api/schedule.py",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/schedule.py",
+          "sha256": "0433132bd1a0cdf5be55e7fc417741e2abfc1c10bb8ea0c7a39eb77aa1bac42f",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_jju_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "config/schools_config.json",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/config/schools_config.json",
+          "sha256": "a067f0bc156873c56640a93594c66d572304d78e63c44e1599bf55d05ce9e9dd",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_jju_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/LICENSE",
+          "sha256": "0ba8555f9b6b5de9d1823dd022aaad586fbae0afa9e1fba9aa94656f3c5ee687",
+          "updated": "2025-06-22T01:10:15Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_jju_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "zfjw/api/base.py",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/base.py",
+          "sha256": "8f179ef6ec1e9f8d0cc544acd0da7e0a6b7156091ec9bd5064330700d56ff9bc",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_jju_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "zfjw/school_config.py",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/school_config.py",
+          "sha256": "1841ff432c193296d87034edc3cf576553aa2f6c158e8d1be942d183bc018806",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_nvu_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "zfjw/api/schedule.py",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/schedule.py",
+          "sha256": "0433132bd1a0cdf5be55e7fc417741e2abfc1c10bb8ea0c7a39eb77aa1bac42f",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_nvu_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "config/schools_config.json",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/config/schools_config.json",
+          "sha256": "a067f0bc156873c56640a93594c66d572304d78e63c44e1599bf55d05ce9e9dd",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_nvu_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/LICENSE",
+          "sha256": "0ba8555f9b6b5de9d1823dd022aaad586fbae0afa9e1fba9aa94656f3c5ee687",
+          "updated": "2025-06-22T01:10:15Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_nvu_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "zfjw/api/base.py",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/api/base.py",
+          "sha256": "8f179ef6ec1e9f8d0cc544acd0da7e0a6b7156091ec9bd5064330700d56ff9bc",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_nvu_personal",
+          "repository": "https://github.com/drfccv/ZFJW-backend",
+          "revision": "6c9af54bf8d82e5e4fc38d22e6cbc156f071450b",
+          "path": "zfjw/school_config.py",
+          "sourceUrl": "https://github.com/drfccv/ZFJW-backend/blob/6c9af54bf8d82e5e4fc38d22e6cbc156f071450b/zfjw/school_config.py",
+          "sha256": "1841ff432c193296d87034edc3cf576553aa2f6c158e8d1be942d183bc018806",
+          "updated": "2026-09-30T07:36:04Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "localFixes": [
+        "Separate exact origin and prefix for each school; explicit index GET before POST xnm/xqm, no guessed third term or upstream clocks.",
+        "Reuse only KAgenda original parser; reject incomplete pagination, unknown nonempty practice/extra arrangements, missing fields and inconsistent double-read snapshots.",
+        "Require stable personal identity; no user identity is written into course output; account validation remains pending."
+      ]
+    },
+    "EXT/gnnu-personal.js": {
+      "sha256": "291a0ce4aa5f4c951fc71fb19887e261dc4c846aefaf2634446ad8abb9606c8e",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "NOASSERTION",
+      "sources": [
+        {
+          "adapterId": "ext_gnnu_personal",
+          "repository": "https://github.com/LittleFishStars/GNNU_API",
+          "revision": "14718d2adc9185adb0ba2bd0757375fcd0d437a2",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/LittleFishStars/GNNU_API/blob/14718d2adc9185adb0ba2bd0757375fcd0d437a2/README.md",
+          "sha256": "441590174c589445563302166b65cae75ca5f65529b85e0ab39978799067165f",
+          "updated": "2026-03-28T17:40:40Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_gnnu_personal",
+          "repository": "https://github.com/LittleFishStars/GNNU_API",
+          "revision": "14718d2adc9185adb0ba2bd0757375fcd0d437a2",
+          "path": "api.py",
+          "sourceUrl": "https://github.com/LittleFishStars/GNNU_API/blob/14718d2adc9185adb0ba2bd0757375fcd0d437a2/api.py",
+          "sha256": "79e0361a08e11768a780b59295a5f3093813c6fe55ad38b92cdf4dd5db379c9b",
+          "updated": "2026-03-28T17:34:33Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ]
+    },
+    "EXT/xyu-personal.js": {
+      "sha256": "764ca807d9fa2e3c694896d545e4a682425f24168973d5d0ff15301c51db5e59",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "MIT",
+      "sources": [
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/xinyuan-app",
+          "revision": "e613997cb19b9ec524219bea5e2505e07fe0fbcd",
+          "path": "app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+          "sourceUrl": "https://github.com/octmicy/xinyuan-app/blob/e613997cb19b9ec524219bea5e2505e07fe0fbcd/app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+          "sha256": "d14db99f82ffd8398947cbd68af68575c9ba053707d4648915d5ecde1fb724dd",
+          "updated": "2026-09-08T06:45:40Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/xinyuan-app",
+          "revision": "e613997cb19b9ec524219bea5e2505e07fe0fbcd",
+          "path": "app/src/main/java/cn/edu/xyc/campus/data/model/Models.kt",
+          "sourceUrl": "https://github.com/octmicy/xinyuan-app/blob/e613997cb19b9ec524219bea5e2505e07fe0fbcd/app/src/main/java/cn/edu/xyc/campus/data/model/Models.kt",
+          "sha256": "5688198b590b6dc4de05142a41aeb55afd73a313b5a986a5c21fe308be7a4798",
+          "updated": "2026-09-04T16:53:15Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/xinyuan-app",
+          "revision": "e613997cb19b9ec524219bea5e2505e07fe0fbcd",
+          "path": "app/src/main/java/cn/edu/xyc/campus/data/remote/CampusHttp.kt",
+          "sourceUrl": "https://github.com/octmicy/xinyuan-app/blob/e613997cb19b9ec524219bea5e2505e07fe0fbcd/app/src/main/java/cn/edu/xyc/campus/data/remote/CampusHttp.kt",
+          "sha256": "f402977d8ea8126d3d0513a348a006f34cf1911361b9eb7ee26e642633cd973b",
+          "updated": "2026-09-04T15:19:26Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/xinyuan-app",
+          "revision": "e613997cb19b9ec524219bea5e2505e07fe0fbcd",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/octmicy/xinyuan-app/blob/e613997cb19b9ec524219bea5e2505e07fe0fbcd/README.md",
+          "sha256": "707f690765a26590ec5b606bef9328149d1697547ceb926dc96279f9910fcf32",
+          "updated": "2026-10-08T06:41:31Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/OriCampus",
+          "revision": "79750c666bdcaa8e9efb4072d9b8162a804ad957",
+          "path": "app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+          "sourceUrl": "https://github.com/octmicy/OriCampus/blob/79750c666bdcaa8e9efb4072d9b8162a804ad957/app/src/main/java/cn/edu/xyc/campus/data/remote/JwxtApi.kt",
+          "sha256": "777a319561285cdeb3a4269edddadb987b23a42ede08020c803131fd18add3df",
+          "updated": "2026-11-03T17:22:42Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/OriCampus",
+          "revision": "79750c666bdcaa8e9efb4072d9b8162a804ad957",
+          "path": "app/src/main/java/cn/edu/xyc/campus/data/model/Models.kt",
+          "sourceUrl": "https://github.com/octmicy/OriCampus/blob/79750c666bdcaa8e9efb4072d9b8162a804ad957/app/src/main/java/cn/edu/xyc/campus/data/model/Models.kt",
+          "sha256": "4cb54c8e11179960b9fdaa267bb737bfaadafc416b0cb24a8dca43f97044b75b",
+          "updated": "2026-11-03T17:22:42Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_xyu_personal",
+          "repository": "https://github.com/octmicy/OriCampus",
+          "revision": "79750c666bdcaa8e9efb4072d9b8162a804ad957",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/octmicy/OriCampus/blob/79750c666bdcaa8e9efb4072d9b8162a804ad957/LICENSE",
+          "sha256": "f9aa8ce585c94b3b94e12e8e5385aaf8e2350ccbc0b001541b81d02b7c42fad4",
+          "updated": "2026-11-06T13:24:55Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "referenceLicenseScope": "Latest pinned OriCampus source; older xinyuan-app sources retain their original NOASSERTION status."
+    },
+    "EXT/ecut-personal.js": {
+      "sha256": "636fd2a6042a653366e1d1025d6cb3c9f480820ee86d8f508039d3d6409b17a1",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "NOASSERTION",
+      "sources": [
+        {
+          "adapterId": "ext_ecut_personal",
+          "repository": "https://github.com/ncxiaofeng/CampusPocket",
+          "revision": "b5f94fe08e2e9d51dcffbf35f435130886db6641",
+          "path": "app/src/main/java/com/ecut/campuspocket/data/remote/jw/JwAdapter.kt",
+          "sourceUrl": "https://github.com/ncxiaofeng/CampusPocket/blob/b5f94fe08e2e9d51dcffbf35f435130886db6641/app/src/main/java/com/ecut/campuspocket/data/remote/jw/JwAdapter.kt",
+          "sha256": "fd824aa8478d3618e5c81649226850791ca350c4f8301dffb3db9e9fb38c7398",
+          "updated": "2026-11-01T05:36:59Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_ecut_personal",
+          "repository": "https://github.com/ncxiaofeng/CampusPocket",
+          "revision": "b5f94fe08e2e9d51dcffbf35f435130886db6641",
+          "path": "app/src/main/java/com/ecut/campuspocket/data/remote/jw/JwParser.kt",
+          "sourceUrl": "https://github.com/ncxiaofeng/CampusPocket/blob/b5f94fe08e2e9d51dcffbf35f435130886db6641/app/src/main/java/com/ecut/campuspocket/data/remote/jw/JwParser.kt",
+          "sha256": "69ff046aad2869b79bc0c409ee4c653d0dd43337e63c92ea08698fdbfce50196",
+          "updated": "2026-10-24T13:47:10Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_ecut_personal",
+          "repository": "https://github.com/ncxiaofeng/CampusPocket",
+          "revision": "b5f94fe08e2e9d51dcffbf35f435130886db6641",
+          "path": "app/src/main/java/com/ecut/campuspocket/network/CampusEndpoints.kt",
+          "sourceUrl": "https://github.com/ncxiaofeng/CampusPocket/blob/b5f94fe08e2e9d51dcffbf35f435130886db6641/app/src/main/java/com/ecut/campuspocket/network/CampusEndpoints.kt",
+          "sha256": "d175384fdf624f2937aa5c38c28fbe89c6b888b5e3501e9331480232be8de903",
+          "updated": "2026-11-01T05:48:35Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_ecut_personal",
+          "repository": "https://github.com/ncxiaofeng/CampusPocket",
+          "revision": "b5f94fe08e2e9d51dcffbf35f435130886db6641",
+          "path": "README.md",
+          "sourceUrl": "https://github.com/ncxiaofeng/CampusPocket/blob/b5f94fe08e2e9d51dcffbf35f435130886db6641/README.md",
+          "sha256": "0b9ef75ff4a0cb0464ed495b30beefbaad06e7402b5c761a265e9a9bc1388683",
+          "updated": "2026-11-01T08:14:10Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ]
+    },
+    "EXT/juwp-h5-personal.js": {
+      "sha256": "5346932bc731def6720e517b011accc7027ae7f7c5477e2206c3d9d59faf1222",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "NOASSERTION",
+      "sources": [
+        {
+          "adapterId": "ext_juwp_h5_personal",
+          "repository": "https://github.com/player0729/juwp-CourseWidgetApp",
+          "revision": "296e779b5d2d238e32ae096953e16c910c156d4b",
+          "path": "app/src/main/java/com/yang/kcb/data/remote/ApiFactory.kt",
+          "sourceUrl": "https://github.com/player0729/juwp-CourseWidgetApp/blob/296e779b5d2d238e32ae096953e16c910c156d4b/app/src/main/java/com/yang/kcb/data/remote/ApiFactory.kt",
+          "sha256": "ca90a7befbb660410ae88a294f2b561169deebf54403b5ae9fe130f53b5b8f91",
+          "updated": "2026-09-21T15:05:44Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_juwp_h5_personal",
+          "repository": "https://github.com/player0729/juwp-CourseWidgetApp",
+          "revision": "296e779b5d2d238e32ae096953e16c910c156d4b",
+          "path": "app/src/main/java/com/yang/kcb/data/remote/JwApi.kt",
+          "sourceUrl": "https://github.com/player0729/juwp-CourseWidgetApp/blob/296e779b5d2d238e32ae096953e16c910c156d4b/app/src/main/java/com/yang/kcb/data/remote/JwApi.kt",
+          "sha256": "f24a3e3b29a1776179a4fe45df9b2397593005205cf01b5a91571264edebfa3d",
+          "updated": "2026-09-21T15:05:44Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "adapterId": "ext_juwp_h5_personal",
+          "repository": "https://github.com/player0729/juwp-CourseWidgetApp",
+          "revision": "296e779b5d2d238e32ae096953e16c910c156d4b",
+          "path": "app/src/main/java/com/yang/kcb/data/remote/Models.kt",
+          "sourceUrl": "https://github.com/player0729/juwp-CourseWidgetApp/blob/296e779b5d2d238e32ae096953e16c910c156d4b/app/src/main/java/com/yang/kcb/data/remote/Models.kt",
+          "sha256": "440286230d5ac7f4821b01bc2e62a8a7708fac139d3ef9f77c572a9878c0acbf",
+          "updated": "2026-09-21T15:05:44Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ],
+      "supportingSources": [
+        {
+          "repository": "http://jiaowuh5.juwp.edu.cn",
+          "revision": "cddfa62c94e23889fc720cb9315d49dc4806ffdf2cff32859f3982f04525b699",
+          "path": "static/js/app.3c1be7b163372784e929.1756772353838.js",
+          "sourceUrl": "http://jiaowuh5.juwp.edu.cn/static/js/app.3c1be7b163372784e929.1756772353838.js",
+          "sha256": "cddfa62c94e23889fc720cb9315d49dc4806ffdf2cff32859f3982f04525b699",
+          "observedAt": "2026-11-12T04:13:41.709302+00:00",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "repository": "http://jiaowuh5.juwp.edu.cn",
+          "revision": "26e57ec7eab273b0a365ddab56ca3524eb02869e6e393644d97b0f9bb1212750",
+          "path": "static/js/48.46cd86c2c90c50633703.1756772353838.js",
+          "sourceUrl": "http://jiaowuh5.juwp.edu.cn/static/js/48.46cd86c2c90c50633703.1756772353838.js",
+          "sha256": "26e57ec7eab273b0a365ddab56ca3524eb02869e6e393644d97b0f9bb1212750",
+          "observedAt": "2026-11-12T04:19:23.897193+00:00",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "repository": "http://jiaowuh5.juwp.edu.cn",
+          "revision": "a98f06ab93d9f273c400b7225de567ce5e5ac959b4bad9677aa7d4d466ac4573",
+          "path": "static/js/51.8c8a4b8ebd12e79f550a.1756772353838.js",
+          "sourceUrl": "http://jiaowuh5.juwp.edu.cn/static/js/51.8c8a4b8ebd12e79f550a.1756772353838.js",
+          "sha256": "a98f06ab93d9f273c400b7225de567ce5e5ac959b4bad9677aa7d4d466ac4573",
+          "observedAt": "2026-11-12T04:16:03.183602+00:00",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        },
+        {
+          "repository": "http://jiaowuh5.juwp.edu.cn",
+          "revision": "beee9e4a95b23abf06402baa4efd097fab43091eb9e75c8c7d4ea5e002d1dd38",
+          "path": "static/js/1.4c79d7b5ee96c5c4aca1.1756772353838.js",
+          "sourceUrl": "http://jiaowuh5.juwp.edu.cn/static/js/1.4c79d7b5ee96c5c4aca1.1756772353838.js",
+          "sha256": "beee9e4a95b23abf06402baa4efd097fab43091eb9e75c8c7d4ea5e002d1dd38",
+          "observedAt": "2026-11-12T04:16:03.183602+00:00",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true
+        }
+      ]
+    },
+    "EXT/qlu-personal.js": {
+      "sha256": "1704cb28f2bc8fbdf8ff9ad7adb0b450ab416420b7c096e858f9970c92a0063f",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "MIT-protocol-only",
+      "sources": [
+        {
+          "adapterId": "ext_qlu_personal",
+          "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+          "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+          "path": "jiaowu_adapter_qlu/lib/src/qlu_api.dart",
+          "sourceUrl": "https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_api.dart",
+          "sha256": "0f22b4224bf842448a522cc68822786ba6f529daccec76638c993a65c51f7054",
+          "updated": "2026-07-19T08:49:43Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true,
+          "author": "Matt-wzy / 空教室查询与图书馆预约应用"
+        },
+        {
+          "adapterId": "ext_qlu_personal",
+          "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+          "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+          "path": "jiaowu_adapter_qlu/lib/src/qlu_adapter.dart",
+          "sourceUrl": "https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_adapter.dart",
+          "sha256": "f8759a4dbd39e467205bfd08c9d0edd7715ddd8a4314a47b1f1fdfea7cd30355",
+          "updated": "2026-07-19T08:49:43Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true,
+          "author": "Matt-wzy / 空教室查询与图书馆预约应用"
+        },
+        {
+          "adapterId": "ext_qlu_personal",
+          "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+          "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+          "path": "jiaowu_adapter_sdk/lib/src/models.dart",
+          "sourceUrl": "https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_sdk/lib/src/models.dart",
+          "sha256": "2bb0bfaac9f45ee467a3f44d1434aae6b2332631db39aeb6430eacf157454152",
+          "updated": "2026-07-19T08:49:43Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true,
+          "author": "Matt-wzy / 空教室查询与图书馆预约应用"
+        },
+        {
+          "adapterId": "ext_qlu_personal",
+          "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+          "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+          "path": "LICENSE",
+          "sourceUrl": "https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/LICENSE",
+          "sha256": "43a26c952ce4ecb60b4a3e873936c0b9005be1c90c9d22d9012ef513b6ad3b9b",
+          "updated": "2026-07-19T08:49:43Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true,
+          "author": "Matt-wzy / 空教室查询与图书馆预约应用"
+        },
+        {
+          "adapterId": "ext_qlu_personal",
+          "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+          "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+          "path": "jiaowu_adapter_qlu/lib/src/qlu_login.dart",
+          "sourceUrl": "https://github.com/Matt-wzy/jiaowu-adapters/blob/152c95b90b66b2a994f99718102bea8e91840704/jiaowu_adapter_qlu/lib/src/qlu_login.dart",
+          "sha256": "a1868b8c815d631cbbd55444856629dc3a98f070735d6c27642c7450d3aae27b",
+          "updated": "2026-07-19T08:49:43Z",
+          "license": "MIT",
+          "protocolReferenceOnly": true,
+          "author": "Matt-wzy / 空教室查询与图书馆预约应用"
+        }
+      ],
+      "localFixes": [
+        "Original current-semester workflow uses source-backed school home date-range page and exact two-field N2151 endpoint, not six-field personal-route request.",
+        "Visible login only; login success basename index_initMenu.html independently verified in qlu_login.dart. No headless credential/library login, current-date guessed semester, hardcoded max25 weeks, or opaque SDK week parser adopted.",
+        "Own strict parser reuses KAgenda original MIT code: jc periods, conflicting jcs/teacher aliases rejected, precise week lists/parity, campus/room/class/credits/evaluation retained, no unknown-course defaults.",
+        "Repeated school-term and raw identity/course reads around explicit calendar input; any unknown nonempty secondary result/paging/expired/partial/changed response aborts whole batch before staging. School range is not treated as first teaching-week Monday.",
+        "Prompts and rejection messages include Chinese/English/French using host-supplied app language; source school labels remain original data. Existing five-school script unchanged."
+      ]
+    },
+    "EXT/sdust-qz-personal.js": {
+      "sha256": "06daeadd51875319227e45fc3c8f5b32677dce911f286194fca06f21a17a5bdf",
+      "implementationOriginal": true,
+      "copiedUpstreamLines": 0,
+      "implementationLicense": "MIT",
+      "referenceLicense": "NOASSERTION-protocol-only",
+      "sources": [
+        {
+          "adapterId": "ext_sdust_qz_personal",
+          "repository": "https://github.com/SHST-SDUST/SHST-ULTRA",
+          "revision": "008e670031820a3ad4f56e8e6b2eace3cbb7882a",
+          "path": "src/pages/plus/study/timetable/model.ts",
+          "sourceUrl": "https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/pages/plus/study/timetable/model.ts",
+          "sha256": "f215a55a4d89da688eaf71415da023ab88e7b1d46742ce1dd70b5b50975e4a09",
+          "updated": "2026-09-25T02:46:19Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "author": "作者未确定；仓库发布者 SHST-SDUST"
+        },
+        {
+          "adapterId": "ext_sdust_qz_personal",
+          "repository": "https://github.com/SHST-SDUST/SHST-ULTRA",
+          "revision": "008e670031820a3ad4f56e8e6b2eace3cbb7882a",
+          "path": "src/pages/plus/study/timetable/parser.ts",
+          "sourceUrl": "https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/pages/plus/study/timetable/parser.ts",
+          "sha256": "f961a872013e6fb52cf9fa994c339f602670fc2f47457f4072caf92cc590b866",
+          "updated": "2026-09-11T09:35:25Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "author": "作者未确定；仓库发布者 SHST-SDUST"
+        },
+        {
+          "adapterId": "ext_sdust_qz_personal",
+          "repository": "https://github.com/SHST-SDUST/SHST-ULTRA",
+          "revision": "008e670031820a3ad4f56e8e6b2eace3cbb7882a",
+          "path": "src/utils/constant.ts",
+          "sourceUrl": "https://github.com/SHST-SDUST/SHST-ULTRA/blob/008e670031820a3ad4f56e8e6b2eace3cbb7882a/src/utils/constant.ts",
+          "sha256": "7a0313e9d372de0b62ef9d0c4b53d0ad4b85a267c0549752742dcc939d4936d8",
+          "updated": "2026-10-08T13:46:57Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "author": "作者未确定；仓库发布者 SHST-SDUST"
+        },
+        {
+          "adapterId": "ext_sdust_qz_personal",
+          "repository": "https://github.com/Opingur/ScheduleClawer_SDUST",
+          "revision": "1ed117b7d7da525b7cc1ae73e3a4a269d23a5ee2",
+          "path": "src/browser_reader.py",
+          "sourceUrl": "https://github.com/Opingur/ScheduleClawer_SDUST/blob/1ed117b7d7da525b7cc1ae73e3a4a269d23a5ee2/src/browser_reader.py",
+          "sha256": "82843a20b4f714e196b01143f67e8b9feab38a3d4937768cb9b4a99841905564",
+          "updated": "2026-09-04T01:43:24Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "author": "作者未确定；仓库发布者 Opingur"
+        },
+        {
+          "adapterId": "ext_sdust_qz_personal",
+          "repository": "https://github.com/Opingur/ScheduleClawer_SDUST",
+          "revision": "1ed117b7d7da525b7cc1ae73e3a4a269d23a5ee2",
+          "path": "src/normalize.py",
+          "sourceUrl": "https://github.com/Opingur/ScheduleClawer_SDUST/blob/1ed117b7d7da525b7cc1ae73e3a4a269d23a5ee2/src/normalize.py",
+          "sha256": "6fdca3fc074654c07fd6900f8b96a9fed57696a994493d59b46c163046e5ebf9",
+          "updated": "2026-08-31T07:23:04Z",
+          "license": "NOASSERTION",
+          "protocolReferenceOnly": true,
+          "author": "作者未确定；仓库发布者 Opingur"
+        }
+      ],
+      "localFixes": [
+        "Recent direct school HTTPS origin and full-category student semester POST from fixed SHST-ULTRA protocol facts; explicit all-week field corroborated by recent browser-reader. No upstream code copied and no grant inferred.",
+        "Require actual live selected semester/all-weeks and explicit returned selected attributes, no first-option/current-date/third-party app-config fallbacks. Exact seven weekday headers and bracketed period lists, never trIndex periods.",
+        "Retain complete building/campus text and raw course/class metadata, precise disjoint/parity weeks. Unknown nonempty cells/rows/tables/remarks/frames or pagination abort whole batch.",
+        "Compare raw course facts plus weekday and optional labelled identity across fresh rereads; prevents same text moved to another day from passing.",
+        "Direct academic origin only; no WebVPN integration or real account success claimed. Explicit user calendar/week count and native preview clocks; Chinese/English/French prompts."
       ]
     }
   },
@@ -2190,7 +2916,7 @@
       "referenceLicense": "NOASSERTION"
     },
     "selected-zf-personal-original-MIT.txt": {
-      "sha256": "55e0d4846056ef2cfc0ed8589389677cc5cd1a7e12a8117145fa826ba817269e",
+      "sha256": "db125e198a26c88a5d0894d257080ef84ad9e00420bd296b74012bb3a8b6f918",
       "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
       "scope": "KAgenda-original-implementation-only",
       "referenceLicense": "mixed-MIT-and-NOASSERTION-protocol-only"
@@ -2213,12 +2939,89 @@
       "scope": "KAgenda-original-implementation-only",
       "referenceRepository": "https://github.com/flame-ray/kezhi",
       "referenceLicense": "NOASSERTION"
+    },
+    "jiangxi-zf-personal-original-MIT.txt": {
+      "sha256": "f350511b36bab68864d551187387f27107ce6cf869741644659cf0178e20615a",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceRepository": "https://github.com/drfccv/ZFJW-backend",
+      "referenceLicense": "MIT"
+    },
+    "gnnu-personal-original-MIT.txt": {
+      "sha256": "a2b4d3670c013446681583d39c87a089d96761d21434d07f98285384cb89a883",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceRepository": "https://github.com/LittleFishStars/GNNU_API",
+      "referenceLicense": "NOASSERTION"
+    },
+    "xyu-personal-original-MIT.txt": {
+      "sha256": "e36c0c5dce2c17737ab1a9a00d1b7ab9c4f43bcb6d6f63cfc2dae295a278396a",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceRepository": "https://github.com/octmicy/xinyuan-app",
+      "referenceLicense": "NOASSERTION"
+    },
+    "ecut-personal-original-MIT.txt": {
+      "sha256": "f6005494bdc8722ab48fb2f73adcdc1833831137868edfac1ab67e81e0a2978b",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceRepository": "https://github.com/ncxiaofeng/CampusPocket",
+      "referenceLicense": "NOASSERTION"
+    },
+    "xyu-oricampus-source-MIT.txt": {
+      "sha256": "f9aa8ce585c94b3b94e12e8e5385aaf8e2350ccbc0b001541b81d02b7c42fad4",
+      "sourceUrl": "https://github.com/octmicy/OriCampus/blob/79750c666bdcaa8e9efb4072d9b8162a804ad957/LICENSE",
+      "scope": "Original full upstream notice; KAgenda implementation remains original and independently licensed."
+    },
+    "juwp-h5-personal-original-MIT.txt": {
+      "sha256": "4cf7ff085a4fa39c1e4574664c9b3efebf67b3b18936ffa1ef6d2402cfe57e26",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only",
+      "referenceLicense": "NOASSERTION"
+    },
+    "qust-protocol-reference-GPL-3.0.txt": {
+      "sha256": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "repository": "https://github.com/fangzi2006/QustSchedule",
+      "revision": "71f26af3ae090dd0170756b3d4ab641fd5b23656",
+      "path": "LICENSE",
+      "scope": "protocol-reference-only; no upstream implementation included"
+    },
+    "sdut-koma-protocol-Apache-2.0.txt": {
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "repository": "https://github.com/liuayueeryuan0313/KOMA",
+      "revision": "da932b81edaa617f98376f2729a32a896418823e",
+      "path": "LICENSE",
+      "scope": "protocol-reference-only; no upstream implementation included"
+    },
+    "sdut-koma-protocol-NOTICE.txt": {
+      "sha256": "f4c38d7f8520987b35d848400baf10df9ab3962ce48ac88f66e6c5ec83f323f4",
+      "repository": "https://github.com/liuayueeryuan0313/KOMA",
+      "revision": "da932b81edaa617f98376f2729a32a896418823e",
+      "path": "NOTICE",
+      "scope": "protocol-reference-only; no upstream implementation included"
+    },
+    "qlu-personal-original-MIT.txt": {
+      "sha256": "b771f1a1b362c700986dc67d84d8d481fe036a1b368df024391f89f204314a99",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only"
+    },
+    "qlu-protocol-MIT.txt": {
+      "sha256": "43a26c952ce4ecb60b4a3e873936c0b9005be1c90c9d22d9012ef513b6ad3b9b",
+      "repository": "https://github.com/Matt-wzy/jiaowu-adapters",
+      "revision": "152c95b90b66b2a994f99718102bea8e91840704",
+      "path": "LICENSE",
+      "scope": "upstream-protocol-reference-license; no implementation copied"
+    },
+    "sdust-qz-original-MIT.txt": {
+      "sha256": "abfb3948d4e991e996399366983709b555269dbdcefab25ef1977dae457c0b90",
+      "projectLicenseSha256": "6b82aec9008054737b4bedd40ec76a824c2d8bb21cda3ec98a342c08b21ddf09",
+      "scope": "KAgenda-original-implementation-only; no upstream grant inferred"
     }
   },
   "systemEvidence": {
     "asset": "academic/school-systems.json",
-    "sha256": "be3b5408fe3d6720f7d5a33d6786a1ac53edbdd17a2e6ee1a74e68daff5d3df2",
-    "schools": 10,
+    "sha256": "2dd591203aa8dd240cdb616b4b70533c84b930b89d010698927f914bc2ec2aaa",
+    "schools": 16,
     "scope": "Exact school vendor labels only. Does not add import URLs/adapters/support flags; does not copy referenced code.",
     "lastVerifiedAddition": {
       "school": "福州外语外贸学院",

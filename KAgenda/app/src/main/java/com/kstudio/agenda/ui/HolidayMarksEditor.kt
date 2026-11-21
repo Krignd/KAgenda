@@ -14,10 +14,7 @@ import com.kstudio.agenda.i18n.LocalAiText.text as tr
 import com.kstudio.agenda.model.*
 import com.kstudio.agenda.ui.components.AppOutlinedTextField
 import com.kstudio.agenda.ui.theme.FrostedAlertDialog
-import com.kstudio.agenda.ui.theme.glassFrost
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneOffset
 
 @Composable
 fun HolidayMarksEditor(vm: AppViewModel, initialDate: LocalDate, onDismiss: () -> Unit) {
@@ -73,14 +70,9 @@ fun HolidayMarksEditor(vm: AppViewModel, initialDate: LocalDate, onDismiss: () -
             }) { Text(if (kind == null) tr("恢复官方", "Restore official", "Rétablir") else tr("保存", "Save", "Enregistrer")) }
         }, dismissButton = { TextButton(onClick = onDismiss) { Text(tr("取消", "Cancel", "Annuler")) } })
     if (pickDate) {
-        val picker = rememberDatePickerState(initialSelectedDateMillis = date.atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli(), yearRange = 2000..2100)
-        DatePickerDialog(onDismissRequest = { pickDate = false }, modifier = Modifier.glassFrost(popup = true),
-            confirmButton = { TextButton(enabled = picker.selectedDateMillis != null, onClick = {
-                picker.selectedDateMillis?.let { day = Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate().toEpochDay() }
-                pickDate = false
-            }) { Text(tr("确定", "OK", "OK")) } },
-            dismissButton = { TextButton(onClick = { pickDate = false }) { Text(tr("取消", "Cancel", "Annuler")) } }) {
-            DatePicker(state = picker)
+        PlannerDatePicker(date, { pickDate = false }, yearRange = 2000..2100) {
+            day = it.toEpochDay()
+            pickDate = false
         }
     }
 }

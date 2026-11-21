@@ -20,22 +20,20 @@ import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
 
-// Cards sample only the scenery. Dialogs sample the page in the other window.
-// Keeping these sources separate prevents a card from sampling itself.
+// Only decorative scenery can be sampled by in-page glass surfaces.
 internal val LocalGlassScenery = staticCompositionLocalOf<HazeState?> { null }
-internal val LocalGlassPage = staticCompositionLocalOf<HazeState?> { null }
 
 @Composable
-fun Modifier.glassFrost(shape: Shape = RectangleShape, popup: Boolean = false): Modifier {
+fun Modifier.glassFrost(shape: Shape = RectangleShape): Modifier {
     if (!LocalGlassEnabled.current) return this
-    val source = (if (popup) LocalGlassPage.current else LocalGlassScenery.current) ?: return this
+    val source = LocalGlassScenery.current ?: return this
     val base = if (isSystemInDarkTheme()) Color(0xFF142035) else Color(0xFFEDF3FC)
     return clip(shape).hazeChild(
         source,
         HazeStyle(
             backgroundColor = base,
             tint = HazeTint(Color.Transparent),
-            blurRadius = if (popup) 32.dp else 24.dp,
+            blurRadius = 24.dp,
             noiseFactor = 0f,
             fallbackTint = HazeTint(base),
         ),
@@ -61,7 +59,7 @@ fun FrostedSurface(
     )
 }
 
-/** Retains Material dialog behavior, focus, insets and dismissal semantics. */
+/** An opaque modal with Material behavior and the selected theme's palette. */
 @Composable
 fun FrostedAlertDialog(
     onDismissRequest: () -> Unit,
@@ -84,18 +82,19 @@ fun FrostedAlertDialog(
     onEntered: (() -> Unit)? = null,
     contentReady: Boolean = true,
 ) {
+    val opaqueContainer = containerColor.copy(alpha = 1f)
     if (origin != null) {
         OriginAlertDialog(origin, onDismissRequest, confirmButton, modifier, dismissButton, icon,
-            title, text, shape, containerColor, iconContentColor, titleContentColor,
+            title, text, shape, opaqueContainer, iconContentColor, titleContentColor,
             textContentColor, tonalElevation, properties, scrollText, entranceDurationMillis, onEntered, contentReady)
         return
     }
     androidx.compose.runtime.LaunchedEffect(Unit) { onEntered?.invoke() }
     androidx.compose.material3.AlertDialog(
         onDismissRequest = onDismissRequest, confirmButton = confirmButton,
-        modifier = modifier.glassFrost(shape, popup = true),
+        modifier = modifier,
         dismissButton = dismissButton, icon = icon, title = title, text = text,
-        shape = shape, containerColor = containerColor,
+        shape = shape, containerColor = opaqueContainer,
         iconContentColor = iconContentColor, titleContentColor = titleContentColor,
         textContentColor = textContentColor, tonalElevation = tonalElevation, properties = properties,
     )

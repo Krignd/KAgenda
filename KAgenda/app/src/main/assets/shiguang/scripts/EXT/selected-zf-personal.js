@@ -1,16 +1,22 @@
-// KAgenda original implementation, MIT. Three explicitly registered school profiles only.
+// KAgenda original implementation, MIT. Explicitly registered school profiles only.
 // Protocol facts: kqakqakqa/xiaoai-schedule-parser@3a4bbfced68fcda9c4bc0ead5b5996e772164e58
 // school-named FZFU branch, 新正方V9.0_request/provider.js (2025-03-27);
 // zaochih/zf-to-ics@f9a8cfab8c4c79e4f56d1e8d583a9ae439ec86a1 extension/content.js (2026-10-12), SMU deployment example.
 // No upstream implementation copied. No grant inferred for either reference.
 // FIT protocol facts: Haooz, ShiGuangSchedule/shiguang_warehouse@c4a35feb061a3f6db2d6c122927083c067c61309,
 // resources/FIT/fit.js (2026-08-31, MIT). Public request facts only; no upstream implementation copied.
+// QUST protocol facts only: fangzi2006/QustSchedule@71f26af3ae090dd0170756b3d4ab641fd5b23656,
+// school.dart and zhengfang_client.dart (GPL-3.0). No upstream code copied or translated.
+// SDUT protocol facts: liuayueeryuan0313/KOMA@da932b81edaa617f98376f2729a32a896418823e,
+// adapters/scripts/jw-core.mjs and fetch-jw-password.mjs (Apache-2.0). Original implementation only.
 (function(){
   'use strict';
   const k=window.kagendaSchool, profiles={
     ext_fzfu_personal:{origins:['http://portal.fzfu.edu.cn','https://portal.fzfu.edu.cn','http://jw.fzfu.edu.cn','https://jw.fzfu.edu.cn'],moduleInBody:true},
     ext_smu_personal:{origins:['http://jwxxt.fjsmu.edu.cn','https://jwxxt.fjsmu.edu.cn'],moduleInBody:false},
-    ext_fit_personal:{origins:['http://oaa.fitedu.net'],moduleInBody:false,requireSelect:true,fixedModule:'N2151'}
+    ext_fit_personal:{origins:['http://oaa.fitedu.net'],moduleInBody:false,requireSelect:true,fixedModule:'N2151'},
+    ext_qust_personal:{origins:[1,2,3,4,5,6].map(n=>'https://jwglxt'+n+'.qust.edu.cn'),moduleInBody:false,requireSelect:true,requireModule:true,termCodes:true,personalFilters:true,aliases:true,rowFacts:['bjmc','kch','jxbmc','xf','kxh','sknr','bz']},
+    ext_sdut_personal:{origins:['https://jw.sdut.edu.cn'],moduleInBody:false,requireSelect:true,requireModule:true,fixedModule:'N2151',termCodes:true,personalFilters:true}
   },profile=profiles[k.adapterId],ORIGIN=location.origin;
   const PATH='/jwglxt/kbcx/xskbcx_cxXskbcxIndex.html',DATA='/jwglxt/kbcx/xskbcx_cxXsgrkb.html';
   function need(ok,message){k.requireValue(ok,message);}
@@ -34,6 +40,7 @@
     guard();const y=selected('xnm'),q=selected('xqm'),hidden=document.querySelector('#gnmkdm');
     const fromPage=hidden?.value,fromUrl=new URL(location.href).searchParams.get('gnmkdm');
     if(fromPage&&fromUrl)need(fromPage===fromUrl,'课表模块字段冲突');
+    need(!profile.requireModule||fromPage||fromUrl,'请从教务菜单进入个人课表，未取得实际模块标识');
     const module=fromPage||fromUrl||'N2151';need(/^N\d{3,12}$/.test(module),'课表模块格式未核验');
     need(!profile.fixedModule||module===profile.fixedModule,'当前课表模块未在本校来源中核验');
     const raw={xnm:y.value,xqm:q.value,yearLabel:y.label,termLabel:q.label,module};
@@ -43,6 +50,7 @@
     const url=new URL(DATA,ORIGIN);if(!profile.moduleInBody)url.searchParams.set('gnmkdm',term.module);
     const fields={xnm:term.xnm,xqm:term.xqm};if(profile.moduleInBody)fields.gnmkdm=term.module;
     fields.kzlx='ck';fields.xsdm='';if(!profile.moduleInBody)fields.kclbdm='';
+    if(profile.personalFilters)fields.kclxdm='';
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),20000);
     try{
       const response=await fetch(url.href,{method:'POST',credentials:'same-origin',redirect:'error',cache:'no-store',signal:controller.signal,referrer:location.href,referrerPolicy:'same-origin',headers:{Accept:'application/json','Content-Type':'application/x-www-form-urlencoded; charset=UTF-8','X-Requested-With':'XMLHttpRequest'},body:new URLSearchParams(fields).toString()});
@@ -57,6 +65,14 @@
     const d=new Date(value+'T00:00:00Z');need(Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===value&&d.getUTCDay()===1,'请按校历填写有效的周一日期');return value;
   }
   function text(value,label){need(typeof value==='string'&&value.trim()&&value.length<=200&&!/^(?:未知|待定|未安排|暂无|未排|未分配|null|undefined|[-—–]+)$/i.test(value.trim()),'课程缺少明确的'+label);return value.trim();}
+  function qustAliases(raw){
+    const row=Object.assign({},raw),aliases={kcmc:['KCMC'],xqj:['XQJ'],jcs:['JCS','jcor','JCOR'],xm:['XM','jsxm'],xqmc:['cdxqmc'],cdmc:['CDMC','jxcdmc'],zcd:['ZCD','weeks'],kch:['KCH','courseCode'],xf:['XF','credits'],jxbmc:['JXBMC','sectionName'],bjmc:['BJMC','className'],kxh:['KXH','lessonSequence'],sknr:['SKNR','teachingContent'],bz:['BZ','notes']};
+    for(const [key,others]of Object.entries(aliases)){
+      const values=[key,...others].filter(n=>row[n]!=null&&row[n]!=='').map(n=>{need(typeof row[n]==='string'||typeof row[n]==='number','课程字段类型发生变化');return String(row[n]).trim();}).filter(Boolean);
+      if(values.length){need(values.every(v=>v===values[0]),'同一课程的备用字段冲突');row[key]=values[0];}
+    }
+    return row;
+  }
   function sections(value){
     need(typeof value==='string'||typeof value==='number','课程缺少明确节次');
     const raw=String(value).replace(/[第节\s]/g,'').replace(/[，、]/g,',');need(raw&&raw.length<150,'课程缺少明确节次');
@@ -101,6 +117,7 @@
     const courses=[];
     data.kbList.forEach((row,index)=>{
       need(row&&typeof row==='object'&&!Array.isArray(row),'课程记录不完整');
+      if(profile.aliases)row=qustAliases(row);
       for(const value of Object.values(row))if(value&&typeof value==='object')need(empty(value),'课程含未核验的结构化安排');
       for(const key of ['xnm','xqm'])if(row[key]!=null)need(String(row[key])===term[key],'课程混入其他学期');
       need(empty(row.dsz),'出现未核验的独立单双周标志');
@@ -112,6 +129,7 @@
       let campus='';if(row.xqmc!=null){need(typeof row.xqmc==='string'&&row.xqmc.length<=200,'校区字段无效');campus=row.xqmc.trim();}
       const info={semester:term.label,sourceRow:index+1};
       for(const key of ['kch_id','kch','jxb_id','jxbmc','jxbzc','xqh_id','xkbz'])if(row[key]!=null){need((typeof row[key]==='string'||typeof row[key]==='number')&&String(row[key]).length<=1000,'课程标识或附加信息无效');info[key]=String(row[key]);}
+      for(const key of profile.rowFacts||[])if(row[key]!=null){need((typeof row[key]==='string'||typeof row[key]==='number')&&String(row[key]).length<=1000,'课程附加信息无效');info[key]=String(row[key]);}
       const extraInfo=JSON.stringify(info);need(extraInfo.length<=4000,'课程附加信息过大');
       const groups=[];for(const n of slots){const previous=groups[groups.length-1];if(previous&&previous[1]+1===n)previous[1]=n;else groups.push([n,n]);}
       for(const [first,last]of groups)courses.push(Object.assign(k.course(name,teacher,campus&&!room.includes(campus)?campus+' '+room:room,day,first,last,weeks),{extraInfo}));
@@ -134,6 +152,7 @@
     const term=Object.assign({},beforeFields,{code:beforeFields.xnm+':'+beforeFields.xqm,label:display,termLabel:effectiveLabel});
     const named=effectiveLabel.replace(/\s/g,'').match(/^(?:第)?([123一二三])(?:学期)?$/);
     term.ordinal=named?({'一':'1','二':'2','三':'3'}[named[1]]||named[1]):null;
+    if(profile.termCodes){need(/^\d{4}$/.test(term.xnm)&&term.ordinal&&({'1':'3','2':'12','3':'16'}[term.ordinal]===term.xqm),'学年学期值与学校编码或名称冲突');const year=term.yearLabel.match(/(\d{4})\s*-\s*(\d{4})/);need(year&&year[1]===term.xnm&&Number(year[2])===Number(year[1])+1,'学年名称与所选值冲突');}
     await k.choose('核对当前课表学期',[term],'code','label');
     guard();need(location.href===page&&current().snapshot===beforeFields.snapshot,'确认期间网页或所选学期发生变化');
     const before=parsed(await fresh(term),term);

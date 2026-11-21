@@ -14,6 +14,7 @@ object SchoolCatalog {
         val repository: String = REPOSITORY, val revision: String = COMMIT,
         val license: String = "MIT", val updated: String = "", val sourceUrl: String = "",
         val parser: String = "", val directoryUrl: String = "", val licenseAsset: String = "", val preferred: Boolean = false,
+        val timeoutSeconds: Int = 120,
     )
     const val COMMIT = "c4a35feb061a3f6db2d6c122927083c067c61309"
     const val REPOSITORY = "https://github.com/ShiGuangSchedule/shiguang_warehouse"
@@ -72,7 +73,8 @@ object SchoolCatalog {
                 a.getString("path"), a.optString("maintainer"), a.optString("description"), a.optBoolean("combo"),
                 repository = a.optString("repository", REPOSITORY), revision = a.optString("revision", COMMIT),
                 license = a.optString("license", "MIT"), updated = a.optString("updated"), sourceUrl = a.optString("sourceUrl"),
-                licenseAsset = a.optString("licenseAsset"), preferred = a.optBoolean("preferred", false))
+                licenseAsset = a.optString("licenseAsset"), preferred = a.optBoolean("preferred", false),
+                timeoutSeconds = a.optInt("timeoutSeconds", 120).coerceIn(30, 600))
         } }
         val tools = JSONArray(toolsRaw)
         general = (0 until tools.length()).flatMap { readAdapters(tools.getJSONObject(it).getJSONArray("adapters")) }
@@ -88,7 +90,7 @@ object SchoolCatalog {
         // These exact school records add labels only: no adapter, URL or support
         // flag is inferred, and historical directory evidence remains intact.
         val vendorEvidence = JSONArray(systemEvidenceRaw)
-        val evidenceTypes = knownTypes + setOf("zhengfang", "jinzhi", "eams")
+        val evidenceTypes = knownTypes + setOf("zhengfang", "jinzhi", "eams", "chaoxing")
         for (i in 0 until vendorEvidence.length()) {
             val row = vendorEvidence.getJSONObject(i)
             val type = row.getString("type")

@@ -58,7 +58,7 @@ object ReminderScheduler {
                 val courses = semester.weeks[weekNo].orEmpty()
                     .filter { it.dayOfWeek == date.dayOfWeek.value && it.occursInWeek(weekNo) }
                 for (course in courses) {
-                    val triggerAt = PeriodTimes.startMillisEpoch(date, course.startPeriod) -
+                    val triggerAt = course.startMillisEpoch(date) -
                         settings.leadMinutes * 60_000L
                     if (triggerAt <= nowMillis) continue   // 已过时或即将发生
                     scheduledCodes.add(scheduleOne(context, am, triggerAt, course, date, settings.alarmEnabled))

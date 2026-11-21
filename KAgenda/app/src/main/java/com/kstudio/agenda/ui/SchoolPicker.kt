@@ -2,7 +2,6 @@
 
 package com.kstudio.agenda.ui
 
-import com.kstudio.agenda.ui.theme.glassFrost
 import com.kstudio.agenda.ui.theme.LocalGlassEnabled
 
 import android.view.Gravity
@@ -120,8 +119,9 @@ internal fun SchoolPicker(selectedId: String, onSelect: (School) -> Unit, onDism
         }
         Surface(
             // 窗口始终铺满屏幕；键盘只通过 Insets 压缩内容，不能反过来固定窗口高度。
-            Modifier.fillMaxSize().glassFrost(popup = true),
+            Modifier.fillMaxSize(),
             color = com.kstudio.agenda.ui.theme.overlayBackgroundColor(),
+            contentColor = MaterialTheme.colorScheme.onSurface,
         ) {
             Scaffold(modifier = Modifier.imePadding(), containerColor = if (LocalGlassEnabled.current) androidx.compose.ui.graphics.Color.Transparent else com.kstudio.agenda.ui.theme.overlayBackgroundColor(), topBar = {
                 TopAppBar(title = { Text(t.secSchool) }, navigationIcon = { IconButton(onClick = onDismiss) { Icon(Icons.AutoMirrored.Filled.ArrowBack, t.cancel) } })

@@ -35,7 +35,7 @@ object OverviewWidgetUpdater {
         val days = (0 until if (weekly) 7 else 1).map { start.plusDays(it.toLong()) }
         return Content(days, days.flatMap { day ->
             val courses = semester?.coursesOnDate(day).orEmpty().map { c ->
-                Entry(day, c.title, PeriodTimes.format(PeriodTimes.startOf(c.startPeriod)), c.room, CoursePalette.colorFor(c))
+                Entry(day, c.title, PeriodTimes.format(c.startTime), c.room, CoursePalette.colorFor(c))
             }
             val events = if (coursesOnly) emptyList() else AgendaStore.events.value.filter { !it.isPlan && it.occursOn(day) }.map { e ->
                 Entry(day, e.title, e.startTime, e.location, e.displayColor.takeIf { it != 0 } ?: 0xFF1D4ED8.toInt())
@@ -82,5 +82,6 @@ object OverviewWidgetUpdater {
     private fun openIntent(context: Context, id: Int) = Intent(context, MainActivity::class.java).apply {
         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         data = Uri.parse("kagenda://widget/$id")
+        putExtra(MainActivity.EXTRA_WIDGET_KIND, "overview")
     }
 }
